@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { buildApiUrl, getBackendUrl } from '@/lib/api';
 
 type TransactionType = 'income' | 'expense';
 
@@ -43,7 +42,10 @@ const categoryIcons: { [key: string]: string } = {
 export default function AddTransactionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const transactionId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const isEditing = Boolean(transactionId);
+
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -51,19 +53,40 @@ export default function AddTransactionScreen() {
   const [categories, setCategories] = useState<Categories>({ income: [], expense: [] });
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingTransaction, setLoadingTransaction] = useState(false);
+  const [backendUrl, setBackendUrl] = useState('');
+  const [backendMissing, setBackendMissing] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    // Reset category when type changes
-    setCategory('');
-  }, [type]);
+  const resolveBackendUrl = async () => {
+    const url = await getBackendUrl();
+    setBackendUrl(url);
+    setBackendMissing(!url);
+    return url;
+  };
 
   const fetchCategories = async () => {
+    setLoadingCategories(true);
     try {
-      const res = await fetch(`${API_URL}/api/categories`);
+      const baseUrl = await resolveBackendUrl();
+      if (!baseUrl) {
+        setCategories({
+          income: ['Salário', 'Freelance', 'Investimentos', 'Vendas', 'Outros'],
+          expense: [
+            'Alimentação',
+            'Transporte',
+            'Moradia',
+            'Saúde',
+            'Educação',
+            'Lazer',
+            'Compras',
+            'Contas',
+            'Outros',
+          ],
+        });
+        return;
+      }
+      const res = await fetch(buildApiUrl(baseUrl, '/api/categories'));
       if (res.ok) {
         const data = await res.json();
         setCategories(data);
@@ -73,24 +96,83 @@ export default function AddTransactionScreen() {
       // Use default categories if fetch fails
       setCategories({
         income: ['Salário', 'Freelance', 'Investimentos', 'Vendas', 'Outros'],
-        expense: ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Educação', 'Lazer', 'Compras', 'Contas', 'Outros'],
+        expense: [
+          'Alimentação',
+          'Transporte',
+          'Moradia',
+          'Saúde',
+          'Educação',
+          'Lazer',
+          'Compras',
+          'Contas',
+          'Outros',
+        ],
       });
     } finally {
       setLoadingCategories(false);
     }
   };
 
+  const fetchTransaction = async () => {
+    if (!transactionId) return;
+    setLoadingTransaction(true);
+    try {
+      const baseUrl = await resolveBackendUrl();
+      if (!baseUrl) return;
+
+      const res = await fetch(buildApiUrl(baseUrl, `/api/transactions/${transactionId}`));
+      if (res.ok) {
+        const data = await res.json();
+        setType(data.type);
+        setAmount(String(data.amount).replace('.', ','));
+        setDescription(data.description || '');
+        setCategory(data.category || '');
+      } else {
+        Alert.alert('Erro', 'Nao foi possivel carregar a transacao.');
+      }
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      Alert.alert('Erro', 'Nao foi possivel carregar a transacao.');
+    } finally {
+      setLoadingTransaction(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const load = async () => {
+        setInitializing(true);
+        await fetchCategories();
+        if (transactionId) {
+          await fetchTransaction();
+        }
+        if (isActive) setInitializing(false);
+      };
+      load();
+      return () => {
+        isActive = false;
+      };
+    }, [transactionId])
+  );
+
   const handleAmountChange = (text: string) => {
-    // Only allow numbers and one decimal point
-    const cleaned = text.replace(/[^0-9.]/g, '');
-    const parts = cleaned.split('.');
+    // Only allow numbers and one decimal separator
+    const cleaned = text.replace(/[^0-9.,]/g, '').replace(/\./g, ',');
+    const parts = cleaned.split(',');
     if (parts.length > 2) return;
     if (parts[1]?.length > 2) return;
     setAmount(cleaned);
   };
 
+  const handleTypeChange = (nextType: TransactionType) => {
+    setType(nextType);
+    setCategory('');
+  };
+
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const parsedAmount = parseFloat(amount.replace(',', '.'));
+    if (!amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
       Alert.alert('Erro', 'Digite um valor válido');
       return;
     }
@@ -108,27 +190,35 @@ export default function AddTransactionScreen() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/transactions`, {
-        method: 'POST',
+      const baseUrl = backendUrl || (await resolveBackendUrl());
+      if (!baseUrl) {
+        Alert.alert('Backend nao configurado', 'Configure a URL nas Configuracoes.');
+        return;
+      }
+
+      const payload = {
+        type,
+        amount: parsedAmount,
+        description: description.trim(),
+        category,
+      };
+
+      const res = await fetch(buildApiUrl(baseUrl, `/api/transactions${isEditing ? `/${transactionId}` : ''}`), {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type,
-          amount: parseFloat(amount),
-          description: description.trim(),
-          category,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         router.back();
       } else {
-        Alert.alert('Erro', 'Não foi possível salvar a transação');
+        Alert.alert('Erro', isEditing ? 'Nao foi possivel atualizar a transacao' : 'Nao foi possivel salvar a transacao');
       }
     } catch (error) {
       console.error('Error creating transaction:', error);
-      Alert.alert('Erro', 'Erro de conexão. Tente novamente.');
+      Alert.alert('Erro', 'Erro de conexao. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -150,10 +240,29 @@ export default function AddTransactionScreen() {
           >
             <Ionicons name="close" size={28} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Nova Transação</Text>
+          <Text style={styles.headerTitle}>
+            {isEditing ? 'Editar Transacao' : 'Nova Transacao'}
+          </Text>
           <View style={{ width: 44 }} />
         </View>
 
+        {backendMissing && (
+          <View style={styles.warningBox}>
+            <Ionicons name="alert-circle-outline" size={18} color="#F59E0B" />
+            <Text style={styles.warningText}>
+              Backend nao configurado. Ajuste em Configuracoes.
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/settings')}>
+              <Text style={styles.warningAction}>Configurar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {initializing || loadingTransaction ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+          </View>
+        ) : (
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -166,7 +275,7 @@ export default function AddTransactionScreen() {
                 styles.typeButton,
                 type === 'expense' && styles.typeButtonActiveExpense,
               ]}
-              onPress={() => setType('expense')}
+              onPress={() => handleTypeChange('expense')}
             >
               <Ionicons
                 name="arrow-down"
@@ -188,7 +297,7 @@ export default function AddTransactionScreen() {
                 styles.typeButton,
                 type === 'income' && styles.typeButtonActiveIncome,
               ]}
-              onPress={() => setType('income')}
+              onPress={() => handleTypeChange('income')}
             >
               <Ionicons
                 name="arrow-up"
@@ -293,18 +402,21 @@ export default function AddTransactionScreen() {
               loading && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || backendMissing}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
                 <Ionicons name="checkmark" size={24} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Salvar Transação</Text>
+                <Text style={styles.submitButtonText}>
+                  {isEditing ? 'Atualizar Transacao' : 'Salvar Transacao'}
+                </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -451,5 +563,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  warningText: {
+    flex: 1,
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  warningAction: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 40,
   },
 });
