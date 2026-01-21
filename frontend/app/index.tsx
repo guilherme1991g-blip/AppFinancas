@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+import { buildApiUrl, getBackendUrl } from '@/lib/api';
 
 interface Transaction {
   id: string;
@@ -56,12 +55,32 @@ export default function HomeScreen() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasBackend, setHasBackend] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [backendUrl, setBackendUrl] = useState('');
+
+  const resolveBackendUrl = async () => {
+    const url = await getBackendUrl();
+    setBackendUrl(url);
+    setHasBackend(Boolean(url));
+    return url;
+  };
 
   const fetchData = async () => {
     try {
+      const baseUrl = await resolveBackendUrl();
+      if (!baseUrl) {
+        setHasBackend(false);
+        setErrorMessage('Configure a URL do backend para continuar.');
+        setTransactions([]);
+        setSummary(null);
+        return;
+      }
+      setHasBackend(true);
+      setErrorMessage(null);
       const [transRes, summaryRes] = await Promise.all([
-        fetch(`${API_URL}/api/transactions`),
-        fetch(`${API_URL}/api/summary`),
+        fetch(buildApiUrl(baseUrl, '/api/transactions')),
+        fetch(buildApiUrl(baseUrl, '/api/summary')),
       ]);
 
       if (transRes.ok) {
@@ -75,6 +94,7 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      setErrorMessage('Nao foi possivel conectar ao backend.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -103,7 +123,15 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const res = await fetch(`${API_URL}/api/transactions/${id}`, {
+              const baseUrl = backendUrl || (await resolveBackendUrl());
+              if (!baseUrl) {
+                Alert.alert(
+                  'Backend nao configurado',
+                  'Configure a URL do backend em Configuracoes.'
+                );
+                return;
+              }
+              const res = await fetch(buildApiUrl(baseUrl, `/api/transactions/${id}`), {
                 method: 'DELETE',
               });
               if (res.ok) {
@@ -142,14 +170,35 @@ export default function HomeScreen() {
     );
   }
 
+  if (!hasBackend) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+        <Ionicons name="cloud-offline-outline" size={64} color="#30363D" />
+        <Text style={styles.emptyText}>Backend nao configurado</Text>
+        <Text style={styles.emptySubtext}>
+          Informe a URL do backend para acessar suas transacoes.
+        </Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/settings')}>
+          <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Configurar agora</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Minhas Finanças</Text>
-        <Text style={styles.headerDate}>
-          {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>Minhas Finanças</Text>
+          <Text style={styles.headerDate}>
+            {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => router.push('/settings')}>
+          <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -163,6 +212,14 @@ export default function HomeScreen() {
           />
         }
       >
+        {errorMessage && (
+          <TouchableOpacity style={styles.errorBanner} onPress={fetchData}>
+            <Ionicons name="alert-circle-outline" size={18} color="#F59E0B" />
+            <Text style={styles.errorBannerText}>{errorMessage}</Text>
+            <Text style={styles.errorBannerAction}>Tentar</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Balance Card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Saldo Total</Text>
@@ -219,6 +276,9 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={transaction.id}
                 style={styles.transactionCard}
+                onPress={() =>
+                  router.push({ pathname: '/add-transaction', params: { id: transaction.id } })
+                }
                 onLongPress={() => deleteTransaction(transaction.id)}
                 delayLongPress={500}
               >
@@ -416,5 +476,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#161B22',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    flex: 1,
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorBannerAction: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
