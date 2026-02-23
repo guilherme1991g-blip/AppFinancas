@@ -36,7 +36,7 @@ services:
     container_name: financas_frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "4000:80"
     depends_on:
       - backend
     networks:
