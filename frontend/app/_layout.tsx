@@ -1,31 +1,43 @@
-import { Stack } from 'expo-router';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack, Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuth, AuthProvider } from '@/contexts/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
+import { Colors } from '@/constants/theme';
 
-export default function RootLayout() {
-  return (
-    <SafeAreaProvider>
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: '#0D1117' },
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="add-transaction" options={{ presentation: 'modal' }} />
-        </Stack>
+function RootLayoutNav() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
+        <ActivityIndicator color={Colors.primary} size="large" />
       </View>
-    </SafeAreaProvider>
+    );
+  }
+
+  return (
+    <ThemeProvider value={DarkTheme}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="transaction/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="transaction/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="transfer/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="budget/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="company/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="account/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="recurring/new" options={{ presentation: 'modal' }} />
+      </Stack>
+      <StatusBar style="light" />
+    </ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D1117',
-  },
-});
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
+}
