@@ -80,19 +80,22 @@ async def delete_account(current_user=Depends(get_current_user)):
         transfers_collection, budgets_collection, recurring_collection,
         companies_collection, bills_collection, sonhos_collection, compromissos_collection
     )
-    user_id = str(current_user["_id"])
+    user_id_obj = current_user["_id"]
+    user_id_str = str(user_id_obj)
     
-    # Delete all associated data
-    await accounts_collection.delete_many({"user_id": user_id})
-    await categories_collection.delete_many({"user_id": user_id})
-    await transactions_collection.delete_many({"user_id": user_id})
-    await transfers_collection.delete_many({"user_id": user_id})
-    await budgets_collection.delete_many({"user_id": user_id})
-    await recurring_collection.delete_many({"user_id": user_id})
-    await companies_collection.delete_many({"user_id": user_id})
-    await bills_collection.delete_many({"user_id": user_id})
-    await sonhos_collection.delete_many({"user_id": user_id})
-    await compromissos_collection.delete_many({"user_id": user_id})
+    # Delete all associated data (Collections using ObjectId)
+    await accounts_collection.delete_many({"user_id": user_id_obj})
+    await categories_collection.delete_many({"user_id": user_id_obj})
+    await transactions_collection.delete_many({"user_id": user_id_obj})
+    await transfers_collection.delete_many({"user_id": user_id_obj})
+    await budgets_collection.delete_many({"user_id": user_id_obj})
+    await recurring_collection.delete_many({"user_id": user_id_obj})
+    await companies_collection.delete_many({"user_id": user_id_obj})
+    await bills_collection.delete_many({"user_id": user_id_obj})
+    
+    # Delete all associated data (Collections using String)
+    await sonhos_collection.delete_many({"user_id": user_id_str})
+    await compromissos_collection.delete_many({"user_id": user_id_str})
     
     # Delete user (REMOVED: User requested not to delete the profile)
     # await users_collection.delete_one({"_id": ObjectId(user_id)})
