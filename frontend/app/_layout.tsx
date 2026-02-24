@@ -34,6 +34,7 @@ function RootLayoutNav() {
         <Stack.Screen name="account/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recurring/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="category/index" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="sonhos/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="notification-settings" options={{
           presentation: 'modal',
           headerShown: true,

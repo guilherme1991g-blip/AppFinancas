@@ -34,6 +34,14 @@ export default function ToolsScreen() {
             icon: 'trending-up',
             color: '#6366F1',
             route: '/tools/metas'
+        },
+        {
+            id: 'sonhos',
+            title: 'Meus Sonhos',
+            sub: 'Planeje e acompanhe seus objetivos financeiros de longo prazo.',
+            icon: 'rocket',
+            color: '#EC4899',
+            route: '/tools/sonhos'
         }
     ];
 

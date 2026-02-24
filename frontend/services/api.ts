@@ -139,4 +139,10 @@ export const api = {
     getPreferences: () => request('/preferences'),
     updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
     deleteUserAccount: () => request('/auth/account', { method: 'DELETE' }),
+
+    // Sonhos
+    getSonhos: () => request('/sonhos'),
+    createSonho: (data: any) => request('/sonhos', { method: 'POST', body: JSON.stringify(data) }),
+    updateSonho: (id: string, data: any) => request(`/sonhos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteSonho: (id: string) => request(`/sonhos/${id}`, { method: 'DELETE' }),
 };
