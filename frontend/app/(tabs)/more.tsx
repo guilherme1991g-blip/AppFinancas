@@ -147,19 +147,19 @@ export default function SettingsScreen() {
                         style={styles.deleteBtn}
                         onPress={() => {
                             Alert.alert(
-                                'Apagar tudo?',
-                                'Esta ação apagará todos os seus dados, contas, transações e seu perfil permanentemente. Você tem certeza?',
+                                'Limpar todos os dados?',
+                                'Esta ação apagará permanentemente todas as suas contas, transações, metas e empresas. Seu perfil de usuário será mantido para que você possa recomeçar.',
                                 [
                                     { text: 'Cancelar', style: 'cancel' },
                                     {
-                                        text: 'Sim, Apagar Tudo',
+                                        text: 'Sim, Limpar Tudo',
                                         style: 'destructive',
                                         onPress: async () => {
                                             try {
                                                 await api.deleteUserAccount();
                                                 logout();
                                             } catch (e) {
-                                                Alert.alert('Erro', 'Não foi possível apagar sua conta. Tente novamente.');
+                                                Alert.alert('Erro', 'Não foi possível limpar seus dados. Tente novamente.');
                                             }
                                         }
                                     }
