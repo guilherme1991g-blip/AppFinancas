@@ -92,7 +92,11 @@ export default function AccountsScreen() {
             ) : (
                 <View style={styles.list}>
                     {accounts.map((acc) => (
-                        <View key={acc.id} style={styles.accountCard}>
+                        <TouchableOpacity
+                            key={acc.id}
+                            style={styles.accountCard}
+                            onPress={() => router.push(`/account/${acc.id}` as any)}
+                        >
                             <View style={[styles.accountIconWrap, { backgroundColor: acc.color + '20' }]}>
                                 <Ionicons name={(ACCOUNT_ICONS[acc.type] || 'wallet') as any} size={24} color={acc.color} />
                             </View>
@@ -104,11 +108,17 @@ export default function AccountsScreen() {
                                 <Text style={[styles.accountBalance, { color: acc.balance >= 0 ? colors.text : colors.expense }]}>
                                     {formatCurrency(acc.balance)}
                                 </Text>
-                                <TouchableOpacity onPress={() => handleDelete(acc.id)}>
-                                    <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
-                                </TouchableOpacity>
+                                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                                    <Ionicons name="create-outline" size={16} color={colors.primary} />
+                                    <TouchableOpacity onPress={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(acc.id);
+                                    }}>
+                                        <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ))}
                 </View>
             )}

@@ -40,6 +40,7 @@ class AccountCreate(BaseModel):
 class AccountUpdate(BaseModel):
     name: Optional[str] = None
     bank: Optional[str] = None
+    balance: Optional[float] = None
     color: Optional[str] = None
     icon: Optional[str] = None
     credit_limit: Optional[float] = None

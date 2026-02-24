@@ -29,11 +29,44 @@ export default function TransactionsScreen() {
     async function fetchData() {
         try {
             const type = filter === 'Receitas' ? 'income' : filter === 'Despesas' ? 'expense' : undefined;
-            const [txs, cats] = await Promise.all([
+            const [txs, cats, accs] = await Promise.all([
                 api.getTransactions({ month, year, limit: 100, ...(type ? { type } : {}) }) as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
+                api.getAccounts() as Promise<any[]>,
             ]);
-            setTransactions(txs);
+
+            const cards = accs.filter(a => a.type === 'credit_card');
+            const cardBills: any[] = [];
+
+            // Add a virtual "bill" transaction for each card if not filtering by type
+            if (filter === 'Todos' || filter === 'Despesas') {
+                for (const card of cards) {
+                    const bills = await api.getBills(card.id) as any[];
+                    let bill = bills.find(b => b.month === month && b.year === year);
+
+                    // If no bill entry exists for this month, create a virtual one
+                    if (!bill) {
+                        bill = {
+                            id: `v_${card.id}_${month}_${year}`,
+                            account_id: card.id,
+                            amount: card.balance || 0, // Current card balance as bill amount
+                            month,
+                            year,
+                            status: 'open',
+                            isBill: true,
+                            cardName: card.name,
+                            color: card.color
+                        };
+                    } else {
+                        bill.isBill = true;
+                        bill.cardName = card.name;
+                        bill.color = card.color;
+                    }
+                    cardBills.push(bill);
+                }
+            }
+
+            setTransactions([...cardBills, ...txs]);
             setCategories(cats);
         } catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
@@ -75,33 +108,60 @@ export default function TransactionsScreen() {
         }
     }
 
-    const renderItem = ({ item: tx }: { item: any }) => {
-        const cat = getCat(tx.category_id);
-        const date = new Date(tx.date);
+    const renderItem = ({ item: it }: { item: any }) => {
+        if (it.isBill) {
+            return (
+                <TouchableOpacity
+                    style={[styles.txItem, { borderColor: (it.color || colors.primary) + '40', borderLeftWidth: 4, borderLeftColor: it.color || colors.primary }]}
+                    onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: it.id, name: `${it.month}/${it.year}` } } as any)}
+                >
+                    <View style={[styles.txIcon, { backgroundColor: (it.color || colors.primary) + '15' }]}>
+                        <Ionicons name="receipt" size={22} color={it.color || colors.primary} />
+                    </View>
+                    <View style={styles.txInfo}>
+                        <Text style={styles.txDesc} numberOfLines={1}>Fatura {it.cardName}</Text>
+                        <Text style={styles.txMeta}>FECHAMENTO EM {it.month}/{it.year}</Text>
+                    </View>
+                    <View style={styles.txRight}>
+                        <Text style={[styles.txAmount, { color: colors.text }]}>
+                            {formatCurrency(it.amount)}
+                        </Text>
+                        <View style={[styles.statusBadgeSmall, { backgroundColor: it.status === 'paid' ? colors.income + '15' : colors.expense + '15' }]}>
+                            <Text style={[styles.statusTextSmall, { color: it.status === 'paid' ? colors.income : colors.expense }]}>
+                                {it.status === 'paid' ? 'Paga' : 'Aberta'}
+                            </Text>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            );
+        }
+
+        const cat = getCat(it.category_id);
+        const date = new Date(it.date);
         return (
-            <TouchableOpacity style={styles.txItem} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
+            <TouchableOpacity style={styles.txItem} onPress={() => router.push(`/transaction/${it.id}` as any)}>
                 <View style={[styles.txIcon, { backgroundColor: (cat?.color || colors.textMuted) + '20' }]}>
                     <Ionicons name={(cat?.icon || 'ellipsis-horizontal') as any} size={20} color={cat?.color || colors.textMuted} />
                 </View>
                 <View style={styles.txInfo}>
-                    <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                    <Text style={styles.txDesc} numberOfLines={1}>{it.description}</Text>
                     <Text style={styles.txMeta}>{cat?.name || '—'} · {date.getDate()}/{MONTHS[date.getMonth()]}</Text>
                 </View>
                 <View style={styles.txRight}>
-                    <Text style={[styles.txAmount, { color: tx.type === 'income' ? colors.income : colors.expense }]}>
-                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : colors.expense }]}>
+                        {it.type === 'income' ? '+' : '-'}{formatCurrency(it.amount)}
                     </Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {!tx.is_paid && (
+                        {!it.is_paid && (
                             <TouchableOpacity
-                                style={[styles.miniPayBtn, { backgroundColor: tx.type === 'income' ? colors.income : colors.expense }]}
-                                onPress={() => handlePay(tx.id)}
+                                style={[styles.miniPayBtn, { backgroundColor: it.type === 'income' ? colors.income : colors.expense }]}
+                                onPress={() => handlePay(it.id)}
                             >
-                                <Text style={styles.miniPayBtnText}>{tx.type === 'income' ? 'Receber' : 'Pagar'}</Text>
+                                <Text style={styles.miniPayBtnText}>{it.type === 'income' ? 'Receber' : 'Pagar'}</Text>
                             </TouchableOpacity>
                         )}
-                        <TouchableOpacity onPress={() => handleDelete(tx.id)} style={styles.deleteBtn}>
+                        <TouchableOpacity onPress={() => handleDelete(it.id)} style={styles.deleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
                     </View>
@@ -185,6 +245,9 @@ const s = (colors: any) => StyleSheet.create({
     miniPayBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
     miniPayBtnText: { color: colors.white, fontSize: 11, fontWeight: '900', textTransform: 'uppercase' },
     deleteBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight, borderRadius: 10 },
+
+    statusBadgeSmall: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 4 },
+    statusTextSmall: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
 
     empty: { alignItems: 'center', paddingTop: 80, gap: 18 },
     emptyText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },

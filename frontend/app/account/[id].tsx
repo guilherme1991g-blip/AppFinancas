@@ -43,18 +43,23 @@ export default function EditAccountScreen() {
 
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const [accounts, setAccounts] = useState<any[]>([]);
+    const [origBalance, setOrigBalance] = useState(0);
 
     const styles = s(colors);
 
     useEffect(() => {
         async function load() {
             try {
-                const accounts = await api.getAccounts() as any[];
-                const acc = accounts.find(a => a.id === id);
+                const accs = await api.getAccounts() as any[];
+                setAccounts(accs.filter(a => a.type !== 'credit_card'));
+
+                const acc = accs.find(a => a.id === id);
                 if (acc) {
                     setName(acc.name || '');
                     setBank(acc.bank || '');
                     setBalance(String(acc.balance || 0));
+                    setOrigBalance(acc.balance || 0);
                     setType(acc.type);
                     setColor(acc.color || CUSTOM_COLORS[0]);
 
@@ -78,15 +83,55 @@ export default function EditAccountScreen() {
     async function handleSave() {
         if (type !== 'credit_card' && !name) { Alert.alert('Atenção', 'Informe o nome da conta'); return; }
 
+        const newBalance = parseFloat(balance.replace(',', '.')) || 0;
+        const diff = newBalance - origBalance;
+
+        if (diff !== 0 && type !== 'credit_card') {
+            Alert.alert(
+                'Ajuste de Saldo',
+                `O saldo foi alterado em ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(diff))}. Deseja lançar essa diferença como uma transação de ${diff > 0 ? 'Receita' : 'Despesa'}?`,
+                [
+                    { text: 'Não, apenas ajustar', onPress: () => performSave(newBalance, false) },
+                    { text: 'Sim, lançar transação', onPress: () => performSave(newBalance, true) },
+                    { text: 'Cancelar', style: 'cancel' }
+                ]
+            );
+        } else {
+            performSave(newBalance, false);
+        }
+    }
+
+    async function performSave(newBalance: number, createTx: boolean) {
         setLoading(true);
         try {
+            if (createTx) {
+                const cats = await api.getCategories() as any[];
+                let adjCat = cats.find(c => c.name.toLowerCase().includes('ajuste'));
+                if (!adjCat) adjCat = cats[0]; // Fallback
+
+                await api.createTransaction({
+                    account_id: id as string,
+                    category_id: adjCat.id,
+                    type: newBalance > origBalance ? 'income' : 'expense',
+                    amount: Math.abs(newBalance - origBalance),
+                    description: 'Ajuste de Saldo',
+                    date: new Date().toISOString(),
+                    is_paid: true
+                });
+            }
+
             const data: any = {
                 name: type === 'credit_card' ? undefined : name,
                 bank,
                 type,
-                balance: parseFloat(balance.replace(',', '.')) || 0,
                 color
             };
+
+            // If a transaction was NOT created, we must update the balance field explicitly.
+            // If a transaction WAS created, the backend already adjusted the balance via $inc.
+            if (!createTx) {
+                data.balance = newBalance;
+            }
 
             if (type === 'credit_card') {
                 data.credit_limit = parseFloat(limit.replace(',', '.')) || 0;
@@ -130,35 +175,26 @@ export default function EditAccountScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                        {/* Preview */}
-                        <View style={[styles.preview, { borderLeftColor: type === 'credit_card' ? currentBrand?.color : color }]}>
-                            <View style={[styles.previewIcon, { backgroundColor: (type === 'credit_card' ? currentBrand?.color : color) + '15' }]}>
-                                <Ionicons name={(type === 'credit_card' ? 'card' : ACC_TYPES.find(t => t.value === type)?.icon) as any || 'wallet'} size={24} color={type === 'credit_card' ? currentBrand?.color : color} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.previewName}>
-                                    {type === 'credit_card'
-                                        ? `${currentBrand?.label}${bank ? ' ' + bank : ''}${lastDigits ? ' ••••' + lastDigits : ''}`
-                                        : (name || 'Nome da conta')}
-                                </Text>
-                                <Text style={styles.previewType}>{ACC_TYPES.find(t => t.value === type)?.label}</Text>
-                            </View>
-                            <Text style={styles.previewBalance}>R$ {parseFloat(balance.replace(',', '.') || '0').toFixed(2)}</Text>
-                        </View>
+                        {/* Preview card removed for simplicity */}
 
-                        <Text style={styles.sectionLabel}>Tipo de Conta</Text>
-                        <View style={styles.typeGrid}>
-                            {ACC_TYPES.map(t => (
-                                <TouchableOpacity
-                                    key={t.value}
-                                    style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
-                                    onPress={() => setType(t.value)}
-                                >
-                                    <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
-                                    <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Show type selection only for accounts */}
+                        {type !== 'credit_card' && (
+                            <>
+                                <Text style={styles.sectionLabel}>Tipo de Conta</Text>
+                                <View style={styles.typeGrid}>
+                                    {ACC_TYPES.map(t => (
+                                        <TouchableOpacity
+                                            key={t.value}
+                                            style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
+                                            onPress={() => setType(t.value)}
+                                        >
+                                            <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
+                                            <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
 
                         {type === 'credit_card' && (
                             <>
@@ -194,10 +230,35 @@ export default function EditAccountScreen() {
                                 </View>
                             )}
 
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.label}>{type === 'credit_card' ? 'Saldo Atual (Opcional)' : 'Saldo Inicial'}</Text>
-                                <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={colors.textMuted} />
-                            </View>
+                            {type !== 'credit_card' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Saldo Atual</Text>
+                                    <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={colors.textMuted} />
+                                </View>
+                            )}
+
+                            {type === 'credit_card' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Conta Vinculada *</Text>
+                                    <View style={styles.chipRow}>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                            {accounts.map(acc => (
+                                                <TouchableOpacity
+                                                    key={acc.id}
+                                                    style={[styles.chip, bank === acc.name && { backgroundColor: acc.color, borderColor: acc.color }]}
+                                                    onPress={() => {
+                                                        setBank(acc.name);
+                                                        setColor(acc.color);
+                                                    }}
+                                                >
+                                                    <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={bank === acc.name ? colors.white : acc.color} />
+                                                    <Text style={[styles.chipTxt, bank === acc.name && { color: colors.white }]}>{acc.name}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                </View>
+                            )}
 
                             {type === 'credit_card' && (
                                 <>
@@ -223,23 +284,21 @@ export default function EditAccountScreen() {
                             )}
                         </View>
 
-                        {type !== 'credit_card' && (
-                            <>
-                                <Text style={styles.sectionLabel}>Personalização</Text>
-                                <View style={styles.card}>
-                                    <Text style={styles.label}>Cor da Conta</Text>
-                                    <View style={styles.colorRow}>
-                                        {CUSTOM_COLORS.map(c => (
-                                            <TouchableOpacity
-                                                key={c}
-                                                style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
-                                                onPress={() => setColor(c)}
-                                            />
-                                        ))}
-                                    </View>
+                        <>
+                            <Text style={styles.sectionLabel}>Personalização</Text>
+                            <View style={styles.card}>
+                                <Text style={styles.label}>Cor</Text>
+                                <View style={styles.colorRow}>
+                                    {CUSTOM_COLORS.map(c => (
+                                        <TouchableOpacity
+                                            key={c}
+                                            style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
+                                            onPress={() => setColor(c)}
+                                        />
+                                    ))}
                                 </View>
-                            </>
-                        )}
+                            </View>
+                        </>
 
                         <View style={{ height: 40 }} />
                     </ScrollView>
@@ -283,4 +342,10 @@ const s = (colors: any) => StyleSheet.create({
 
     colorRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginTop: 4 },
     colorDot: { width: 36, height: 36, borderRadius: 18 },
+
+    chipRow: { flexDirection: 'row', marginTop: 8 },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: 10 },
+    chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+    emptyAcc: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center', minWidth: 150 },
+    emptyAccTxt: { color: colors.textMuted, fontWeight: '700', fontSize: 12 },
 });

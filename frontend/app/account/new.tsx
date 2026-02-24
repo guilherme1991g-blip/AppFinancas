@@ -34,12 +34,8 @@ export default function NewAccountScreen() {
     const [type, setType] = useState('checking');
     const [color, setColor] = useState(CUSTOM_COLORS[0]);
 
-    // Pre-select type from URL
-    React.useEffect(() => {
-        if (typeParam) {
-            setType(typeParam as string);
-        }
-    }, [typeParam]);
+    const [loading, setLoading] = useState(false);
+    const [accounts, setAccounts] = useState<any[]>([]);
 
     // Credit card specific state
     const [limit, setLimit] = useState('');
@@ -48,9 +44,22 @@ export default function NewAccountScreen() {
     const [lastDigits, setLastDigits] = useState('');
     const [brand, setBrand] = useState('visa');
 
-    const [loading, setLoading] = useState(false);
-
     const styles = s(colors);
+
+    // Pre-select type from URL and load accounts
+    React.useEffect(() => {
+        if (typeParam) {
+            setType(typeParam as string);
+        }
+
+        async function loadAccounts() {
+            try {
+                const accs = await api.getAccounts() as any[];
+                setAccounts(accs.filter(a => a.type !== 'credit_card'));
+            } catch (e) { console.error(e); }
+        }
+        loadAccounts();
+    }, [typeParam]);
 
     async function handleSave() {
         if (type !== 'credit_card' && !name) { Alert.alert('Atenção', 'Informe o nome da conta'); return; }
@@ -98,35 +107,26 @@ export default function NewAccountScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                        {/* Preview */}
-                        <View style={[styles.preview, { borderLeftColor: type === 'credit_card' ? currentBrand?.color : color }]}>
-                            <View style={[styles.previewIcon, { backgroundColor: (type === 'credit_card' ? currentBrand?.color : color) + '15' }]}>
-                                <Ionicons name={(type === 'credit_card' ? 'card' : ACC_TYPES.find(t => t.value === type)?.icon) as any || 'wallet'} size={24} color={type === 'credit_card' ? currentBrand?.color : color} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.previewName}>
-                                    {type === 'credit_card'
-                                        ? `${currentBrand?.label}${bank ? ' ' + bank : ''}${lastDigits ? ' ••••' + lastDigits : ''}`
-                                        : (name || 'Nome da conta')}
-                                </Text>
-                                <Text style={styles.previewType}>{ACC_TYPES.find(t => t.value === type)?.label}</Text>
-                            </View>
-                            <Text style={styles.previewBalance}>R$ {parseFloat(balance.replace(',', '.') || '0').toFixed(2)}</Text>
-                        </View>
+                        {/* Preview card removed for simplicity */}
 
-                        <Text style={styles.sectionLabel}>Tipo de Conta</Text>
-                        <View style={styles.typeGrid}>
-                            {ACC_TYPES.map(t => (
-                                <TouchableOpacity
-                                    key={t.value}
-                                    style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
-                                    onPress={() => setType(t.value)}
-                                >
-                                    <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
-                                    <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Show type selection only for accounts (or if not pre-selected as card) */}
+                        {type !== 'credit_card' && (
+                            <>
+                                <Text style={styles.sectionLabel}>Tipo de Conta</Text>
+                                <View style={styles.typeGrid}>
+                                    {ACC_TYPES.map(t => (
+                                        <TouchableOpacity
+                                            key={t.value}
+                                            style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
+                                            onPress={() => setType(t.value)}
+                                        >
+                                            <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
+                                            <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
+                        )}
 
                         {type === 'credit_card' && (
                             <>
@@ -162,10 +162,40 @@ export default function NewAccountScreen() {
                                 </View>
                             )}
 
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.label}>{type === 'credit_card' ? 'Saldo Atual (Opcional)' : 'Saldo Inicial'}</Text>
-                                <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={colors.textMuted} />
-                            </View>
+                            {type !== 'credit_card' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Saldo Inicial</Text>
+                                    <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={colors.textMuted} />
+                                </View>
+                            )}
+
+                            {type === 'credit_card' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Conta Vinculada *</Text>
+                                    <View style={styles.chipRow}>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                            {accounts.map(acc => (
+                                                <TouchableOpacity
+                                                    key={acc.id}
+                                                    style={[styles.chip, bank === acc.name && { backgroundColor: acc.color, borderColor: acc.color }]}
+                                                    onPress={() => {
+                                                        setBank(acc.name);
+                                                        setColor(acc.color); // Sync color with linked account if desired
+                                                    }}
+                                                >
+                                                    <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={bank === acc.name ? colors.white : acc.color} />
+                                                    <Text style={[styles.chipTxt, bank === acc.name && { color: colors.white }]}>{acc.name}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                            {accounts.length === 0 && (
+                                                <TouchableOpacity style={styles.emptyAcc} onPress={() => router.push('/account/new')}>
+                                                    <Text style={styles.emptyAccTxt}>+ Cadastrar conta</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </ScrollView>
+                                    </View>
+                                </View>
+                            )}
 
                             {type === 'credit_card' && (
                                 <>
@@ -191,23 +221,21 @@ export default function NewAccountScreen() {
                             )}
                         </View>
 
-                        {type !== 'credit_card' && (
-                            <>
-                                <Text style={styles.sectionLabel}>Personalização</Text>
-                                <View style={styles.card}>
-                                    <Text style={styles.label}>Cor da Conta</Text>
-                                    <View style={styles.colorRow}>
-                                        {CUSTOM_COLORS.map(c => (
-                                            <TouchableOpacity
-                                                key={c}
-                                                style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
-                                                onPress={() => setColor(c)}
-                                            />
-                                        ))}
-                                    </View>
+                        <>
+                            <Text style={styles.sectionLabel}>Personalização</Text>
+                            <View style={styles.card}>
+                                <Text style={styles.label}>Cor</Text>
+                                <View style={styles.colorRow}>
+                                    {CUSTOM_COLORS.map(c => (
+                                        <TouchableOpacity
+                                            key={c}
+                                            style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
+                                            onPress={() => setColor(c)}
+                                        />
+                                    ))}
                                 </View>
-                            </>
-                        )}
+                            </View>
+                        </>
 
                         <View style={{ height: 40 }} />
                     </ScrollView>
@@ -251,4 +279,10 @@ const s = (colors: any) => StyleSheet.create({
 
     colorRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginTop: 4 },
     colorDot: { width: 36, height: 36, borderRadius: 18 },
+
+    chipRow: { flexDirection: 'row', marginTop: 8 },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: 10 },
+    chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+    emptyAcc: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center', minWidth: 150 },
+    emptyAccTxt: { color: colors.textMuted, fontWeight: '700', fontSize: 12 },
 });

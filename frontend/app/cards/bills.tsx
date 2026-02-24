@@ -53,22 +53,26 @@ export default function CardBillsScreen() {
             style={[styles.billCard, item.status === 'overdue' && { backgroundColor: colors.expense + '05', borderColor: colors.expense + '30' }]}
             onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: item.id, name: `${item.month}/${item.year}` } } as any)}
         >
+            <View style={styles.billIcon}>
+                <Ionicons
+                    name={item.status === 'paid' ? 'checkmark-circle' : 'receipt-outline'}
+                    size={24}
+                    color={STATUS_COLORS[item.status]}
+                />
+            </View>
             <View style={styles.billInfo}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={styles.billDate}>{`${new Date(item.closing_date).toLocaleString('pt-BR', { month: 'long' })} / ${item.year}`}</Text>
-                    {item.status === 'overdue' && (
-                        <Ionicons name="alert-circle" size={18} color={colors.expense} />
-                    )}
-                </View>
+                <Text style={styles.billDate}>
+                    {`${new Date(item.closing_date).toLocaleString('pt-BR', { month: 'long' })} / ${item.year}`}
+                </Text>
                 <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '15', borderColor: STATUS_COLORS[item.status] + '30' }]}>
                     <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{STATUS_LABELS[item.status]}</Text>
                 </View>
             </View>
             <View style={styles.billAmountWrap}>
-                <Text style={[styles.billAmount, item.status === 'overdue' && { color: colors.expense }]}>{formatCurrency(item.amount)}</Text>
-                <View style={styles.chevronWrap}>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                </View>
+                <Text style={[styles.billAmount, item.status === 'overdue' && { color: colors.expense }]}>
+                    {formatCurrency(item.amount)}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>
         </TouchableOpacity>
     );
@@ -124,20 +128,24 @@ const s = (colors: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     headerSpacer: { height: 110 },
     backBtn: { marginLeft: 0, paddingRight: 20 },
-    list: { padding: 20, gap: 16 },
+    list: { padding: 20, gap: 12 },
     billCard: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: colors.surface, borderRadius: 24, padding: 20,
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: colors.surface, borderRadius: 24, padding: 16,
         borderWidth: 1, borderColor: colors.border,
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2
     },
-    billInfo: { gap: 8 },
-    billDate: { fontSize: 17, fontWeight: '800', color: colors.text, textTransform: 'capitalize' },
-    statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
-    statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-    billAmountWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    billAmount: { fontSize: 18, fontWeight: '900', color: colors.text },
-    chevronWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+    billIcon: {
+        width: 48, height: 48, borderRadius: 16,
+        backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center',
+        marginRight: 16, borderWidth: 1, borderColor: colors.border
+    },
+    billInfo: { flex: 1, gap: 4 },
+    billDate: { fontSize: 16, fontWeight: '800', color: colors.text, textTransform: 'capitalize' },
+    statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1 },
+    statusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+    billAmountWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    billAmount: { fontSize: 16, fontWeight: '900', color: colors.text },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
     emptyIconWrap: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.primary + '10', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
     emptyTitle: { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 12 },

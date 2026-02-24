@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Svg, G, Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
@@ -342,32 +343,72 @@ export default function DashboardScreen() {
                         <Text style={styles.seeAll}>Ver tudo</Text>
                     </TouchableOpacity>
                 </View>
+
                 <View style={styles.spendingCard}>
                     {byCategory.length === 0 ? (
                         <View style={styles.emptyInternal}>
                             <Ionicons name="pie-chart-outline" size={24} color={colors.textMuted} />
                             <Text style={styles.emptyInternalTxt}>Sem gastos nesta categoria no mês</Text>
                         </View>
-                    ) : byCategory.map((cat, idx) => {
-                        const pct = summary?.expense > 0 ? (cat.total / summary.expense) * 100 : 0;
-                        return (
-                            <View key={cat.category_id} style={[styles.catSpendingRow, idx === byCategory.length - 1 && { borderBottomWidth: 0 }]}>
-                                <View style={[styles.miniCatIcon, { backgroundColor: cat.category_color + '20' }]}>
-                                    <Ionicons name={cat.category_icon as any} size={14} color={cat.category_color} />
+                    ) : (
+                        <View style={styles.chartContainer}>
+                            {/* Modern Donut Chart */}
+                            <View style={styles.chartWrapper}>
+                                <Svg width={180} height={180} viewBox="0 0 100 100">
+                                    <G rotation="-90" origin="50, 50">
+                                        {(() => {
+                                            let currentAngle = 0;
+                                            const totalExpense = summary?.expense || 1;
+                                            return byCategory.map((cat, idx) => {
+                                                const pct = (cat.total / totalExpense);
+                                                const angle = pct * 360;
+
+                                                // Calculate path for the arc
+                                                const x1 = 50 + 40 * Math.cos((Math.PI * currentAngle) / 180);
+                                                const y1 = 50 + 40 * Math.sin((Math.PI * currentAngle) / 180);
+                                                currentAngle += angle;
+                                                const x2 = 50 + 40 * Math.cos((Math.PI * currentAngle) / 180);
+                                                const y2 = 50 + 40 * Math.sin((Math.PI * currentAngle) / 180);
+
+                                                const largeArc = angle > 180 ? 1 : 0;
+                                                const d = `M ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2}`;
+
+                                                return (
+                                                    <Path
+                                                        key={cat.category_id}
+                                                        d={d}
+                                                        fill="none"
+                                                        stroke={cat.category_color}
+                                                        strokeWidth="12"
+                                                        strokeLinecap="round"
+                                                    />
+                                                );
+                                            });
+                                        })()}
+                                        <Circle cx="50" cy="50" r="40" stroke={colors.border + '30'} strokeWidth="1" fill="none" />
+                                    </G>
+                                </Svg>
+                                <View style={styles.chartCenter}>
+                                    <Text style={styles.chartCenterLabel}>TOTAL</Text>
+                                    <Text style={styles.chartCenterValue}>{fmt(summary?.expense || 0).split(',')[0]}</Text>
                                 </View>
-                                <View style={{ flex: 1, gap: 4 }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                        <Text style={styles.catNameText}>{cat.category_name}</Text>
-                                        <Text style={styles.catAmountText}>{fmt(cat.total)}</Text>
-                                    </View>
-                                    <View style={styles.miniProgressBg}>
-                                        <View style={[styles.miniProgressFg, { width: `${pct}%` as any, backgroundColor: cat.category_color }]} />
-                                    </View>
-                                </View>
-                                <Text style={styles.catPctText}>{pct.toFixed(0)}%</Text>
                             </View>
-                        );
-                    })}
+
+                            {/* Legend */}
+                            <View style={styles.legendContainer}>
+                                {byCategory.slice(0, 4).map((cat) => {
+                                    const pct = summary?.expense > 0 ? (cat.total / summary.expense) * 100 : 0;
+                                    return (
+                                        <View key={cat.category_id} style={styles.legendItem}>
+                                            <View style={[styles.legendDot, { backgroundColor: cat.category_color }]} />
+                                            <Text style={styles.legendName} numberOfLines={1}>{cat.category_name}</Text>
+                                            <Text style={styles.legendPct}>{pct.toFixed(0)}%</Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    )}
                 </View>
             </View>
 
@@ -552,14 +593,18 @@ const s = (colors: any) => StyleSheet.create({
     progressFg: { height: '100%', borderRadius: 4 },
     budgetSub: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
 
-    spendingCard: { backgroundColor: colors.surface, borderRadius: 28, padding: 16, borderWidth: 1, borderColor: colors.border },
-    catSpendingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border + '50' },
-    miniCatIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    catNameText: { fontSize: 14, color: colors.text, fontWeight: '700' },
-    catAmountText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
-    miniProgressBg: { height: 4, backgroundColor: colors.background, borderRadius: 2, overflow: 'hidden' },
-    miniProgressFg: { height: '100%', borderRadius: 2 },
     catPctText: { fontSize: 12, color: colors.textMuted, fontWeight: '800', width: 35, textAlign: 'right' },
+
+    chartContainer: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+    chartWrapper: { width: 180, height: 180, alignItems: 'center', justifyContent: 'center' },
+    chartCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    chartCenterLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, letterSpacing: 1 },
+    chartCenterValue: { fontSize: 20, fontWeight: '900', color: colors.text },
+    legendContainer: { flex: 1, gap: 12 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    legendDot: { width: 10, height: 10, borderRadius: 5 },
+    legendName: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+    legendPct: { fontSize: 13, fontWeight: '800', color: colors.text, width: 35, textAlign: 'right' },
 
     healthCard: { backgroundColor: colors.surface, borderRadius: 28, padding: 20, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
     healthTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
