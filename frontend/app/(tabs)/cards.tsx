@@ -41,6 +41,15 @@ function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDele
                     <TouchableOpacity
                         onPress={(e) => {
                             e.stopPropagation();
+                            router.push(`/account/${card.id}` as any);
+                        }}
+                        style={cv.deleteIcon}
+                    >
+                        <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
                             onDelete();
                         }}
                         style={cv.deleteIcon}

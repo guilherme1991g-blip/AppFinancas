@@ -85,6 +85,11 @@ export default function CardBillsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
+                ),
+                headerRight: () => (
+                    <TouchableOpacity onPress={() => router.push(`/account/${id}` as any)} style={{ marginRight: 20 }}>
+                        <Ionicons name="create-outline" size={24} color={colors.text} />
+                    </TouchableOpacity>
                 )
             }} />
 
