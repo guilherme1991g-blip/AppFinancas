@@ -168,14 +168,13 @@ export default function DashboardScreen() {
             {/* Quick Actions */}
             <View style={styles.quickRow}>
                 {[
-                    { icon: 'add-circle', label: 'Receita', color: colors.income, route: '/transaction/new?type=income' },
-                    { icon: 'remove-circle', label: 'Despesa', color: colors.expense, route: '/transaction/new?type=expense' },
+                    { icon: 'arrow-down-circle', label: 'Receita', color: colors.income, route: '/transaction/new?type=income' },
+                    { icon: 'arrow-up-circle', label: 'Despesa', color: colors.expense, route: '/transaction/new?type=expense' },
                     { icon: 'swap-horizontal', label: 'Transferir', color: colors.secondary, route: '/transfer/new' },
-                    { icon: 'receipt-outline', label: 'Extrato', color: colors.primary, route: '/(tabs)/transactions' },
                 ].map(a => (
                     <TouchableOpacity key={a.label} style={styles.quickItem} onPress={() => router.push(a.route as any)}>
                         <View style={[styles.quickIcon, { backgroundColor: a.color + '15' }]}>
-                            <Ionicons name={a.icon as any} size={22} color={a.color} />
+                            <Ionicons name={a.icon as any} size={26} color={a.color} />
                         </View>
                         <Text style={styles.quickLabel}>{a.label}</Text>
                     </TouchableOpacity>

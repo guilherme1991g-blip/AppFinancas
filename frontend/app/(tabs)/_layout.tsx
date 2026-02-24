@@ -53,6 +53,17 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
+                name="transactions"
+                options={{
+                    title: 'Transações',
+                    tabBarIcon: ({ color, focused }) => (
+                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                            <Ionicons name={focused ? 'list' : 'list-outline'} size={22} color={color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="accounts"
                 options={{
                     title: 'Contas',
@@ -86,7 +97,6 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen name="cards" options={{ href: null }} />
-            <Tabs.Screen name="transactions" options={{ href: null }} />
         </Tabs>
     );
 }
