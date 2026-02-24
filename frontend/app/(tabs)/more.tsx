@@ -133,7 +133,6 @@ export default function SettingsScreen() {
                     <Text style={styles.sectionHeading}>Ações Rápidas</Text>
                     <View style={styles.quickGrid}>
                         {[
-                            { icon: 'card', label: 'Cartões', color: colors.secondary, route: '/cards' },
                             { icon: 'wallet', label: 'Contas', color: colors.primary, route: '/(tabs)/accounts' },
                             { icon: 'analytics', label: 'Relatórios', color: '#6366F1', route: '/(tabs)/reports' },
                         ].map(item => (

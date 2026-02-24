@@ -71,6 +71,17 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
+                name="cards"
+                options={{
+                    title: 'Cartões',
+                    tabBarIcon: ({ color, focused }) => (
+                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                            <Ionicons name={focused ? 'card' : 'card-outline'} size={22} color={color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="reports"
                 options={{
                     title: 'Análise',

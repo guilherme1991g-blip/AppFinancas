@@ -1,12 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, Alert, TextInput, Modal, ActivityIndicator, Platform,
-    Animated
+    View, Text, StyleSheet, ScrollView, TouchableOpacity as RNTouchableOpacity,
+    RefreshControl, Alert, TextInput, Modal, ActivityIndicator, Platform
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Swipeable } from 'react-native-gesture-handler';
+import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
 
@@ -60,36 +59,6 @@ export default function CategoryManagementScreen() {
         setModalVisible(true);
     }
 
-    async function handleSave() {
-        if (!catName.trim()) {
-            Alert.alert('Atenção', 'Digite um nome para a categoria');
-            return;
-        }
-        setActionLoading(true);
-        try {
-            if (editingCat) {
-                await api.updateCategory(editingCat.id, {
-                    name: catName.trim(),
-                    color: catColor,
-                    icon: catIcon
-                });
-            } else {
-                await api.createCategory({
-                    name: catName.trim(),
-                    color: catColor,
-                    icon: catIcon,
-                    type: catType
-                });
-            }
-            setModalVisible(false);
-            fetchData();
-        } catch (e: any) {
-            Alert.alert('Erro', e.message);
-        } finally {
-            setActionLoading(false);
-        }
-    }
-
     async function handleDelete(id: string, name: string, callback?: () => void) {
         Alert.alert('Excluir', `Deseja excluir "${name}"?`, [
             { text: 'Cancelar', style: 'cancel' },
@@ -110,12 +79,12 @@ export default function CategoryManagementScreen() {
 
     const renderRightActions = (id: string, name: string, closeSwipe: () => void) => {
         return (
-            <TouchableOpacity
+            <RNTouchableOpacity
                 style={styles.swipeDeleteBtn}
                 onPress={() => handleDelete(id, name, closeSwipe)}
             >
                 <Ionicons name="trash-outline" size={24} color={colors.white} />
-            </TouchableOpacity>
+            </RNTouchableOpacity>
         );
     };
 
@@ -133,13 +102,13 @@ export default function CategoryManagementScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <RNTouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
-                </TouchableOpacity>
+                </RNTouchableOpacity>
                 <Text style={styles.title}>Categorias</Text>
-                <TouchableOpacity onPress={() => openModal()} style={styles.addBtn}>
+                <RNTouchableOpacity onPress={() => openModal()} style={styles.addBtn}>
                     <Ionicons name="add" size={26} color={colors.white} />
-                </TouchableOpacity>
+                </RNTouchableOpacity>
             </View>
 
             <ScrollView
@@ -160,24 +129,24 @@ export default function CategoryManagementScreen() {
                                     return (
                                         <Swipeable
                                             key={cat.id}
-                                            ref={ref => swipeRef = ref}
+                                            ref={ref => (swipeRef = ref)}
                                             renderRightActions={() => renderRightActions(cat.id, cat.name, () => swipeRef?.close())}
                                             containerStyle={{ borderBottomWidth: idx === filtered.length - 1 ? 0 : 1, borderBottomColor: colors.border }}
                                             friction={2}
                                             enableTrackpadTwoFingerGesture
                                             rightThreshold={40}
                                         >
-                                            <TouchableOpacity
+                                            <RectButton
                                                 style={styles.item}
                                                 onPress={() => openModal(cat)}
-                                                activeOpacity={0.7}
+                                                underlayColor={colors.border}
                                             >
                                                 <View style={[styles.iconWrap, { backgroundColor: cat.color + '15' }]}>
                                                     <Ionicons name={(cat.icon || 'pricetag') as any} size={20} color={cat.color} />
                                                 </View>
                                                 <Text style={styles.name}>{cat.name}</Text>
                                                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                                            </TouchableOpacity>
+                                            </RectButton>
                                         </Swipeable>
                                     );
                                 })}
@@ -192,16 +161,16 @@ export default function CategoryManagementScreen() {
                     <View style={mStyles.handle} />
                     <View style={mStyles.header}>
                         <Text style={mStyles.title}>{editingCat ? 'Editar Categoria' : 'Nova Categoria'}</Text>
-                        <TouchableOpacity onPress={() => setModalVisible(false)}>
+                        <RNTouchableOpacity onPress={() => setModalVisible(false)}>
                             <Ionicons name="close" size={28} color={colors.text} />
-                        </TouchableOpacity>
+                        </RNTouchableOpacity>
                     </View>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {!editingCat && (
                             <View style={mStyles.typeContainer}>
                                 {(['expense', 'income'] as const).map(t => (
-                                    <TouchableOpacity
+                                    <RNTouchableOpacity
                                         key={t}
                                         style={[mStyles.typeBtn, catType === t && { backgroundColor: colors.primary }]}
                                         onPress={() => setCatType(t)}
@@ -209,7 +178,7 @@ export default function CategoryManagementScreen() {
                                         <Text style={[mStyles.typeTxt, catType === t && { color: colors.white }]}>
                                             {t === 'expense' ? 'Despesa' : 'Receita'}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </RNTouchableOpacity>
                                 ))}
                             </View>
                         )}
@@ -226,7 +195,7 @@ export default function CategoryManagementScreen() {
                         <Text style={mStyles.label}>COR</Text>
                         <View style={mStyles.colors}>
                             {defaultColors.map((c, idx) => (
-                                <TouchableOpacity
+                                <RNTouchableOpacity
                                     key={`color-${idx}`}
                                     onPress={() => setCatColor(c)}
                                     style={[mStyles.colorBtn, { backgroundColor: c }, catColor === c && { borderWidth: 3, borderColor: colors.text }]}
@@ -237,13 +206,13 @@ export default function CategoryManagementScreen() {
                         <Text style={mStyles.label}>ÍCONE</Text>
                         <View style={mStyles.icons}>
                             {ICONS.map((i, idx) => (
-                                <TouchableOpacity
+                                <RNTouchableOpacity
                                     key={`icon-${idx}`}
                                     onPress={() => setCatIcon(i)}
                                     style={[mStyles.iconBtn, catIcon === i && { backgroundColor: catColor }]}
                                 >
                                     <Ionicons name={i as any} size={22} color={catIcon === i ? colors.white : colors.textSecondary} />
-                                </TouchableOpacity>
+                                </RNTouchableOpacity>
                             ))}
                         </View>
 
@@ -254,19 +223,19 @@ export default function CategoryManagementScreen() {
                             <Text style={mStyles.previewTitle}>{catName || 'Visualização'}</Text>
                         </View>
 
-                        <TouchableOpacity style={mStyles.saveBtn} onPress={handleSave} disabled={actionLoading}>
+                        <RNTouchableOpacity style={mStyles.saveBtn} onPress={handleSave} disabled={actionLoading}>
                             {actionLoading ? <ActivityIndicator color={colors.white} /> : <Text style={mStyles.saveBtnTxt}>Salvar</Text>}
-                        </TouchableOpacity>
+                        </RNTouchableOpacity>
 
                         {editingCat && (
-                            <TouchableOpacity
+                            <RNTouchableOpacity
                                 style={mStyles.deleteBtn}
                                 onPress={() => handleDelete(editingCat.id, editingCat.name)}
                                 disabled={actionLoading}
                             >
                                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
                                 <Text style={mStyles.deleteBtnTxt}>Excluir Categoria</Text>
-                            </TouchableOpacity>
+                            </RNTouchableOpacity>
                         )}
                     </ScrollView>
                 </View>
