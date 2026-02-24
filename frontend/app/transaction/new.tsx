@@ -237,8 +237,11 @@ export default function NewTransactionScreen() {
                         <View style={s.fieldGroup}>
                             <View style={s.switchRow}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.fieldLabel}>Está Pago?</Text>
-                                    <Text style={s.fieldSub}>{isPaid ? 'Valor já saiu da conta' : 'Agendar para o vencimento'}</Text>
+                                    <Text style={s.fieldLabel}>{type === 'income' ? 'Já recebeu?' : 'Já pagou?'}</Text>
+                                    <Text style={s.fieldSub}>{isPaid
+                                        ? (type === 'income' ? 'Valor já entrou na conta' : 'Valor já saiu da conta')
+                                        : (type === 'income' ? 'Agendar recebimento' : 'Agendar para o vencimento')}
+                                    </Text>
                                 </View>
                                 <Switch
                                     value={isPaid}

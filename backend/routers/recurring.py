@@ -46,8 +46,11 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
     }
     result = await recurring_collection.insert_one(doc)
     
-    # Create the first transaction immediately
+    # Create the first transaction immediately (Paid)
     from database import transactions_collection, accounts_collection
+    from datetime import timedelta
+
+    # Current/First transaction
     tx_doc_first = {
         "user_id": current_user["_id"],
         "account_id": ObjectId(data.account_id),
@@ -57,18 +60,42 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
         "amount": data.amount,
         "description": data.description,
         "date": datetime.utcnow(),
-        "is_paid": True, # First occurrence of recurring is usually paid or at least created as a record
+        "is_paid": True,
         "created_at": datetime.utcnow(),
         "recurring_id": result.inserted_id
     }
     await transactions_collection.insert_one(tx_doc_first)
     
-    # Update account balance
+    # Update account balance for the first one
     delta = data.amount if data.type == "income" else -data.amount
     await accounts_collection.update_one(
         {"_id": ObjectId(data.account_id)},
         {"$inc": {"balance": delta}}
     )
+
+    # Generate future occurrences (next 11 months, as unpaid)
+    if data.frequency == 'monthly':
+        for i in range(1, 12):
+            # Calculate future date
+            future_month = (datetime.utcnow().month + i - 1) % 12 + 1
+            future_year = datetime.utcnow().year + (datetime.utcnow().month + i - 1) // 12
+            future_date = datetime(future_year, future_month, datetime.utcnow().day)
+            
+            tx_future = {
+                "user_id": current_user["_id"],
+                "account_id": ObjectId(data.account_id),
+                "category_id": ObjectId(data.category_id),
+                "company_id": ObjectId(data.company_id) if data.company_id else None,
+                "type": data.type,
+                "amount": data.amount,
+                "description": data.description,
+                "date": future_date,
+                "is_paid": False,
+                "due_date": future_date,
+                "created_at": datetime.utcnow(),
+                "recurring_id": result.inserted_id
+            }
+            await transactions_collection.insert_one(tx_future)
 
     doc["_id"] = result.inserted_id
     return rec_doc(doc)

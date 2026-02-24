@@ -63,6 +63,15 @@ export default function TransactionsScreen() {
         ]);
     }
 
+    async function handlePay(id: string) {
+        try {
+            await api.payTransaction(id);
+            fetchData();
+        } catch (e: any) {
+            Alert.alert('Erro', e.message);
+        }
+    }
+
     const renderItem = ({ item: tx }: { item: any }) => {
         const cat = getCat(tx.category_id);
         const date = new Date(tx.date);
@@ -79,9 +88,20 @@ export default function TransactionsScreen() {
                     <Text style={[styles.txAmount, { color: tx.type === 'income' ? Colors.income : Colors.expense }]}>
                         {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </Text>
-                    <TouchableOpacity onPress={() => handleDelete(tx.id)} style={styles.deleteBtn}>
-                        <Ionicons name="trash-outline" size={14} color={Colors.textMuted} />
-                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {!tx.is_paid && (
+                            <TouchableOpacity
+                                style={[styles.miniPayBtn, { backgroundColor: tx.type === 'income' ? Colors.income : Colors.expense }]}
+                                onPress={() => handlePay(tx.id)}
+                            >
+                                <Text style={styles.miniPayBtnText}>{tx.type === 'income' ? 'Receber' : 'Pagar'}</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={() => handleDelete(tx.id)} style={styles.deleteBtn}>
+                            <Ionicons name="trash-outline" size={14} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </TouchableOpacity>
         );
@@ -153,8 +173,10 @@ const styles = StyleSheet.create({
     txInfo: { flex: 1 },
     txDesc: { fontSize: 14, fontWeight: '600', color: Colors.text },
     txMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-    txRight: { alignItems: 'flex-end', gap: 4 },
+    txRight: { alignItems: 'flex-end', gap: 6 },
     txAmount: { fontSize: 14, fontWeight: '700' },
+    miniPayBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    miniPayBtnText: { color: Colors.background, fontSize: 11, fontWeight: '800' },
     deleteBtn: { padding: 4 },
     empty: { alignItems: 'center', paddingTop: 60, gap: Spacing.md },
     emptyText: { color: Colors.textSecondary, fontSize: 15 },
