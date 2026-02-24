@@ -33,6 +33,7 @@ export default function DashboardScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [balanceVisible, setBalanceVisible] = useState(true);
+    const [cardIndex, setCardIndex] = useState(0);
 
     async function fetchData() {
         try {
@@ -101,74 +102,98 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Balance Card */}
-            <View style={styles.balanceCard}>
-                <View style={styles.balanceTop}>
-                    <View>
-                        <Text style={styles.balanceLabel}>Saldo Total</Text>
-                        <Text style={styles.balanceValue}>
-                            {balanceVisible ? fmt(summary?.total_balance || 0) : '••••••'}
-                        </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => setBalanceVisible(v => !v)} style={styles.eyeBtn}>
-                        <Ionicons name={balanceVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="rgba(255,255,255,0.7)" />
-                    </TouchableOpacity>
-                </View>
+            {/* Cards Carousel */}
+            <View>
+                <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={(e) => {
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+                        setCardIndex(idx);
+                    }}
+                >
+                    {/* Balance Card */}
+                    <View style={{ width }}>
+                        <View style={styles.balanceCard}>
+                            <View style={styles.balanceTop}>
+                                <View>
+                                    <Text style={styles.balanceLabel}>Saldo Total</Text>
+                                    <Text style={styles.balanceValue}>
+                                        {balanceVisible ? fmt(summary?.total_balance || 0) : '••••••'}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setBalanceVisible(v => !v)} style={styles.eyeBtn}>
+                                    <Ionicons name={balanceVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="rgba(255,255,255,0.7)" />
+                                </TouchableOpacity>
+                            </View>
 
-                <View style={styles.balanceRow}>
-                    <View style={styles.balanceItem}>
-                        <View style={styles.incBadge}>
-                            <Ionicons name="arrow-down" size={12} color="#FFF" />
-                        </View>
-                        <View>
-                            <Text style={styles.balanceItemLabel}>Receitas</Text>
-                            <Text style={styles.balanceItemVal}>{fmt(summary?.income || 0)}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.balanceDivider} />
-                    <View style={styles.balanceItem}>
-                        <View style={styles.expBadge}>
-                            <Ionicons name="arrow-up" size={12} color="#FFF" />
-                        </View>
-                        <View>
-                            <Text style={styles.balanceItemLabel}>Despesas</Text>
-                            <Text style={styles.balanceItemVal}>{fmt(summary?.expense || 0)}</Text>
-                        </View>
-                    </View>
-                </View>
+                            <View style={styles.balanceRow}>
+                                <View style={styles.balanceItem}>
+                                    <View style={styles.incBadge}>
+                                        <Ionicons name="arrow-down" size={12} color="#FFF" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.balanceItemLabel}>Receitas</Text>
+                                        <Text style={styles.balanceItemVal}>{fmt(summary?.income || 0)}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.balanceDivider} />
+                                <View style={styles.balanceItem}>
+                                    <View style={styles.expBadge}>
+                                        <Ionicons name="arrow-up" size={12} color="#FFF" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.balanceItemLabel}>Despesas</Text>
+                                        <Text style={styles.balanceItemVal}>{fmt(summary?.expense || 0)}</Text>
+                                    </View>
+                                </View>
+                            </View>
 
-                {/* Savings rate bar */}
-                <View style={styles.savingsRow}>
-                    <Text style={styles.savingsLabel}>Taxa de poupança: {savingsRate.toFixed(0)}%</Text>
-                </View>
-                <View style={styles.savingsBar}>
-                    <View style={[styles.savingsFill, { width: `${savingsRate}%` as any }]} />
-                </View>
-            </View>
+                            {/* Savings rate bar */}
+                            <View style={styles.savingsRow}>
+                                <Text style={styles.savingsLabel}>Taxa de poupança: {savingsRate.toFixed(0)}%</Text>
+                            </View>
+                            <View style={styles.savingsBar}>
+                                <View style={[styles.savingsFill, { width: `${savingsRate}%` as any }]} />
+                            </View>
+                        </View>
+                    </View>
 
-            {/* Monthly Forecast Card */}
-            <View style={styles.forecastCard}>
-                <View style={styles.forecastTop}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Ionicons name="trending-up" size={18} color={colors.primary} />
-                        <Text style={styles.forecastTitle}>Previsão do Mês</Text>
+                    {/* Monthly Forecast Card */}
+                    <View style={{ width }}>
+                        <View style={styles.forecastCard}>
+                            <View style={styles.forecastTop}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Ionicons name="trending-up" size={18} color={colors.primary} />
+                                    <Text style={styles.forecastTitle}>Previsão do Mês</Text>
+                                </View>
+                                <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
+                            </View>
+                            <View style={styles.forecastMain}>
+                                <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
+                                <Text style={styles.forecastSub}>Saldo projetado se tudo for recebido/pago</Text>
+                            </View>
+                            <View style={styles.forecastDetails}>
+                                <View style={styles.forecastDetailItem}>
+                                    <Text style={styles.forecastDetailLabel}>A RECEBER</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(summary?.pending_income || 0)}</Text>
+                                </View>
+                                <View style={styles.forecastDetailDivider} />
+                                <View style={styles.forecastDetailItem}>
+                                    <Text style={styles.forecastDetailLabel}>A PAGAR</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(summary?.pending_expense || 0)}</Text>
+                                </View>
+                            </View>
+                        </View>
                     </View>
-                    <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
-                </View>
-                <View style={styles.forecastMain}>
-                    <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
-                    <Text style={styles.forecastSub}>Saldo projetado se tudo for pago/recebido</Text>
-                </View>
-                <View style={styles.forecastDetails}>
-                    <View style={styles.forecastDetailItem}>
-                        <Text style={styles.forecastDetailLabel}>A RECEBER</Text>
-                        <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(summary?.pending_income || 0)}</Text>
-                    </View>
-                    <View style={styles.forecastDetailDivider} />
-                    <View style={styles.forecastDetailItem}>
-                        <Text style={styles.forecastDetailLabel}>A PAGAR</Text>
-                        <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(summary?.pending_expense || 0)}</Text>
-                    </View>
+                </ScrollView>
+
+                {/* Pagination Dots */}
+                <View style={styles.dotsRow}>
+                    {[0, 1].map(i => (
+                        <View key={i} style={[styles.dot, cardIndex === i && styles.dotActive]} />
+                    ))}
                 </View>
             </View>
 
@@ -368,6 +393,10 @@ const s = (colors: any) => StyleSheet.create({
     forecastDetailDivider: { width: 1, height: '60%', backgroundColor: colors.border, alignSelf: 'center' },
     forecastDetailLabel: { fontSize: 9, fontWeight: '800', color: colors.textMuted, marginBottom: 4 },
     forecastDetailVal: { fontSize: 14, fontWeight: '900' },
+
+    dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 24, marginTop: -8 },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
+    dotActive: { width: 14, backgroundColor: colors.primary },
 
     quickRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 28 },
     quickItem: { flex: 1, alignItems: 'center', gap: 10 },
