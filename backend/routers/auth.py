@@ -78,7 +78,7 @@ async def delete_account(current_user=Depends(get_current_user)):
     from database import (
         accounts_collection, categories_collection, transactions_collection,
         transfers_collection, budgets_collection, recurring_collection,
-        companies_collection, bills_collection
+        companies_collection, bills_collection, sonhos_collection, compromissos_collection
     )
     user_id = str(current_user["_id"])
     
@@ -91,6 +91,8 @@ async def delete_account(current_user=Depends(get_current_user)):
     await recurring_collection.delete_many({"user_id": user_id})
     await companies_collection.delete_many({"user_id": user_id})
     await bills_collection.delete_many({"user_id": user_id})
+    await sonhos_collection.delete_many({"user_id": user_id})
+    await compromissos_collection.delete_many({"user_id": user_id})
     
     # Delete user (REMOVED: User requested not to delete the profile)
     # await users_collection.delete_one({"_id": ObjectId(user_id)})
