@@ -43,6 +43,25 @@ async def get_summary(
     ]
     result = await transactions_collection.aggregate(pipeline).to_list(20)
     
+    income_paid = 0
+    income_pending = 0
+    expense_paid = 0
+    tx_expense_pending = 0
+    income_count = 0
+    expense_count = 0
+
+    for r in result:
+        t = r["_id"]["type"]
+        p = r["_id"]["is_paid"]
+        if t == "income":
+            income_count += r["count"]
+            if p: income_paid += r["total"]
+            else: income_pending += r["total"]
+        else:
+            expense_count += r["count"]
+            if p: expense_paid += r["total"]
+            else: tx_expense_pending += r["total"]
+
     # Calculate bill totals
     bill_expense_paid = 0
     bill_expense_pending = 0
