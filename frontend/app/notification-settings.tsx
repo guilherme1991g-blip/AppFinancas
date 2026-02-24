@@ -19,7 +19,8 @@ export default function NotificationSettingsScreen() {
         recurring_alerts: true,
         whatsapp_transactions: false,
         overdue_bills: true,
-        due_today_bills: true
+        due_today_bills: true,
+        agenda_reminders: true
     });
 
     const styles = s(colors);
@@ -110,6 +111,13 @@ export default function NotificationSettingsScreen() {
             sub: 'Alertas de lançamentos recorrentes',
             icon: 'repeat-outline',
             color: '#10B981'
+        },
+        {
+            key: 'agenda_reminders',
+            label: 'Lembretes da Agenda',
+            sub: 'Notificações de compromissos agendados',
+            icon: 'calendar-number-outline',
+            color: '#F59E0B'
         }
     ] as const;
 

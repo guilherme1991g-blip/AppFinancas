@@ -157,4 +157,10 @@ export const api = {
     createSonho: (data: any) => request('/sonhos', { method: 'POST', body: JSON.stringify(data) }),
     updateSonho: (id: string, data: any) => request(`/sonhos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteSonho: (id: string) => request(`/sonhos/${id}`, { method: 'DELETE' }),
+
+    // Compromissos (Agenda)
+    getCompromissos: () => request('/compromissos'),
+    createCompromisso: (data: any) => request('/compromissos', { method: 'POST', body: JSON.stringify(data) }),
+    updateCompromisso: (id: string, data: any) => request(`/compromissos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCompromisso: (id: string) => request(`/compromissos/${id}`, { method: 'DELETE' }),
 };

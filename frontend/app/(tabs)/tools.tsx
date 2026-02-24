@@ -42,6 +42,14 @@ export default function ToolsScreen() {
             icon: 'rocket',
             color: '#EC4899',
             route: '/tools/sonhos'
+        },
+        {
+            id: 'agenda',
+            title: 'Agenda',
+            sub: 'Gerencie seus compromissos e receba lembretes importantes.',
+            icon: 'calendar',
+            color: '#F59E0B',
+            route: '/tools/agenda'
         }
     ];
 
