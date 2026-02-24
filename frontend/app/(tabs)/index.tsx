@@ -29,6 +29,7 @@ export default function DashboardScreen() {
     const [accounts, setAccounts] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [byCategory, setByCategory] = useState<any[]>([]);
     const [overdueTransactions, setOverdueTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -37,16 +38,17 @@ export default function DashboardScreen() {
 
     async function fetchData() {
         try {
-            const [s, txs, accs, cats, buds, overdue] = await Promise.all([
+            const [s, txs, accs, cats, buds, overdue, byCat] = await Promise.all([
                 api.getSummary({ month, year }) as Promise<any>,
                 api.getTransactions({ month, year, limit: 5 }) as Promise<any[]>,
                 api.getAccounts() as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
                 api.getBudgets({ month, year }) as Promise<any[]>,
                 api.getTransactions({ is_paid: false, type: 'expense', limit: 10 }) as Promise<any[]>,
+                api.getByCategory({ month, year, type: 'expense' }) as Promise<any[]>,
             ]);
             setSummary(s); setTransactions(txs); setAccounts(accs);
-            setCategories(cats); setBudgets(buds);
+            setCategories(cats); setBudgets(buds); setByCategory(byCat.slice(0, 4));
 
             // Filter only those that are truly overdue (date < today)
             const today = new Date();
@@ -263,6 +265,40 @@ export default function DashboardScreen() {
             </View>
 
 
+            {/* Spending by Category Chart */}
+            {byCategory.length > 0 && (
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Distribuição de Gastos</Text>
+                        <TouchableOpacity onPress={() => router.push('/tools/analytics' as any)}>
+                            <Text style={styles.seeAll}>Ver tudo</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.spendingCard}>
+                        {byCategory.map((cat, idx) => {
+                            const pct = summary?.expense > 0 ? (cat.total / summary.expense) * 100 : 0;
+                            return (
+                                <View key={cat.category_id} style={[styles.catSpendingRow, idx === byCategory.length - 1 && { borderBottomWidth: 0 }]}>
+                                    <View style={[styles.miniCatIcon, { backgroundColor: cat.category_color + '20' }]}>
+                                        <Ionicons name={cat.category_icon as any} size={14} color={cat.category_color} />
+                                    </View>
+                                    <View style={{ flex: 1, gap: 4 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Text style={styles.catNameText}>{cat.category_name}</Text>
+                                            <Text style={styles.catAmountText}>{fmt(cat.total)}</Text>
+                                        </View>
+                                        <View style={styles.miniProgressBg}>
+                                            <View style={[styles.miniProgressFg, { width: `${pct}%` as any, backgroundColor: cat.category_color }]} />
+                                        </View>
+                                    </View>
+                                    <Text style={styles.catPctText}>{pct.toFixed(0)}%</Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                </View>
+            )}
+
             {/* Overdue Expenses */}
             {overdueTransactions.length > 0 && (
                 <View style={[styles.section, { marginBottom: 12 }]}>
@@ -308,34 +344,66 @@ export default function DashboardScreen() {
             )}
 
             {/* Budgets overview */}
-            {budgets.length > 0 && (
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Metas</Text>
-                        <TouchableOpacity onPress={() => router.push('/budget/new' as any)}>
-                            <Text style={styles.seeAll}>+ Nova</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {budgets.slice(0, 3).map(b => {
-                        const cat = getCat(b.category_id);
-                        const pct = b.amount > 0 ? Math.min(b.spent / b.amount, 1) : 0;
-                        const over = b.spent > b.amount;
-                        return (
-                            <View key={b.id} style={styles.budgetItem}>
-                                <View style={styles.budgetItemHeader}>
-                                    <View style={[styles.catDot, { backgroundColor: cat?.color || colors.secondary }]} />
-                                    <Text style={styles.budgetName}>{cat?.name || 'Categoria'}</Text>
-                                    <Text style={[styles.budgetPct, { color: over ? colors.danger : colors.income }]}>{(pct * 100).toFixed(0)}%</Text>
-                                </View>
-                                <View style={styles.progressBg}>
-                                    <View style={[styles.progressFg, { width: `${pct * 100}%` as any, backgroundColor: over ? colors.danger : colors.income }]} />
-                                </View>
-                                <Text style={styles.budgetSub}>{fmt(b.spent)} de {fmt(b.amount)}</Text>
+            {budgets.length > 0 && (() => {
+                const totalTarget = budgets.reduce((acc, b) => acc + b.amount, 0);
+                const totalSpent = budgets.reduce((acc, b) => acc + b.spent, 0);
+                const totalPct = totalTarget > 0 ? Math.min(totalSpent / totalTarget, 1) : 0;
+                const totalOver = totalSpent > totalTarget;
+
+                return (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <View>
+                                <Text style={styles.sectionTitle}>Saúde das Metas</Text>
+                                <Text style={styles.greetingSub}>
+                                    {totalOver ? 'Você ultrapassou o planejado' : 'Dentro do orçamento esperado'}
+                                </Text>
                             </View>
-                        );
-                    })}
-                </View>
-            )}
+                            <TouchableOpacity onPress={() => router.push('/budget/new' as any)}>
+                                <Text style={styles.seeAll}>+ Nova</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Global Health Card */}
+                        <View style={[styles.healthCard, { borderColor: totalOver ? colors.expense + '30' : colors.income + '30' }]}>
+                            <View style={styles.healthTop}>
+                                <View style={[styles.healthBadge, { backgroundColor: (totalOver ? colors.expense : colors.income) + '15' }]}>
+                                    <Ionicons name={totalOver ? 'warning' : 'checkmark-circle'} size={24} color={totalOver ? colors.expense : colors.income} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                                        <Text style={styles.healthVal}>{(totalPct * 100).toFixed(0)}%</Text>
+                                        <Text style={styles.healthSub}>{fmt(totalSpent)} / {fmt(totalTarget)}</Text>
+                                    </View>
+                                    <View style={styles.healthBarBg}>
+                                        <View style={[styles.healthBarFg, { width: `${totalPct * 100}%` as any, backgroundColor: totalOver ? colors.expense : colors.income }]} />
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+
+                        <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 12, marginTop: 8 }]}>Destaques</Text>
+                        {budgets.slice(0, 3).map(b => {
+                            const cat = getCat(b.category_id);
+                            const pct = b.amount > 0 ? Math.min(b.spent / b.amount, 1) : 0;
+                            const over = b.spent > b.amount;
+                            return (
+                                <View key={b.id} style={styles.budgetItem}>
+                                    <View style={styles.budgetItemHeader}>
+                                        <View style={[styles.catDot, { backgroundColor: cat?.color || colors.secondary }]} />
+                                        <Text style={styles.budgetName}>{cat?.name || 'Categoria'}</Text>
+                                        <Text style={[styles.budgetPct, { color: over ? colors.danger : colors.income }]}>{(pct * 100).toFixed(0)}%</Text>
+                                    </View>
+                                    <View style={styles.progressBg}>
+                                        <View style={[styles.progressFg, { width: `${pct * 100}%` as any, backgroundColor: over ? colors.danger : colors.income }]} />
+                                    </View>
+                                    <Text style={styles.budgetSub}>{fmt(b.spent)} de {fmt(b.amount)}</Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                );
+            })()}
 
 
             <View style={{ height: 100 }} />
@@ -451,4 +519,21 @@ const s = (colors: any) => StyleSheet.create({
     progressBg: { height: 8, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
     progressFg: { height: '100%', borderRadius: 4 },
     budgetSub: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+
+    spendingCard: { backgroundColor: colors.surface, borderRadius: 28, padding: 16, borderWidth: 1, borderColor: colors.border },
+    catSpendingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border + '50' },
+    miniCatIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    catNameText: { fontSize: 14, color: colors.text, fontWeight: '700' },
+    catAmountText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+    miniProgressBg: { height: 4, backgroundColor: colors.background, borderRadius: 2, overflow: 'hidden' },
+    miniProgressFg: { height: '100%', borderRadius: 2 },
+    catPctText: { fontSize: 12, color: colors.textMuted, fontWeight: '800', width: 35, textAlign: 'right' },
+
+    healthCard: { backgroundColor: colors.surface, borderRadius: 28, padding: 20, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+    healthTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    healthBadge: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    healthVal: { fontSize: 24, fontWeight: '900', color: colors.text },
+    healthSub: { fontSize: 12, color: colors.textMuted, fontWeight: '700' },
+    healthBarBg: { height: 8, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden', marginTop: 8 },
+    healthBarFg: { height: '100%', borderRadius: 4 },
 });
