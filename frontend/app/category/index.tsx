@@ -59,6 +59,36 @@ export default function CategoryManagementScreen() {
         setModalVisible(true);
     }
 
+    async function handleSave() {
+        if (!catName.trim()) {
+            Alert.alert('Atenção', 'Digite um nome para a categoria');
+            return;
+        }
+        setActionLoading(true);
+        try {
+            if (editingCat) {
+                await api.updateCategory(editingCat.id, {
+                    name: catName.trim(),
+                    color: catColor,
+                    icon: catIcon
+                });
+            } else {
+                await api.createCategory({
+                    name: catName.trim(),
+                    color: catColor,
+                    icon: catIcon,
+                    type: catType
+                });
+            }
+            setModalVisible(false);
+            fetchData();
+        } catch (e: any) {
+            Alert.alert('Erro', e.message);
+        } finally {
+            setActionLoading(false);
+        }
+    }
+
     async function handleDelete(id: string, name: string, callback?: () => void) {
         Alert.alert('Excluir', `Deseja excluir "${name}"?`, [
             { text: 'Cancelar', style: 'cancel' },
