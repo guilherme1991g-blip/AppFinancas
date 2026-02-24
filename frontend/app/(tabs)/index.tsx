@@ -29,21 +29,28 @@ export default function DashboardScreen() {
     const [accounts, setAccounts] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [overdueTransactions, setOverdueTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [balanceVisible, setBalanceVisible] = useState(true);
 
     async function fetchData() {
         try {
-            const [s, txs, accs, cats, buds] = await Promise.all([
+            const [s, txs, accs, cats, buds, overdue] = await Promise.all([
                 api.getSummary({ month, year }) as Promise<any>,
                 api.getTransactions({ month, year, limit: 5 }) as Promise<any[]>,
                 api.getAccounts() as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
                 api.getBudgets({ month, year }) as Promise<any[]>,
+                api.getTransactions({ is_paid: false, type: 'expense', limit: 10 }) as Promise<any[]>,
             ]);
             setSummary(s); setTransactions(txs); setAccounts(accs);
             setCategories(cats); setBudgets(buds);
+
+            // Filter only those that are truly overdue (date < today)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            setOverdueTransactions(overdue.filter(t => new Date(t.date) < today));
         } catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
     }
@@ -205,6 +212,50 @@ export default function DashboardScreen() {
             </View>
 
 
+            {/* Overdue Expenses */}
+            {overdueTransactions.length > 0 && (
+                <View style={[styles.section, { marginBottom: 12 }]}>
+                    <View style={styles.sectionHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Ionicons name="alert-circle" size={20} color={colors.expense} />
+                            <Text style={[styles.sectionTitle, { color: colors.expense }]}>Despesas Vencidas</Text>
+                        </View>
+                        <Text style={[styles.overdueCount, { color: colors.expense }]}>{overdueTransactions.length}</Text>
+                    </View>
+                    {overdueTransactions.map(tx => {
+                        const cat = getCat(tx.category_id);
+                        return (
+                            <TouchableOpacity key={tx.id} style={styles.overdueRow} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
+                                <View style={[styles.txIcon, { backgroundColor: colors.expense + '15' }]}>
+                                    <Ionicons name={(cat?.icon || 'alert-circle-outline') as any} size={18} color={colors.expense} />
+                                </View>
+                                <View style={styles.txInfo}>
+                                    <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                                    <Text style={[styles.txDate, { color: colors.expense }]}>Venceu em {new Date(tx.date).toLocaleDateString('pt-BR')}</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                                    <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
+                                    <TouchableOpacity
+                                        style={styles.payNowBtn}
+                                        onPress={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                                await api.payTransaction(tx.id);
+                                                fetchData();
+                                            } catch (err: any) {
+                                                alert(err.message);
+                                            }
+                                        }}
+                                    >
+                                        <Text style={styles.payNowTxt}>Pagar</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            )}
+
             {/* Budgets overview */}
             {budgets.length > 0 && (
                 <View style={styles.section}>
@@ -304,6 +355,28 @@ const s = (colors: any) => StyleSheet.create({
         borderWidth: 2, borderColor: colors.border, borderStyle: 'dotted',
         alignItems: 'center', justifyContent: 'center', gap: 8
     },
-    addCardTxt: { fontSize: 11, color: colors.textMuted, fontWeight: '700' },
+    section: { paddingHorizontal: 20, marginBottom: 20 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
+    seeAll: { fontSize: 13, color: colors.primary, fontWeight: '800' },
 
+    overdueCount: { fontSize: 13, fontWeight: '800', backgroundColor: colors.expense + '20', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+    overdueRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, padding: 14, marginBottom: 10, gap: 12, borderWidth: 1, borderColor: colors.expense + '30' },
+    txDate: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+    payNowBtn: { backgroundColor: colors.expense, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    payNowTxt: { color: colors.white, fontSize: 11, fontWeight: '800' },
+
+    txIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    txInfo: { flex: 1 },
+    txDesc: { fontSize: 15, fontWeight: '800', color: colors.text },
+    txAmount: { fontSize: 15, fontWeight: '900' },
+
+    budgetItem: { backgroundColor: colors.surface, borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.border, gap: 12 },
+    budgetItemHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    catDot: { width: 12, height: 12, borderRadius: 6 },
+    budgetName: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '800' },
+    budgetPct: { fontSize: 15, fontWeight: '900' },
+    progressBg: { height: 8, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
+    progressFg: { height: '100%', borderRadius: 4 },
+    budgetSub: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
 });

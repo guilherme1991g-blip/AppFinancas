@@ -35,6 +35,7 @@ async def list_transactions(
     category_id: Optional[str] = None,
     type: Optional[str] = None,
     company_id: Optional[str] = None,
+    is_paid: Optional[bool] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
     limit: int = Query(50, le=200),
@@ -50,6 +51,8 @@ async def list_transactions(
         query["type"] = type
     if company_id:
         query["company_id"] = ObjectId(company_id)
+    if is_paid is not None:
+        query["is_paid"] = is_paid
     if month and year:
         from datetime import datetime
         start = datetime(year, month, 1)
