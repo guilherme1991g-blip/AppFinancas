@@ -168,7 +168,7 @@ export default function SettingsScreen() {
                         }}
                     >
                         <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                        <Text style={styles.deleteBtnTxt}>Apagar tudo e começar do zero</Text>
+                        <Text style={styles.deleteBtnTxt}>Limpar dados e começar do zero</Text>
                     </TouchableOpacity>
                 </View>
 

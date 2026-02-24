@@ -89,7 +89,7 @@ async def delete_account(current_user=Depends(get_current_user)):
     await companies_collection.delete_many({"user_id": user_id})
     await bills_collection.delete_many({"user_id": user_id})
     
-    # Delete user
-    await users_collection.delete_one({"_id": ObjectId(user_id)})
+    # Delete user (REMOVED: User requested not to delete the profile)
+    # await users_collection.delete_one({"_id": ObjectId(user_id)})
     
-    return {"message": "Conta e dados apagados com sucesso"}
+    return {"message": "Dados e configurações removidos com sucesso"}
