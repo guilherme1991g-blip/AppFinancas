@@ -89,8 +89,8 @@ async def get_summary(
     return {
         "month": m,
         "year": y,
-        "income": income_paid + income_pending,
-        "expense": expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending,
+        "income": income_paid,
+        "expense": expense_paid + bill_expense_paid,
         "pending_income": income_pending,
         "pending_expense": tx_expense_pending + bill_expense_pending,
         "balance": (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending),
