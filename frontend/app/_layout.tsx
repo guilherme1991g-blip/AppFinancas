@@ -32,6 +32,7 @@ function RootLayoutNav() {
         <Stack.Screen name="company/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="account/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recurring/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="category/index" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
     </NavigationProvider>

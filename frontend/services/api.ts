@@ -43,6 +43,7 @@ export const api = {
     getCategories: () => request('/categories'),
     seedCategories: () => request('/categories/seed', { method: 'POST' }),
     createCategory: (data: any) => request('/categories', { method: 'POST', body: JSON.stringify(data) }),
+    updateCategory: (id: string, data: any) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteCategory: (id: string) => request(`/categories/${id}`, { method: 'DELETE' }),
 
     // Transactions

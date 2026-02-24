@@ -1,16 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, Alert, TextInput, Modal, ActivityIndicator, Switch
+    RefreshControl, Alert, Switch
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
-
-const ICONS = ['cart', 'car', 'restaurant', 'home', 'medkit', 'school', 'airplane', 'game-controller',
-    'shirt', 'gift', 'trending-up', 'briefcase', 'phone-portrait', 'musical-notes', 'paw', 'fitness'];
 
 function fmt(v: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -27,16 +24,7 @@ export default function SettingsScreen() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'budgets' | 'recurring' | 'categories' | 'companies'>('categories');
-
-    // Category modal state
-    const [catModal, setCatModal] = useState(false);
-    const [catName, setCatName] = useState('');
-    const defaultColors = [colors.primary, colors.secondary, '#6366F1', '#F59E0B', '#3B82F6', '#EC4899', '#10B981', '#F97316'];
-    const [catColor, setCatColor] = useState(defaultColors[0]);
-    const [catIcon, setCatIcon] = useState(ICONS[0]);
-    const [catType, setCatType] = useState<'expense' | 'income'>('expense');
-    const [catLoading, setCatLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<'budgets' | 'recurring' | 'companies'>('budgets');
 
     async function fetchData() {
         try {
@@ -55,37 +43,13 @@ export default function SettingsScreen() {
 
     function getCat(id: string) { return categories.find(c => c.id === id); }
 
-    async function createCategory() {
-        if (!catName.trim()) { Alert.alert('Atenção', 'Digite um nome para a categoria'); return; }
-        setCatLoading(true);
-        try {
-            await api.createCategory({ name: catName.trim(), color: catColor, icon: catIcon, type: catType });
-            setCatModal(false); setCatName(''); setCatColor(defaultColors[0]); setCatIcon(ICONS[0]);
-            fetchData();
-        } catch (e: any) { Alert.alert('Erro', e.message); }
-        finally { setCatLoading(false); }
-    }
-
-    async function deleteCategory(id: string, name: string) {
-        Alert.alert('Excluir', `Deseja excluir "${name}"?`, [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-                text: 'Excluir', style: 'destructive', onPress: async () => {
-                    try { await api.deleteCategory(id); fetchData(); } catch (e: any) { Alert.alert('Erro', e.message); }
-                }
-            },
-        ]);
-    }
-
     const tabs = [
-        { key: 'categories', label: 'Categorias', icon: 'pricetag' },
         { key: 'budgets', label: 'Orçamentos', icon: 'pie-chart' },
         { key: 'recurring', label: 'Recorrentes', icon: 'repeat' },
         { key: 'companies', label: 'Empresas', icon: 'business' },
     ] as const;
 
     const styles = s(colors);
-    const mStyles = m(colors);
 
     return (
         <View style={styles.root}>
@@ -97,7 +61,7 @@ export default function SettingsScreen() {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.title}>Mais Opções</Text>
-                        <Text style={styles.sub}>Gerencie categorias, orçamentos e mais</Text>
+                        <Text style={styles.sub}>Ajustes e gerenciamento</Text>
                     </View>
                     <TouchableOpacity style={styles.headerBtn} onPress={logout}>
                         <Ionicons name="log-out-outline" size={22} color={colors.danger} />
@@ -122,6 +86,7 @@ export default function SettingsScreen() {
 
                 {/* Settings Rows */}
                 <View style={styles.section}>
+                    <Text style={styles.sectionHeading}>Ajustes</Text>
                     <View style={styles.settingsGroup}>
                         <View style={styles.settingRow}>
                             <View style={styles.settingIconWrap}>
@@ -139,13 +104,24 @@ export default function SettingsScreen() {
                             />
                         </View>
 
-                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => { }}>
                             <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="notifications-outline" size={20} color={colors.secondary} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.settingLabel}>Notificações</Text>
                                 <Text style={styles.settingSub}>Alertas de vencimento e gastos</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/category')}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#6366F115' }]}>
+                                <Ionicons name="pricetags-outline" size={20} color="#6366F1" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Categorias</Text>
+                                <Text style={styles.settingSub}>Gerenciar categorias de gastos</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -171,7 +147,7 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
-                {/* Main Tabs Selection */}
+                {/* Tabbed Content Sections */}
                 <View style={styles.tabsSection}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
                         {tabs.map(t => (
@@ -187,59 +163,7 @@ export default function SettingsScreen() {
                     </ScrollView>
                 </View>
 
-                {/*Tab Content Area */}
                 <View style={styles.tabContentArea}>
-                    {/* CATEGORIES */}
-                    {activeTab === 'categories' && (
-                        <View>
-                            <View style={styles.tabHeader}>
-                                <Text style={styles.tabTitle}>Categorias</Text>
-                                <TouchableOpacity style={styles.miniAddBtn} onPress={() => setCatModal(true)}>
-                                    <Ionicons name="add" size={18} color={colors.white} />
-                                </TouchableOpacity>
-                            </View>
-
-                            <Text style={styles.groupLabel}>Despesas</Text>
-                            <View style={styles.listCard}>
-                                {categories.filter(c => c.type !== 'income').map((cat, idx) => (
-                                    <View key={cat.id} style={[styles.listItem, idx === categories.filter(c => c.type !== 'income').length - 1 && { borderBottomWidth: 0 }]}>
-                                        <View style={[styles.catIcon, { backgroundColor: cat.color + '15' }]}>
-                                            <Ionicons name={(cat.icon || 'pricetag') as any} size={18} color={cat.color} />
-                                        </View>
-                                        <Text style={styles.catName}>{cat.name}</Text>
-                                        {!cat.is_default ? (
-                                            <TouchableOpacity onPress={() => deleteCategory(cat.id, cat.name)} style={styles.deleteBtn}>
-                                                <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <Text style={styles.defaultBadge}>Padrão</Text>
-                                        )}
-                                    </View>
-                                ))}
-                            </View>
-
-                            <Text style={[styles.groupLabel, { marginTop: 20 }]}>Receitas</Text>
-                            <View style={styles.listCard}>
-                                {categories.filter(c => c.type === 'income').map((cat, idx) => (
-                                    <View key={cat.id} style={[styles.listItem, idx === categories.filter(c => c.type === 'income').length - 1 && { borderBottomWidth: 0 }]}>
-                                        <View style={[styles.catIcon, { backgroundColor: cat.color + '15' }]}>
-                                            <Ionicons name={(cat.icon || 'pricetag') as any} size={18} color={cat.color} />
-                                        </View>
-                                        <Text style={styles.catName}>{cat.name}</Text>
-                                        {!cat.is_default ? (
-                                            <TouchableOpacity onPress={() => deleteCategory(cat.id, cat.name)} style={styles.deleteBtn}>
-                                                <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <Text style={styles.defaultBadge}>Padrão</Text>
-                                        )}
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    )}
-
-                    {/* BUDGETS */}
                     {activeTab === 'budgets' && (
                         <View>
                             <View style={styles.tabHeader}>
@@ -279,11 +203,10 @@ export default function SettingsScreen() {
                         </View>
                     )}
 
-                    {/* RECURRING */}
                     {activeTab === 'recurring' && (
                         <View>
                             <View style={styles.tabHeader}>
-                                <Text style={styles.tabTitle}>Pagamentos Recorrentes</Text>
+                                <Text style={styles.tabTitle}>Recorrentes</Text>
                                 <TouchableOpacity style={styles.miniAddBtn} onPress={() => router.push('/recurring/new' as any)}>
                                     <Ionicons name="add" size={18} color={colors.white} />
                                 </TouchableOpacity>
@@ -314,11 +237,10 @@ export default function SettingsScreen() {
                         </View>
                     )}
 
-                    {/* COMPANIES */}
                     {activeTab === 'companies' && (
                         <View>
                             <View style={styles.tabHeader}>
-                                <Text style={styles.tabTitle}>Empresas & Vendedores</Text>
+                                <Text style={styles.tabTitle}>Empresas</Text>
                                 <TouchableOpacity style={styles.miniAddBtn} onPress={() => router.push('/company/new' as any)}>
                                     <Ionicons name="add" size={18} color={colors.white} />
                                 </TouchableOpacity>
@@ -350,7 +272,6 @@ export default function SettingsScreen() {
 
                 {/* Foot Info */}
                 <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>Informações</Text>
                     <View style={styles.listCard}>
                         <View style={styles.listItem}>
                             <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
@@ -367,81 +288,6 @@ export default function SettingsScreen() {
 
                 <View style={{ height: 120 }} />
             </ScrollView>
-
-            {/* New Category Modal */}
-            <Modal visible={catModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setCatModal(false)}>
-                <View style={mStyles.container}>
-                    <View style={mStyles.handle} />
-                    <View style={mStyles.modalHeader}>
-                        <Text style={mStyles.title}>Nova Categoria</Text>
-                        <TouchableOpacity onPress={() => setCatModal(false)}>
-                            <Ionicons name="close" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        {/* Type toggle */}
-                        <View style={mStyles.typeToggle}>
-                            {(['expense', 'income'] as const).map(t => (
-                                <TouchableOpacity key={t} style={[mStyles.typeBtn, catType === t && mStyles.typeBtnActive]} onPress={() => setCatType(t)}>
-                                    <Text style={[mStyles.typeTxt, catType === t && mStyles.typeTxtActive]}>
-                                        {t === 'expense' ? '💸 Despesa' : '💰 Receita'}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Name */}
-                        <Text style={mStyles.inputLabel}>NOME DA CATEGORIA</Text>
-                        <TextInput
-                            style={mStyles.input}
-                            value={catName}
-                            onChangeText={setCatName}
-                            placeholder="Ex: Alimentação, Lazer..."
-                            placeholderTextColor={colors.textMuted}
-                        />
-
-                        {/* Color Selection */}
-                        <Text style={mStyles.inputLabel}>COR DE IDENTIFICAÇÃO</Text>
-                        <View style={mStyles.colorGrid}>
-                            {defaultColors.map(c => (
-                                <TouchableOpacity
-                                    key={c}
-                                    onPress={() => setCatColor(c)}
-                                    style={[mStyles.colorCircle, { backgroundColor: c }, catColor === c && { borderColor: colors.text, borderWidth: 3 }]}
-                                />
-                            ))}
-                        </View>
-
-                        {/* Icon Selection */}
-                        <Text style={mStyles.inputLabel}>ÍCONE</Text>
-                        <View style={mStyles.iconGrid}>
-                            {ICONS.map(ic => (
-                                <TouchableOpacity
-                                    key={ic}
-                                    onPress={() => setCatIcon(ic)}
-                                    style={[mStyles.iconItem, catIcon === ic && { backgroundColor: catColor, borderColor: catColor }]}
-                                >
-                                    <Ionicons name={ic as any} size={22} color={catIcon === ic ? colors.white : colors.textSecondary} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Preview Card */}
-                        <View style={mStyles.previewCard}>
-                            <View style={[mStyles.previewBadge, { backgroundColor: catColor + '20' }]}>
-                                <Ionicons name={catIcon as any} size={28} color={catColor} />
-                            </View>
-                            <Text style={mStyles.previewTitle}>{catName || 'Nova Categoria'}</Text>
-                            <Text style={mStyles.previewType}>{catType === 'income' ? 'Receita' : 'Despesa'}</Text>
-                        </View>
-
-                        <TouchableOpacity style={mStyles.mainBtn} onPress={createCategory} disabled={catLoading}>
-                            {catLoading ? <ActivityIndicator color={colors.white} /> : <Text style={mStyles.mainBtnTxt}>Salvar Categoria</Text>}
-                        </TouchableOpacity>
-                    </ScrollView>
-                </View>
-            </Modal>
         </View>
     );
 }
@@ -488,13 +334,8 @@ const s = (colors: any) => StyleSheet.create({
     tabTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
     miniAddBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
 
-    groupLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 },
     listCard: { backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
     listItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 14 },
-    catIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    catName: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '700' },
-    deleteBtn: { padding: 8, backgroundColor: colors.danger + '10', borderRadius: 10 },
-    defaultBadge: { fontSize: 10, color: colors.textMuted, fontWeight: '700', textTransform: 'uppercase' },
 
     emptyState: { padding: 40, alignItems: 'center', gap: 16 },
     emptyTxt: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, fontWeight: '500' },
@@ -516,37 +357,6 @@ const s = (colors: any) => StyleSheet.create({
     itemVal: { fontSize: 16, fontWeight: '800' },
 
     infoSection: { paddingHorizontal: 20, marginTop: 8 },
-    infoSectionTitle: { fontSize: 13, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 1 },
     infoLabel: { flex: 1, fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
     infoVal: { fontSize: 14, color: colors.text, fontWeight: '700' }
-});
-
-const m = (colors: any) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20, paddingBottom: 40 },
-    handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 20 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-    title: { fontSize: 24, fontWeight: '900', color: colors.text },
-
-    typeToggle: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 16, padding: 4, marginBottom: 32, borderWidth: 1, borderColor: colors.border },
-    typeBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-    typeBtnActive: { backgroundColor: colors.primary, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-    typeTxt: { fontSize: 14, color: colors.textSecondary, fontWeight: '800' },
-    typeTxtActive: { color: colors.white },
-
-    inputLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '800', marginBottom: 12, letterSpacing: 1 },
-    input: { backgroundColor: colors.surface, borderRadius: 18, height: 60, paddingHorizontal: 20, fontSize: 16, color: colors.text, fontWeight: '600', borderWidth: 1, borderColor: colors.border, marginBottom: 32 },
-
-    colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 32 },
-    colorCircle: { width: 40, height: 40, borderRadius: 20 },
-
-    iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
-    iconItem: { width: 50, height: 50, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-
-    previewCard: { backgroundColor: colors.surface, borderRadius: 24, padding: 24, alignItems: 'center', marginBottom: 40, borderWidth: 1, borderColor: colors.border },
-    previewBadge: { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    previewTitle: { fontSize: 20, fontWeight: '900', color: colors.text, marginBottom: 4 },
-    previewType: { fontSize: 13, color: colors.textSecondary, fontWeight: '700', textTransform: 'uppercase' },
-
-    mainBtn: { backgroundColor: colors.primary, borderRadius: 20, height: 64, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-    mainBtnTxt: { color: colors.white, fontSize: 17, fontWeight: '900' }
 });
