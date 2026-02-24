@@ -95,9 +95,9 @@ async def get_summary(
         "pending_expense": tx_expense_pending + bill_expense_pending,
         "balance": (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending),
         "total_balance": total_balance,
-        # Forecast subtracts pending non-CC transactions. 
-        # CC debt is already in total_balance.
-        "forecast": total_balance + income_pending - tx_expense_pending,
+        # Forecast subtracts pending non-CC transactions and pending CC bills.
+        # total_balance only includes assets (non-CC or CC with positive balance).
+        "forecast": total_balance + income_pending - tx_expense_pending - bill_expense_pending,
         "income_count": income_count,
         "expense_count": expense_count
     }
