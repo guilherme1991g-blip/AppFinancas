@@ -104,7 +104,7 @@ export default function SettingsScreen() {
                             />
                         </View>
 
-                        <TouchableOpacity style={styles.settingRow} onPress={() => { }}>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/notification-settings' as any)}>
                             <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="notifications-outline" size={20} color={colors.secondary} />
                             </View>

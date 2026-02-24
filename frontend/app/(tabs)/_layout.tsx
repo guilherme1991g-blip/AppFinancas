@@ -29,12 +29,12 @@ export default function TabsLayout() {
                     height: Platform.OS === 'ios' ? 88 : 74,
                     paddingTop: 8,
                     paddingBottom: Platform.OS === 'ios' ? 28 : 14,
-                    paddingHorizontal: 12,
+                    paddingHorizontal: 20,
                     elevation: 0,
                     shadowOpacity: 0,
                 },
                 tabBarItemStyle: {
-                    marginHorizontal: 10,
+                    marginHorizontal: 12,
                 },
                 tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.textMuted,
@@ -64,17 +64,6 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="cards"
-                options={{
-                    title: 'Cartões',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'card' : 'card-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
                 name="tools"
                 options={{
                     title: 'Ferramentas',
@@ -96,6 +85,7 @@ export default function TabsLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen name="cards" options={{ href: null }} />
         </Tabs>
     );
 }

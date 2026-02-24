@@ -182,6 +182,20 @@ export default function DashboardScreen() {
                 ))}
             </View>
 
+            {/* Credit Cards Highlight Card */}
+            <View style={styles.section}>
+                <TouchableOpacity style={styles.cardsPrimaryCard} onPress={() => router.push('/(tabs)/cards' as any)}>
+                    <View style={styles.cardsIconCircle}>
+                        <Ionicons name="card" size={28} color={colors.white} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.cardsCardTitle}>Meus Cartões</Text>
+                        <Text style={styles.cardsCardSub}>Gerencie limites, faturas e controle seus gastos no crédito.</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+            </View>
+
             {/* Charts */}
             <View style={styles.chartCard}>
                 <Text style={styles.sectionTitle}>Receita vs Despesa</Text>
@@ -319,6 +333,15 @@ const s = (colors: any) => StyleSheet.create({
     quickItem: { flex: 1, alignItems: 'center', gap: 10 },
     quickIcon: { width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     quickLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '800' },
+
+    cardsPrimaryCard: {
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
+        borderRadius: 28, padding: 20, gap: 16, borderWidth: 1, borderColor: colors.border,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 4
+    },
+    cardsIconCircle: { width: 56, height: 56, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+    cardsCardTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+    cardsCardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 18, fontWeight: '500' },
 
     chartCard: { marginHorizontal: 20, backgroundColor: colors.surface, borderRadius: 28, padding: 24, marginBottom: 28, borderWidth: 1, borderColor: colors.border },
 
