@@ -513,7 +513,6 @@ const s = (colors: any) => StyleSheet.create({
         marginHorizontal: 20, borderRadius: 32,
         backgroundColor: colors.primary,
         padding: 28, marginBottom: 24,
-        shadowColor: colors.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10
     },
     balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
     balanceLabel: { fontSize: 13, color: colors.white + 'A0', fontWeight: '700', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
