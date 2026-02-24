@@ -206,42 +206,6 @@ export default function NewAccountScreen() {
     );
 }
 
-                        <Text style={styles.sectionLabel}>Tipo de Conta</Text>
-                        <View style={styles.typeGrid}>
-                            {ACC_TYPES.map(t => (
-                                <TouchableOpacity
-                                    key={t.value}
-                                    style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
-                                    onPress={() => setType(t.value)}
-                                >
-                                    <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
-                                    <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <Text style={styles.sectionLabel}>Personalização</Text>
-                        <View style={styles.card}>
-                            <Text style={styles.label}>Cor da Conta</Text>
-                            <View style={styles.colorRow}>
-                                {CUSTOM_COLORS.map(c => (
-                                    <TouchableOpacity
-                                        key={c}
-                                        style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
-                                        onPress={() => setColor(c)}
-                                    />
-                                ))}
-                            </View>
-                        </View>
-
-                        <View style={{ height: 40 }} />
-                    </ScrollView >
-                </TouchableWithoutFeedback >
-            </KeyboardAvoidingView >
-        </View >
-    );
-}
-
 const s = (colors: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
