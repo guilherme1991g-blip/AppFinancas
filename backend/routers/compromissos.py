@@ -15,7 +15,7 @@ def serialize_compromisso(doc) -> dict:
     return doc
 
 
-@router.post("/", response_model=CompromissoResponse)
+@router.post("", response_model=CompromissoResponse)
 async def create_compromisso(compromisso: CompromissoCreate, current_user=Depends(get_current_user)):
     user_id = str(current_user["_id"])
     doc = compromisso.dict()
@@ -28,7 +28,7 @@ async def create_compromisso(compromisso: CompromissoCreate, current_user=Depend
     return serialize_compromisso(doc)
 
 
-@router.get("/", response_model=List[CompromissoResponse])
+@router.get("", response_model=List[CompromissoResponse])
 async def get_compromissos(current_user=Depends(get_current_user)):
     user_id = str(current_user["_id"])
     cursor = compromissos_collection.find({"user_id": user_id}).sort("date", 1)

@@ -1,12 +1,5 @@
-import os
-import bcrypt
-from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
-from bson import ObjectId
-from database import users_collection
-from models.user import UserCreate, UserLogin, UserResponse
+from dotenv import load_dotenv
+load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
@@ -26,11 +19,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
+        print(f"Auth DEBUG: Decoding token for user_id: {user_id}")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
+            print(f"Auth DEBUG: User {user_id} not found in database")
             raise HTTPException(status_code=401, detail="Usuário não encontrado")
         return user
-    except Exception:
+    except Exception as e:
+        print(f"Auth DEBUG: Token validation failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido")
 
 

@@ -15,7 +15,7 @@ def serialize_sonho(doc) -> dict:
     return doc
 
 
-@router.post("/", response_model=SonhoResponse)
+@router.post("", response_model=SonhoResponse)
 async def create_sonho(sonho: SonhoCreate, current_user=Depends(get_current_user)):
     user_id = str(current_user["_id"])
     doc = sonho.dict()
@@ -28,7 +28,7 @@ async def create_sonho(sonho: SonhoCreate, current_user=Depends(get_current_user
     return serialize_sonho(doc)
 
 
-@router.get("/", response_model=List[SonhoResponse])
+@router.get("", response_model=List[SonhoResponse])
 async def get_sonhos(current_user=Depends(get_current_user)):
     user_id = str(current_user["_id"])
     cursor = sonhos_collection.find({"user_id": user_id}).sort("created_at", -1)

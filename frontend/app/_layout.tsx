@@ -6,9 +6,26 @@ import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { useSegments, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const { mode, colors } = useTheme();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      router.replace('/(auth)/login' as any);
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)/home' as any);
+    }
+  }, [user, segments, isLoading]);
 
   if (isLoading) {
     return (
