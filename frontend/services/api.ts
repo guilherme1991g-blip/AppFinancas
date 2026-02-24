@@ -6,6 +6,12 @@ async function getToken(): Promise<string | null> {
     return await AsyncStorage.getItem('auth_token');
 }
 
+let onUnauthorized: (() => void) | null = null;
+
+export const setUnauthorizedListener = (callback: () => void) => {
+    onUnauthorized = callback;
+};
+
 async function request<T>(
     path: string,
     options: RequestInit = {}
@@ -27,6 +33,12 @@ async function request<T>(
             signal: controller.signal
         });
         clearTimeout(id);
+
+        if (response.status === 401) {
+            if (onUnauthorized) onUnauthorized();
+            const err = await response.json().catch(() => ({ detail: 'Sessão expirada' }));
+            throw new Error(err.detail || 'Não autenticado');
+        }
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({ detail: 'Erro na requisição' }));

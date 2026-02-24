@@ -42,7 +42,7 @@ export default function SonhosListScreen() {
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Meus Sonhos</Text>
+                    <Text style={styles.title}>Meus Objetivos</Text>
                     <Text style={styles.sub}>Planejamento para o futuro</Text>
                 </View>
                 <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/sonhos/new' as any)}>
@@ -62,7 +62,7 @@ export default function SonhosListScreen() {
                         <View style={styles.emptyIconBox}>
                             <Ionicons name="cloud-outline" size={80} color={colors.primary + '30'} />
                         </View>
-                        <Text style={styles.emptyTitle}>Inicie um novo sonho</Text>
+                        <Text style={styles.emptyTitle}>Inicie um novo objetivo</Text>
                         <Text style={styles.emptyTxt}>Defina um objetivo financeiro e acompanhe seu progresso para realizá-lo.</Text>
                         <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/sonhos/new' as any)}>
                             <Text style={styles.emptyBtnTxt}>Começar agora</Text>

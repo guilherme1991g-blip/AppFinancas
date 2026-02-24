@@ -37,7 +37,7 @@ export default function ToolsScreen() {
         },
         {
             id: 'sonhos',
-            title: 'Meus Sonhos',
+            title: 'Meus Objetivos',
             sub: 'Planeje e acompanhe seus objetivos financeiros de longo prazo.',
             icon: 'rocket',
             color: '#EC4899',

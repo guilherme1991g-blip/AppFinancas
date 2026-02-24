@@ -23,6 +23,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        const { setUnauthorizedListener } = require('@/services/api');
+        setUnauthorizedListener(() => {
+            logout();
+        });
         loadUser();
     }, []);
 

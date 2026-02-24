@@ -40,7 +40,7 @@ export default function NewSonhoScreen() {
             router.back();
         } catch (e) {
             console.error(e);
-            Alert.alert('Erro', 'Não foi possível salvar seu sonho.');
+            Alert.alert('Erro', 'Não foi possível salvar seu objetivo.');
         } finally {
             setLoading(false);
         }
@@ -58,7 +58,7 @@ export default function NewSonhoScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
                         <Ionicons name="close" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.title}>Novo Sonho</Text>
+                    <Text style={styles.title}>Novo Objetivo</Text>
                     <View style={{ width: 44 }} />
                 </View>
 
@@ -136,7 +136,7 @@ export default function NewSonhoScreen() {
                     </View>
 
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
-                        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnTxt}>Criar Sonho</Text>}
+                        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnTxt}>Criar Objetivo</Text>}
                     </TouchableOpacity>
                 </View>
             </ScrollView>
