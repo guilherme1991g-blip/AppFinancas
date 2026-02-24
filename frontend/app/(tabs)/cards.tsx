@@ -114,9 +114,6 @@ export default function CardsScreen() {
     const { colors } = useTheme();
     const [cards, setCards] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [modal, setModal] = useState(false);
-    const [loading, setLoading] = useState(false);
-
     const [loading, setLoading] = useState(false);
 
     const styles = s(colors);
@@ -248,28 +245,4 @@ const s = (colors: any) => StyleSheet.create({
     summaryValue: { fontSize: 16, fontWeight: '800', color: colors.text },
 });
 
-const m = (colors: any) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 24 },
-    handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 24 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-    title: { fontSize: 24, fontWeight: '900', color: colors.text },
 
-    preview: { borderRadius: 24, padding: 24, marginBottom: 32, minHeight: 160, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 10 },
-    previewTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-    previewName: { fontSize: 16, fontWeight: '800', color: 'rgba(255,255,255,0.95)' },
-    previewBrand: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
-    previewDigits: { fontSize: 20, color: '#FFF', letterSpacing: 4, fontWeight: '700', marginBottom: 16 },
-    previewBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    previewHolder: { fontSize: 12, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: '700' },
-
-    label: { fontSize: 11, color: colors.textMuted, fontWeight: '800', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
-    input: { backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 18, height: 56, color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 24 },
-    row: { flexDirection: 'row' },
-    brandRow: { marginBottom: 24 },
-    brandBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, backgroundColor: colors.surface, marginRight: 10, borderWidth: 1, borderColor: colors.border },
-    brandTxt: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
-    colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
-    colorDot: { width: 40, height: 40, borderRadius: 20 },
-    saveBtn: { height: 60, backgroundColor: colors.primary, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-    saveTxt: { color: colors.white, fontWeight: '800', fontSize: 16 },
-});
