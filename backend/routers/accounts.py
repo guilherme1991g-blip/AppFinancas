@@ -12,13 +12,20 @@ def account_doc(doc) -> dict:
     return {
         "id": str(doc["_id"]),
         "user_id": str(doc["user_id"]),
-        "name": doc["name"],
+        "name": doc.get("name") or "Sem Nome",
         "type": doc["type"],
         "bank": doc.get("bank"),
         "balance": doc["balance"],
         "color": doc.get("color", "#00D09C"),
         "icon": doc.get("icon", "wallet"),
-        "company_id": str(doc["company_id"]) if doc.get("company_id") else None
+        "company_id": str(doc["company_id"]) if doc.get("company_id") else None,
+        # Credit card fields
+        "credit_limit": doc.get("credit_limit"),
+        "closing_day": doc.get("closing_day"),
+        "due_day": doc.get("due_day"),
+        "last_digits": doc.get("last_digits"),
+        "card_brand": doc.get("card_brand"),
+        "card_holder": doc.get("card_holder"),
     }
 
 
@@ -30,8 +37,19 @@ async def list_accounts(current_user=Depends(get_current_user)):
 
 @router.post("")
 async def create_account(data: AccountCreate, current_user=Depends(get_current_user)):
+    name = data.name
+    if not name and data.type == "credit_card":
+        brand = (data.card_brand or "Cartão").capitalize()
+        bank = f" {data.bank}" if data.bank else ""
+        digits = f" {data.last_digits}" if data.last_digits else ""
+        name = f"{brand}{bank}{digits}"
+    
+    if not name:
+        name = "Nova Conta"
+
     doc = {
         **data.dict(),
+        "name": name,
         "user_id": current_user["_id"],
         "company_id": ObjectId(data.company_id) if data.company_id else None,
         "created_at": datetime.utcnow()

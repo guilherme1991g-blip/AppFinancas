@@ -21,7 +21,7 @@ class CardBrand(str, Enum):
 
 
 class AccountCreate(BaseModel):
-    name: str
+    name: Optional[str] = None
     type: AccountType
     bank: Optional[str] = None
     balance: float = 0.0
