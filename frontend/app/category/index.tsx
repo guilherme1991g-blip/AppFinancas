@@ -90,13 +90,15 @@ export default function CategoryManagementScreen() {
         }
     }
 
-    async function handleDelete(id: string, name: string) {
+    async function handleDelete(id: string, name: string, callback?: () => void) {
         Alert.alert('Excluir', `Deseja excluir "${name}"?`, [
             { text: 'Cancelar', style: 'cancel' },
             {
                 text: 'Excluir', style: 'destructive', onPress: async () => {
                     try {
                         await api.deleteCategory(id);
+                        if (callback) callback();
+                        setModalVisible(false);
                         fetchData();
                     } catch (e: any) {
                         Alert.alert('Erro', e.message);
@@ -106,15 +108,13 @@ export default function CategoryManagementScreen() {
         ]);
     }
 
-    const renderRightActions = (id: string, name: string) => {
+    const renderRightActions = (id: string, name: string, closeSwipe: () => void) => {
         return (
             <TouchableOpacity
                 style={styles.swipeDeleteBtn}
-                onPress={() => handleDelete(id, name)}
+                onPress={() => handleDelete(id, name, closeSwipe)}
             >
-                <Animated.View>
-                    <Ionicons name="trash-outline" size={24} color={colors.white} />
-                </Animated.View>
+                <Ionicons name="trash-outline" size={24} color={colors.white} />
             </TouchableOpacity>
         );
     };
@@ -155,24 +155,32 @@ export default function CategoryManagementScreen() {
                         <View key={type} style={styles.section}>
                             <Text style={styles.sectionTitle}>{type === 'expense' ? 'DESPESAS' : 'RECEITAS'}</Text>
                             <View style={styles.list}>
-                                {filtered.map((cat, idx) => (
-                                    <Swipeable
-                                        key={cat.id}
-                                        renderRightActions={() => renderRightActions(cat.id, cat.name)}
-                                        containerStyle={{ borderBottomWidth: idx === filtered.length - 1 ? 0 : 1, borderBottomColor: colors.border }}
-                                    >
-                                        <TouchableOpacity
-                                            style={styles.item}
-                                            onPress={() => openModal(cat)}
+                                {filtered.map((cat, idx) => {
+                                    let swipeRef: Swipeable | null = null;
+                                    return (
+                                        <Swipeable
+                                            key={cat.id}
+                                            ref={ref => swipeRef = ref}
+                                            renderRightActions={() => renderRightActions(cat.id, cat.name, () => swipeRef?.close())}
+                                            containerStyle={{ borderBottomWidth: idx === filtered.length - 1 ? 0 : 1, borderBottomColor: colors.border }}
+                                            friction={2}
+                                            enableTrackpadTwoFingerGesture
+                                            rightThreshold={40}
                                         >
-                                            <View style={[styles.iconWrap, { backgroundColor: cat.color + '15' }]}>
-                                                <Ionicons name={(cat.icon || 'pricetag') as any} size={20} color={cat.color} />
-                                            </View>
-                                            <Text style={styles.name}>{cat.name}</Text>
-                                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                                        </TouchableOpacity>
-                                    </Swipeable>
-                                ))}
+                                            <TouchableOpacity
+                                                style={styles.item}
+                                                onPress={() => openModal(cat)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={[styles.iconWrap, { backgroundColor: cat.color + '15' }]}>
+                                                    <Ionicons name={(cat.icon || 'pricetag') as any} size={20} color={cat.color} />
+                                                </View>
+                                                <Text style={styles.name}>{cat.name}</Text>
+                                                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                                            </TouchableOpacity>
+                                        </Swipeable>
+                                    );
+                                })}
                             </View>
                         </View>
                     );
@@ -249,6 +257,17 @@ export default function CategoryManagementScreen() {
                         <TouchableOpacity style={mStyles.saveBtn} onPress={handleSave} disabled={actionLoading}>
                             {actionLoading ? <ActivityIndicator color={colors.white} /> : <Text style={mStyles.saveBtnTxt}>Salvar</Text>}
                         </TouchableOpacity>
+
+                        {editingCat && (
+                            <TouchableOpacity
+                                style={mStyles.deleteBtn}
+                                onPress={() => handleDelete(editingCat.id, editingCat.name)}
+                                disabled={actionLoading}
+                            >
+                                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                                <Text style={mStyles.deleteBtnTxt}>Excluir Categoria</Text>
+                            </TouchableOpacity>
+                        )}
                     </ScrollView>
                 </View>
             </Modal>
@@ -304,5 +323,8 @@ const m = (colors: any, mode: string) => StyleSheet.create({
     previewTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
 
     saveBtn: { height: 64, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, marginBottom: 40 },
-    saveBtnTxt: { color: colors.white, fontSize: 18, fontWeight: '900' }
+    saveBtnTxt: { color: colors.white, fontSize: 18, fontWeight: '900' },
+
+    deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 18, backgroundColor: colors.danger + '10', marginBottom: 60, borderWidth: 1, borderColor: colors.danger + '20' },
+    deleteBtnTxt: { color: colors.danger, fontSize: 15, fontWeight: '800' }
 });
