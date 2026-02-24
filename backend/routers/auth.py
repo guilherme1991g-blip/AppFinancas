@@ -7,9 +7,6 @@ import jwt
 from bson import ObjectId
 from database import users_collection
 from models.user import UserCreate, UserLogin, UserResponse
-from dotenv import load_dotenv
-
-load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
