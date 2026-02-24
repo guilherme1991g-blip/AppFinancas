@@ -73,10 +73,11 @@ export default function ToolsScreen() {
                 {/* Tabs Selector */}
                 <View style={styles.tabSelector}>
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'budgets' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
+                        style={[styles.tabBtn, activeTab === 'budgets' && styles.tabBtnActive]}
                         onPress={() => setActiveTab('budgets')}
                     >
-                        <Text style={[styles.tabText, activeTab === 'budgets' && { color: colors.primary }]}>Metas</Text>
+                        <Ionicons name="trending-up-outline" size={18} color={activeTab === 'budgets' ? colors.white : colors.textSecondary} />
+                        <Text style={[styles.tabBtnTxt, activeTab === 'budgets' && styles.tabBtnTxtActive]}>Metas</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tabBtn, activeTab === 'recurring' && styles.tabBtnActive]}
@@ -94,15 +95,15 @@ export default function ToolsScreen() {
                     ) : activeTab === 'budgets' ? (
                         <View>
                             <View style={styles.tabHeader}>
-                                <Text style={styles.tabHeaderTitle}>Meus Orçamentos</Text>
+                                <Text style={styles.tabHeaderTitle}>Minhas Metas</Text>
                                 <TouchableOpacity style={styles.miniAddBtn} onPress={() => router.push('/budget/new' as any)}>
                                     <Ionicons name="add" size={18} color={colors.white} />
                                 </TouchableOpacity>
                             </View>
                             {budgets.length === 0 ? (
                                 <View style={styles.emptyState}>
-                                    <Ionicons name="pie-chart-outline" size={48} color={colors.border} />
-                                    <Text style={styles.emptyTxt}>Nenhum orçamento definido para este mês</Text>
+                                    <Ionicons name="trending-up-outline" size={48} color={colors.border} />
+                                    <Text style={styles.emptyTxt}>Nenhuma meta definida para este mês</Text>
                                 </View>
                             ) : (
                                 budgets.map(b => {

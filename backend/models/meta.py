@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class BudgetCreate(BaseModel):
+class MetaCreate(BaseModel):
     category_id: str
     amount: float
     month: int  # 1-12
@@ -11,11 +11,11 @@ class BudgetCreate(BaseModel):
     company_id: Optional[str] = None
 
 
-class BudgetUpdate(BaseModel):
+class MetaUpdate(BaseModel):
     amount: Optional[float] = None
 
 
-class BudgetResponse(BaseModel):
+class MetaResponse(BaseModel):
     id: str
     user_id: str
     category_id: str

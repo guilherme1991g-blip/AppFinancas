@@ -54,7 +54,7 @@ export const api = {
     getAccounts: () => request('/accounts'),
     createAccount: (data: any) => request('/accounts', { method: 'POST', body: JSON.stringify(data) }),
     updateAccount: (id: string, data: any) => request(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deleteAccount: (id: string) => request(`/accounts/${id}`, { method: 'DELETE' }),
+    deleteBankAccount: (id: string) => request(`/accounts/${id}`, { method: 'DELETE' }),
 
     // Categories
     getCategories: () => request('/categories'),
@@ -79,16 +79,16 @@ export const api = {
     createTransfer: (data: any) => request('/transfers', { method: 'POST', body: JSON.stringify(data) }),
     deleteTransfer: (id: string) => request(`/transfers/${id}`, { method: 'DELETE' }),
 
-    // Budgets
+    // Metas (ex-Budgets)
     getBudgets: (params?: { month?: number; year?: number }) => {
         const query = params ? '?' + new URLSearchParams(
             Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
         ) : '';
-        return request(`/budgets${query}`);
+        return request(`/metas${query}`);
     },
-    createBudget: (data: any) => request('/budgets', { method: 'POST', body: JSON.stringify(data) }),
-    updateBudget: (id: string, data: any) => request(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deleteBudget: (id: string) => request(`/budgets/${id}`, { method: 'DELETE' }),
+    createBudget: (data: any) => request('/metas', { method: 'POST', body: JSON.stringify(data) }),
+    updateBudget: (id: string, data: any) => request(`/metas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteBudget: (id: string) => request(`/metas/${id}`, { method: 'DELETE' }),
 
     // Recurring
     getRecurring: () => request('/recurring'),
@@ -138,4 +138,5 @@ export const api = {
     // Preferences
     getPreferences: () => request('/preferences'),
     updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteUserAccount: () => request('/auth/account', { method: 'DELETE' }),
 };

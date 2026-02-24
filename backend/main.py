@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import auth, accounts, categories, transactions, transfers, budgets, recurring, companies, analytics, bills, preferences
+from routers import auth, accounts, categories, transactions, transfers, metas, recurring, companies, analytics, bills, preferences
 
 app = FastAPI(
     title="App Finanças API",
@@ -26,7 +26,7 @@ app.include_router(accounts.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(transfers.router)
-app.include_router(budgets.router)
+app.include_router(metas.router)
 app.include_router(recurring.router)
 app.include_router(companies.router)
 app.include_router(analytics.router)

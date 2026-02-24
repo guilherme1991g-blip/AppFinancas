@@ -92,7 +92,7 @@ export default function NotificationSettingsScreen() {
         },
         {
             key: 'budget_alerts',
-            label: 'Metas e Orçamentos',
+            label: 'Metas',
             sub: 'Avisar quando atingir limites de gastos',
             icon: 'trending-up-outline',
             color: colors.primary

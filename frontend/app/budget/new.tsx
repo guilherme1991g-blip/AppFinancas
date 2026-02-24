@@ -45,7 +45,7 @@ export default function NewBudgetScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
                     <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Novo Orçamento</Text>
+                <Text style={styles.title}>Nova Meta</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving} style={[styles.saveBtn, saving && { opacity: 0.7 }]}>
                     {saving ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Definir</Text>}
                 </TouchableOpacity>

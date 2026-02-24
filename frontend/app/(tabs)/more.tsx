@@ -44,7 +44,7 @@ export default function SettingsScreen() {
     function getCat(id: string) { return categories.find(c => c.id === id); }
 
     const tabs = [
-        { key: 'budgets', label: 'Orçamentos', icon: 'pie-chart' },
+        { key: 'budgets', label: 'Metas', icon: 'pie-chart' },
         { key: 'recurring', label: 'Recorrentes', icon: 'repeat' },
         { key: 'companies', label: 'Empresas', icon: 'business' },
     ] as const;
@@ -60,8 +60,8 @@ export default function SettingsScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Mais Opções</Text>
-                        <Text style={styles.sub}>Ajustes e gerenciamento</Text>
+                        <Text style={styles.title}>Ajustes</Text>
+                        <Text style={styles.sub}>Gerenciamento da sua conta</Text>
                     </View>
                     <TouchableOpacity style={styles.headerBtn} onPress={logout}>
                         <Ionicons name="log-out-outline" size={22} color={colors.danger} />
@@ -142,6 +142,34 @@ export default function SettingsScreen() {
                             <Text style={styles.infoVal}>1.3.0</Text>
                         </View>
                     </View>
+
+                    <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => {
+                            Alert.alert(
+                                'Apagar tudo?',
+                                'Esta ação apagará todos os seus dados, contas, transações e seu perfil permanentemente. Você tem certeza?',
+                                [
+                                    { text: 'Cancelar', style: 'cancel' },
+                                    {
+                                        text: 'Sim, Apagar Tudo',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                            try {
+                                                await api.deleteUserAccount();
+                                                logout();
+                                            } catch (e) {
+                                                Alert.alert('Erro', 'Não foi possível apagar sua conta. Tente novamente.');
+                                            }
+                                        }
+                                    }
+                                ]
+                            );
+                        }}
+                    >
+                        <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                        <Text style={styles.deleteBtnTxt}>Apagar tudo e começar do zero</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={{ height: 120 }} />
@@ -216,5 +244,8 @@ const s = (colors: any) => StyleSheet.create({
 
     infoSection: { paddingHorizontal: 20, marginTop: 8 },
     infoLabel: { flex: 1, fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
-    infoVal: { fontSize: 14, color: colors.text, fontWeight: '700' }
+    infoVal: { fontSize: 14, color: colors.text, fontWeight: '700' },
+
+    deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 32, padding: 20, backgroundColor: colors.danger + '10', borderRadius: 24, borderWidth: 1, borderColor: colors.danger + '20' },
+    deleteBtnTxt: { fontSize: 15, fontWeight: '800', color: colors.danger }
 });

@@ -2,15 +2,20 @@ from fastapi import APIRouter, HTTPException, Depends
 from bson import ObjectId
 from datetime import datetime
 from database import budgets_collection, transactions_collection
-from models.budget import BudgetCreate, BudgetUpdate
+from models.meta import MetaCreate, MetaUpdate
 from routers.auth import get_current_user
 
-router = APIRouter(prefix="/budgets", tags=["budgets"])
+router = APIRouter(prefix="/metas", tags=["metas"])
 
 
 async def calc_spent(user_id, category_id, month, year) -> float:
     start = datetime(year, month, 1)
-    end = datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
+    # Correctly handle next month for end date
+    if month == 12:
+        end = datetime(year + 1, 1, 1)
+    else:
+        end = datetime(year, month + 1, 1)
+        
     pipeline = [
         {"$match": {"user_id": user_id, "category_id": category_id, "type": "expense", "date": {"$gte": start, "$lt": end}}},
         {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
@@ -19,7 +24,7 @@ async def calc_spent(user_id, category_id, month, year) -> float:
     return result[0]["total"] if result else 0.0
 
 
-def budget_doc(doc, spent=0.0) -> dict:
+def meta_doc(doc, spent=0.0) -> dict:
     return {
         "id": str(doc["_id"]),
         "user_id": str(doc["user_id"]),
@@ -34,7 +39,7 @@ def budget_doc(doc, spent=0.0) -> dict:
 
 
 @router.get("")
-async def list_budgets(month: int = None, year: int = None, current_user=Depends(get_current_user)):
+async def list_metas(month: int = None, year: int = None, current_user=Depends(get_current_user)):
     query = {"user_id": current_user["_id"]}
     if month:
         query["month"] = month
@@ -44,12 +49,12 @@ async def list_budgets(month: int = None, year: int = None, current_user=Depends
     result = []
     for d in docs:
         spent = await calc_spent(current_user["_id"], d["category_id"], d["month"], d["year"])
-        result.append(budget_doc(d, spent))
+        result.append(meta_doc(d, spent))
     return result
 
 
 @router.post("")
-async def create_budget(data: BudgetCreate, current_user=Depends(get_current_user)):
+async def create_meta(data: MetaCreate, current_user=Depends(get_current_user)):
     doc = {
         **data.dict(),
         "category_id": ObjectId(data.category_id),
@@ -60,22 +65,24 @@ async def create_budget(data: BudgetCreate, current_user=Depends(get_current_use
     result = await budgets_collection.insert_one(doc)
     doc["_id"] = result.inserted_id
     spent = await calc_spent(current_user["_id"], doc["category_id"], data.month, data.year)
-    return budget_doc(doc, spent)
+    return meta_doc(doc, spent)
 
 
-@router.put("/{budget_id}")
-async def update_budget(budget_id: str, data: BudgetUpdate, current_user=Depends(get_current_user)):
+@router.put("/{meta_id}")
+async def update_meta(meta_id: str, data: MetaUpdate, current_user=Depends(get_current_user)):
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     await budgets_collection.update_one(
-        {"_id": ObjectId(budget_id), "user_id": current_user["_id"]},
+        {"_id": ObjectId(meta_id), "user_id": current_user["_id"]},
         {"$set": update_data}
     )
-    doc = await budgets_collection.find_one({"_id": ObjectId(budget_id)})
+    doc = await budgets_collection.find_one({"_id": ObjectId(meta_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Meta não encontrada")
     spent = await calc_spent(current_user["_id"], doc["category_id"], doc["month"], doc["year"])
-    return budget_doc(doc, spent)
+    return meta_doc(doc, spent)
 
 
-@router.delete("/{budget_id}")
-async def delete_budget(budget_id: str, current_user=Depends(get_current_user)):
-    await budgets_collection.delete_one({"_id": ObjectId(budget_id), "user_id": current_user["_id"]})
-    return {"message": "Orçamento removido"}
+@router.delete("/{meta_id}")
+async def delete_meta(meta_id: str, current_user=Depends(get_current_user)):
+    await budgets_collection.delete_one({"_id": ObjectId(meta_id), "user_id": current_user["_id"]})
+    return {"message": "Meta removida"}

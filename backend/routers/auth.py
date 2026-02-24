@@ -68,3 +68,28 @@ async def me(current_user=Depends(get_current_user)):
         "email": current_user["email"],
         "created_at": current_user["created_at"]
     }
+
+
+@router.delete("/account")
+async def delete_account(current_user=Depends(get_current_user)):
+    from database import (
+        accounts_collection, categories_collection, transactions_collection,
+        transfers_collection, budgets_collection, recurring_collection,
+        companies_collection, bills_collection
+    )
+    user_id = str(current_user["_id"])
+    
+    # Delete all associated data
+    await accounts_collection.delete_many({"user_id": user_id})
+    await categories_collection.delete_many({"user_id": user_id})
+    await transactions_collection.delete_many({"user_id": user_id})
+    await transfers_collection.delete_many({"user_id": user_id})
+    await budgets_collection.delete_many({"user_id": user_id})
+    await recurring_collection.delete_many({"user_id": user_id})
+    await companies_collection.delete_many({"user_id": user_id})
+    await bills_collection.delete_many({"user_id": user_id})
+    
+    # Delete user
+    await users_collection.delete_one({"_id": ObjectId(user_id)})
+    
+    return {"message": "Conta e dados apagados com sucesso"}
