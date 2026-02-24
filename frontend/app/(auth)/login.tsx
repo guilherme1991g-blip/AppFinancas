@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    KeyboardAvoidingView, Platform, Animated, Dimensions, ActivityIndicator, Alert
+    KeyboardAvoidingView, Platform, Animated, Dimensions, ActivityIndicator
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const { login } = useAuth();
+    const { colors, mode } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPass, setShowPass] = useState(false);
@@ -22,6 +24,8 @@ export default function LoginScreen() {
     const slideAnim = useRef(new Animated.Value(40)).current;
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
     const logoFloat = useRef(new Animated.Value(0)).current;
+
+    const styles = s(colors, mode);
 
     useEffect(() => {
         Animated.parallel([
@@ -56,7 +60,7 @@ export default function LoginScreen() {
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            {/* Background circles */}
+            {/* Background Decor */}
             <View style={styles.circle1} />
             <View style={styles.circle2} />
             <View style={styles.circle3} />
@@ -66,33 +70,33 @@ export default function LoginScreen() {
                 contentContainerStyle={styles.scroll}
                 style={{ opacity: fadeAnim }}
             >
-                {/* Logo */}
+                {/* Logo Section */}
                 <Animated.View style={[styles.logoSection, { transform: [{ translateY: logoFloat }] }]}>
                     <View style={styles.logoRing}>
                         <View style={styles.logoInner}>
-                            <Ionicons name="trending-up" size={36} color="#00D09C" />
+                            <Ionicons name="trending-up" size={40} color={colors.primary} />
                         </View>
                     </View>
                     <Text style={styles.appName}>Meu Dindin</Text>
-                    <Text style={styles.tagline}>Controle financeiro inteligente</Text>
+                    <Text style={styles.tagline}>A gestão que seu dinheiro merece</Text>
                 </Animated.View>
 
-                {/* Card */}
+                {/* Card Container */}
                 <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }, { scale: scaleAnim }] }]}>
-                    <Text style={styles.cardTitle}>Bem-vindo de volta 👋</Text>
-                    <Text style={styles.cardSubtitle}>Entre na sua conta para continuar</Text>
+                    <Text style={styles.cardTitle}>Bem-vindo 👋</Text>
+                    <Text style={styles.cardSubtitle}>Entre com seus dados para continuar</Text>
 
-                    {/* Email */}
+                    {/* Email Field */}
                     <View style={styles.fieldGroup}>
                         <Text style={styles.label}>Email</Text>
                         <View style={[styles.inputWrap, focusedField === 'email' && styles.inputWrapFocused]}>
-                            <Ionicons name="mail-outline" size={18} color={focusedField === 'email' ? '#00D09C' : '#6B7280'} />
+                            <Ionicons name="mail-outline" size={20} color={focusedField === 'email' ? colors.primary : colors.textMuted} />
                             <TextInput
                                 style={styles.input}
                                 value={email}
                                 onChangeText={setEmail}
                                 placeholder="seu@email.com"
-                                placeholderTextColor="#4B5563"
+                                placeholderTextColor={colors.textMuted + '80'}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 onFocus={() => setFocusedField('email')}
@@ -101,36 +105,36 @@ export default function LoginScreen() {
                         </View>
                     </View>
 
-                    {/* Senha */}
+                    {/* Password Field */}
                     <View style={styles.fieldGroup}>
                         <Text style={styles.label}>Senha</Text>
                         <View style={[styles.inputWrap, focusedField === 'password' && styles.inputWrapFocused]}>
-                            <Ionicons name="lock-closed-outline" size={18} color={focusedField === 'password' ? '#00D09C' : '#6B7280'} />
+                            <Ionicons name="lock-closed-outline" size={20} color={focusedField === 'password' ? colors.primary : colors.textMuted} />
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
                                 value={password}
                                 onChangeText={setPassword}
                                 placeholder="••••••••"
-                                placeholderTextColor="#4B5563"
+                                placeholderTextColor={colors.textMuted + '80'}
                                 secureTextEntry={!showPass}
                                 onFocus={() => setFocusedField('password')}
                                 onBlur={() => setFocusedField(null)}
                             />
-                            <TouchableOpacity onPress={() => setShowPass(!showPass)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color="#6B7280" />
+                            <TouchableOpacity onPress={() => setShowPass(!showPass)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Erro inline */}
+                    {/* Error Feedback */}
                     {error ? (
                         <View style={styles.errorBox}>
-                            <Ionicons name="alert-circle-outline" size={16} color="#FF6B6B" />
+                            <Ionicons name="alert-circle-outline" size={16} color={colors.expense} />
                             <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
 
-                    {/* Botão */}
+                    {/* Main Action */}
                     <TouchableOpacity
                         style={[styles.button, loading && styles.buttonLoading]}
                         onPress={handleLogin}
@@ -138,121 +142,126 @@ export default function LoginScreen() {
                         activeOpacity={0.85}
                     >
                         {loading
-                            ? <ActivityIndicator color="#000" />
+                            ? <ActivityIndicator color={colors.white} />
                             : (
                                 <View style={styles.buttonInner}>
-                                    <Text style={styles.buttonText}>Entrar</Text>
-                                    <Ionicons name="arrow-forward" size={18} color="#000" />
+                                    <Text style={styles.buttonText}>Acessar conta</Text>
+                                    <View style={styles.btnIconCircle}>
+                                        <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+                                    </View>
                                 </View>
                             )
                         }
                     </TouchableOpacity>
 
-                    {/* Divisor */}
+                    {/* Secondary Actions */}
                     <View style={styles.divider}>
                         <View style={styles.dividerLine} />
                         <Text style={styles.dividerText}>ou</Text>
                         <View style={styles.dividerLine} />
                     </View>
 
-                    {/* Criar conta */}
                     <TouchableOpacity style={styles.registerBtn} onPress={() => router.push('/(auth)/register')} activeOpacity={0.8}>
-                        <Text style={styles.registerBtnText}>Criar nova conta</Text>
+                        <Text style={styles.registerBtnText}>Não tem conta? <Text style={{ color: colors.primary, fontWeight: '800' }}>Cadastre-se</Text></Text>
                     </TouchableOpacity>
                 </Animated.View>
 
-                <Text style={styles.footer}>Seus dados protegidos com criptografia 🔒</Text>
+                <Text style={styles.footer}>Criptografia de ponta a ponta 🔒</Text>
             </Animated.ScrollView>
         </KeyboardAvoidingView>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0A0F1E' },
+const s = (colors: any, mode: string) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     circle1: {
         position: 'absolute', width: 300, height: 300, borderRadius: 150,
-        backgroundColor: '#00D09C', opacity: 0.06, top: -80, right: -80,
+        backgroundColor: colors.primary, opacity: mode === 'dark' ? 0.04 : 0.06, top: -80, right: -80,
     },
     circle2: {
-        position: 'absolute', width: 200, height: 200, borderRadius: 100,
-        backgroundColor: '#6C5ECF', opacity: 0.08, top: 200, left: -60,
+        position: 'absolute', width: 220, height: 220, borderRadius: 110,
+        backgroundColor: colors.primary, opacity: mode === 'dark' ? 0.05 : 0.07, top: 180, left: -60,
     },
     circle3: {
-        position: 'absolute', width: 250, height: 250, borderRadius: 125,
-        backgroundColor: '#00D09C', opacity: 0.05, bottom: -60, right: 40,
+        position: 'absolute', width: 260, height: 260, borderRadius: 130,
+        backgroundColor: colors.secondary, opacity: mode === 'dark' ? 0.03 : 0.05, bottom: -60, right: 40,
     },
     scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 },
 
-    // Logo
-    logoSection: { alignItems: 'center', marginBottom: 36 },
+    logoSection: { alignItems: 'center', marginBottom: 40 },
     logoRing: {
-        width: 96, height: 96, borderRadius: 48,
-        borderWidth: 1, borderColor: 'rgba(0,208,156,0.3)',
+        width: 100, height: 100, borderRadius: 50,
+        borderWidth: 2, borderColor: colors.primary + '30',
         alignItems: 'center', justifyContent: 'center',
-        marginBottom: 16,
+        marginBottom: 20,
     },
     logoInner: {
         width: 76, height: 76, borderRadius: 38,
-        backgroundColor: 'rgba(0,208,156,0.12)',
+        backgroundColor: colors.primary + '15',
         alignItems: 'center', justifyContent: 'center',
     },
-    appName: { fontSize: 30, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
-    tagline: { fontSize: 13, color: '#6B7280', marginTop: 6 },
+    appName: { fontSize: 32, fontWeight: '900', color: colors.text, letterSpacing: -1 },
+    tagline: { fontSize: 13, color: colors.textSecondary, marginTop: 8, fontWeight: '500' },
 
-    // Card
     card: {
-        backgroundColor: '#111827',
-        borderRadius: 24,
+        backgroundColor: colors.surface,
+        borderRadius: 32,
         padding: 28,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
+        borderColor: colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: mode === 'dark' ? 0.2 : 0.05,
+        shadowRadius: 20,
+        elevation: 10,
     },
-    cardTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 6 },
-    cardSubtitle: { fontSize: 13, color: '#6B7280', marginBottom: 28 },
+    cardTitle: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 6 },
+    cardSubtitle: { fontSize: 14, color: colors.textSecondary, marginBottom: 32, fontWeight: '500' },
 
-    // Fields
-    fieldGroup: { marginBottom: 18 },
-    label: { fontSize: 12, color: '#9CA3AF', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+    fieldGroup: { marginBottom: 20 },
+    label: { fontSize: 12, color: colors.textMuted, fontWeight: '800', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
     inputWrap: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: '#1F2937',
-        borderRadius: 14, borderWidth: 1, borderColor: '#374151',
-        paddingHorizontal: 16, height: 54,
+        flexDirection: 'row', alignItems: 'center', gap: 14,
+        backgroundColor: colors.background,
+        borderRadius: 18, borderWidth: 1, borderColor: colors.border,
+        paddingHorizontal: 18, height: 58,
     },
-    inputWrapFocused: { borderColor: '#00D09C', backgroundColor: 'rgba(0,208,156,0.05)' },
-    input: { flex: 1, color: '#FFFFFF', fontSize: 15 },
+    inputWrapFocused: { borderColor: colors.primary, backgroundColor: colors.primary + '03' },
+    input: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
 
-    // Button
     button: {
-        height: 54, borderRadius: 14,
-        backgroundColor: '#00D09C',
+        height: 60, borderRadius: 20,
+        backgroundColor: colors.primary,
         alignItems: 'center', justifyContent: 'center',
-        marginTop: 8,
+        marginTop: 10,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
     },
-    buttonLoading: { opacity: 0.7 },
-    buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    buttonText: { color: '#000000', fontWeight: '800', fontSize: 16 },
+    buttonLoading: { opacity: 0.8 },
+    buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'center', width: '100%' },
+    buttonText: { color: colors.white, fontWeight: '900', fontSize: 17 },
+    btnIconCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
 
-    // Divider
-    divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: '#1F2937' },
-    dividerText: { fontSize: 13, color: '#4B5563' },
+    divider: { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 24 },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+    dividerText: { fontSize: 13, color: colors.textMuted, fontWeight: '700' },
 
     errorBox: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: 'rgba(255,107,107,0.1)',
-        borderRadius: 10, padding: 12, marginBottom: 12,
-        borderWidth: 1, borderColor: 'rgba(255,107,107,0.3)',
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: colors.expense + '10',
+        borderRadius: 12, padding: 14, marginBottom: 16,
+        borderWidth: 1, borderColor: colors.expense + '30',
     },
-    errorText: { color: '#FF6B6B', fontSize: 13, flex: 1 },
-    // Register
+    errorText: { color: colors.expense, fontSize: 13, flex: 1, fontWeight: '600' },
+
     registerBtn: {
-        height: 54, borderRadius: 14,
-        borderWidth: 1, borderColor: '#374151',
+        height: 58, borderRadius: 18,
+        borderWidth: 1, borderColor: colors.border,
         alignItems: 'center', justifyContent: 'center',
         backgroundColor: 'transparent',
     },
-    registerBtnText: { color: '#9CA3AF', fontWeight: '600', fontSize: 15 },
+    registerBtnText: { color: colors.textSecondary, fontWeight: '500', fontSize: 15 },
 
-    footer: { textAlign: 'center', color: '#374151', fontSize: 12, marginTop: 32 },
+    footer: { textAlign: 'center', color: colors.textMuted, fontSize: 12, marginTop: 40, fontWeight: '600' },
 });

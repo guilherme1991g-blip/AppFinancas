@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function formatCurrency(v: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 }
 
 export default function NewTransferScreen() {
+    const { colors } = useTheme();
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [fromAccount, setFromAccount] = useState('');
     const [toAccount, setToAccount] = useState('');
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const styles = s(colors);
 
     useEffect(() => {
-        api.getAccounts().then((accs: any) => setAccounts(accs)).catch(console.error);
+        setLoading(true);
+        api.getAccounts()
+            .then((accs: any) => setAccounts(accs))
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, []);
 
     async function handleSave() {
@@ -26,7 +34,7 @@ export default function NewTransferScreen() {
             Alert.alert('Atenção', 'Selecione contas diferentes e informe o valor');
             return;
         }
-        setLoading(true);
+        setSaving(true);
         try {
             await api.createTransfer({
                 from_account_id: fromAccount,
@@ -40,7 +48,7 @@ export default function NewTransferScreen() {
         } catch (e: any) {
             Alert.alert('Erro', e.message);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     }
 
@@ -49,89 +57,134 @@ export default function NewTransferScreen() {
             <View style={styles.handle} />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                    <Ionicons name="close" size={22} color={Colors.text} />
+                    <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Transferência</Text>
-                <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
-                    <Text style={styles.saveBtnText}>{loading ? '...' : 'Salvar'}</Text>
+                <TouchableOpacity onPress={handleSave} disabled={saving} style={[styles.saveBtn, saving && { opacity: 0.7 }]}>
+                    {saving ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Enviar</Text>}
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Amount */}
-                <View style={styles.amountContainer}>
+                <View style={styles.amountCard}>
                     <Text style={styles.currency}>R$</Text>
                     <TextInput
                         style={styles.amountInput}
-                        value={amount} onChangeText={setAmount}
-                        placeholder="0,00" placeholderTextColor={Colors.textMuted}
+                        value={amount}
+                        onChangeText={setAmount}
+                        placeholder="0,00"
+                        placeholderTextColor={colors.textMuted}
                         keyboardType="decimal-pad"
+                        autoFocus
                     />
+                    <Text style={styles.amountLabel}>Valor a transferir</Text>
                 </View>
 
-                {/* From → To */}
-                <View style={styles.transferRow}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>De</Text>
-                        {accounts.map(acc => (
-                            <TouchableOpacity
-                                key={acc.id}
-                                style={[styles.accBtn, fromAccount === acc.id && { borderColor: acc.color, backgroundColor: acc.color + '15' }]}
-                                onPress={() => setFromAccount(acc.id)}
-                            >
-                                <View style={[styles.accDot, { backgroundColor: acc.color }]} />
-                                <Text style={styles.accName} numberOfLines={1}>{acc.name}</Text>
-                                {fromAccount === acc.id && <Text style={[styles.accBal, { color: acc.color }]}>{formatCurrency(acc.balance)}</Text>}
-                            </TouchableOpacity>
-                        ))}
+                {/* Transfer Map */}
+                <View style={styles.transferSection}>
+                    <View style={styles.selectionColumn}>
+                        <Text style={styles.sectionLabel}>De onde sai?</Text>
+                        <View style={styles.accList}>
+                            {accounts.map(acc => (
+                                <TouchableOpacity
+                                    key={acc.id}
+                                    style={[
+                                        styles.accCard,
+                                        fromAccount === acc.id && { borderColor: acc.color || colors.primary, backgroundColor: (acc.color || colors.primary) + '15' }
+                                    ]}
+                                    onPress={() => setFromAccount(acc.id)}
+                                >
+                                    <View style={[styles.accIcon, { backgroundColor: (acc.color || colors.primary) + '20' }]}>
+                                        <Ionicons name="wallet-outline" size={16} color={acc.color || colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.accName, fromAccount === acc.id && { fontWeight: '800' }]} numberOfLines={1}>{acc.name}</Text>
+                                        <Text style={styles.accBal}>{formatCurrency(acc.balance)}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
-                    <Ionicons name="arrow-forward" size={24} color={Colors.textMuted} style={{ marginTop: 30 }} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Para</Text>
-                        {accounts.map(acc => (
-                            <TouchableOpacity
-                                key={acc.id}
-                                style={[styles.accBtn, toAccount === acc.id && { borderColor: acc.color, backgroundColor: acc.color + '15' }]}
-                                onPress={() => setToAccount(acc.id)}
-                            >
-                                <View style={[styles.accDot, { backgroundColor: acc.color }]} />
-                                <Text style={styles.accName} numberOfLines={1}>{acc.name}</Text>
-                            </TouchableOpacity>
-                        ))}
+
+                    <View style={styles.arrowWrap}>
+                        <View style={styles.arrowLine} />
+                        <View style={styles.arrowIconWrap}>
+                            <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+                        </View>
+                        <View style={styles.arrowLine} />
+                    </View>
+
+                    <View style={styles.selectionColumn}>
+                        <Text style={styles.sectionLabel}>Pra onde vai?</Text>
+                        <View style={styles.accList}>
+                            {accounts.map(acc => (
+                                <TouchableOpacity
+                                    key={acc.id}
+                                    style={[
+                                        styles.accCard,
+                                        toAccount === acc.id && { borderColor: acc.color || colors.primary, backgroundColor: (acc.color || colors.primary) + '15' }
+                                    ]}
+                                    onPress={() => setToAccount(acc.id)}
+                                >
+                                    <View style={[styles.accIcon, { backgroundColor: (acc.color || colors.primary) + '20' }]}>
+                                        <Ionicons name="wallet-outline" size={16} color={acc.color || colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.accName, toAccount === acc.id && { fontWeight: '800' }]} numberOfLines={1}>{acc.name}</Text>
+                                        <Text style={styles.accBal}>{formatCurrency(acc.balance)}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
 
                 <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Descrição</Text>
+                    <Text style={styles.sectionLabel}>Identificação</Text>
                     <TextInput
                         style={styles.fieldInput}
-                        value={description} onChangeText={setDescription}
-                        placeholder="Ex: Poupança mensal" placeholderTextColor={Colors.textMuted}
+                        value={description}
+                        onChangeText={setDescription}
+                        placeholder="Ex: Reserva mensal, Pagamento..."
+                        placeholderTextColor={colors.textMuted}
                     />
                 </View>
+
+                <View style={{ height: 40 }} />
             </ScrollView>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.surface },
-    handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border },
-    closeBtn: { padding: Spacing.sm, backgroundColor: Colors.surfaceLight, borderRadius: Radius.full },
-    title: { fontSize: 17, fontWeight: '700', color: Colors.text },
-    saveBtn: { backgroundColor: Colors.secondary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full },
-    saveBtnText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
-    content: { padding: Spacing.lg },
-    amountContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl, gap: Spacing.sm },
-    currency: { fontSize: 28, fontWeight: '700', color: Colors.textSecondary },
-    amountInput: { fontSize: 48, fontWeight: '800', color: Colors.text, minWidth: 120, textAlign: 'center' },
-    transferRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start', marginBottom: Spacing.lg },
-    fieldLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500', marginBottom: Spacing.sm },
-    accBtn: { borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.sm, marginBottom: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6 },
-    accDot: { width: 8, height: 8, borderRadius: 4 },
-    accName: { fontSize: 12, color: Colors.text, fontWeight: '500', flex: 1 },
-    accBal: { fontSize: 11, fontWeight: '600' },
-    fieldGroup: { marginBottom: Spacing.lg },
-    fieldInput: { backgroundColor: Colors.surfaceLight, borderRadius: Radius.md, padding: Spacing.md, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
+const s = (colors: any) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border },
+    closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+    title: { fontSize: 18, fontWeight: '800', color: colors.text },
+    saveBtn: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, minWidth: 80, alignItems: 'center' },
+    saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 14 },
+    content: { padding: 20, gap: 32 },
+
+    amountCard: { backgroundColor: colors.surface, borderRadius: 32, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+    currency: { fontSize: 24, fontWeight: '700', color: colors.textSecondary, marginBottom: -10 },
+    amountInput: { fontSize: 56, fontWeight: '900', color: colors.text, textAlign: 'center' },
+    amountLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '600', marginTop: 8 },
+
+    transferSection: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+    selectionColumn: { flex: 1, gap: 12 },
+    sectionLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+    accList: { gap: 8 },
+    accCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, borderWith: 1, borderColor: colors.border, backgroundColor: colors.surface, borderWidth: 1 },
+    accIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    accName: { fontSize: 13, color: colors.text, fontWeight: '600' },
+    accBal: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+
+    arrowWrap: { alignItems: 'center', justifyContent: 'center', height: '100%', width: 32 },
+    arrowLine: { width: 1, flex: 1, backgroundColor: colors.border },
+    arrowIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, marginVertical: 12 },
+
+    fieldGroup: { gap: 12 },
+    fieldInput: { backgroundColor: colors.surface, borderRadius: 16, padding: 18, color: colors.text, fontSize: 16, borderWidth: 1, borderColor: colors.border, fontWeight: '600' },
 });

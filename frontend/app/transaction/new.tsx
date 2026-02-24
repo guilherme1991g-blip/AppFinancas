@@ -9,19 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { api } from '@/services/api';
-
-const COLORS = {
-    background: '#0A0F1E',
-    surface: '#111827',
-    surfaceLight: '#1F2937',
-    primary: '#00D09C',
-    expense: '#FF6B6B',
-    income: '#00D09C',
-    text: '#FFFFFF',
-    textSecondary: '#9CA3AF',
-    textMuted: '#4B5563',
-    border: 'rgba(255,255,255,0.07)',
-};
+import { useTheme } from '@/contexts/ThemeContext';
 
 const FREQUENCIES = [
     { key: 'daily', label: 'Diário' },
@@ -31,6 +19,7 @@ const FREQUENCIES = [
 ];
 
 export default function NewTransactionScreen() {
+    const { mode, colors } = useTheme();
     const { type: initialType } = useLocalSearchParams<{ type?: string }>();
     const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
     const [payMethod, setPayMethod] = useState<'account' | 'card'>('account');
@@ -47,7 +36,7 @@ export default function NewTransactionScreen() {
     // Recurring state
     const [isRecurring, setIsRecurring] = useState(false);
     const [frequency, setFrequency] = useState('monthly');
-    const [installments, setInstallments] = useState(''); // empty means until canceled
+    const [installments, setInstallments] = useState('');
     const [isPaid, setIsPaid] = useState(true);
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -58,7 +47,6 @@ export default function NewTransactionScreen() {
                 const [accs, cats] = await Promise.all([api.getAccounts() as Promise<any[]>, api.getCategories() as Promise<any[]>]);
                 setAccounts(accs);
                 setCategories(cats);
-                // Default account selection based on payMethod
                 const filteredAccs = accs.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
                 if (filteredAccs.length > 0) setSelectedAccount(filteredAccs[0].id);
             } catch (e) { console.error(e); }
@@ -94,7 +82,7 @@ export default function NewTransactionScreen() {
                     amount: val,
                     description,
                     frequency,
-                    start_date: new Date().toISOString(),
+                    start_date: date.toISOString(),
                     is_active: true,
                 });
             } else {
@@ -120,22 +108,24 @@ export default function NewTransactionScreen() {
         }
     }
 
+    const styles = s(colors);
+
     if (fetching) return (
-        <View style={[s.container, { justifyContent: 'center' }]}>
-            <ActivityIndicator color={COLORS.primary} size="large" />
+        <View style={[styles.container, { justifyContent: 'center' }]}>
+            <ActivityIndicator color={colors.primary} size="large" />
         </View>
     );
 
     return (
-        <View style={s.container}>
-            <View style={s.handle} />
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => router.back()} style={s.closeBtn}>
-                    <Ionicons name="close" size={22} color={COLORS.text} />
+        <View style={styles.container}>
+            <View style={styles.handle} />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+                    <Ionicons name="close" size={22} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={s.title}>{isRecurring ? 'Novo Recorrente' : 'Nova Transação'}</Text>
-                <TouchableOpacity onPress={handleSave} disabled={loading} style={s.saveBtn}>
-                    {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={s.saveBtnText}>Salvar</Text>}
+                <Text style={styles.title}>{isRecurring ? 'Novo Recorrente' : (type === 'income' ? 'Nova Receita' : 'Nova Despesa')}</Text>
+                <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
+                    {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
                 </TouchableOpacity>
             </View>
 
@@ -144,34 +134,34 @@ export default function NewTransactionScreen() {
                 style={{ flex: 1 }}
             >
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                         {/* Type selector (Income/Expense) */}
-                        <View style={s.typeToggle}>
+                        <View style={styles.typeToggle}>
                             <TouchableOpacity
-                                style={[s.typeBtn, type === 'expense' && s.typeBtnExpense]}
+                                style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
                                 onPress={() => setType('expense')}
                             >
-                                <Ionicons name="arrow-up-circle" size={18} color={type === 'expense' ? '#000' : COLORS.expense} />
-                                <Text style={[s.typeBtnTxt, type === 'expense' && { color: '#000' }]}>Despesa</Text>
+                                <Ionicons name="arrow-up-circle" size={18} color={type === 'expense' ? colors.white : colors.expense} />
+                                <Text style={[styles.typeBtnTxt, type === 'expense' && { color: colors.white }]}>Despesa</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[s.typeBtn, type === 'income' && s.typeBtnIncome]}
+                                style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
                                 onPress={() => setType('income')}
                             >
-                                <Ionicons name="arrow-down-circle" size={18} color={type === 'income' ? '#000' : COLORS.income} />
-                                <Text style={[s.typeBtnTxt, type === 'income' && { color: '#000' }]}>Receita</Text>
+                                <Ionicons name="arrow-down-circle" size={18} color={type === 'income' ? colors.white : colors.income} />
+                                <Text style={[styles.typeBtnTxt, type === 'income' && { color: colors.white }]}>Receita</Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Amount Input */}
-                        <View style={s.amountWrap}>
-                            <Text style={s.currency}>R$</Text>
+                        <View style={styles.amountWrap}>
+                            <Text style={styles.currency}>R$</Text>
                             <TextInput
-                                style={s.amountInput}
+                                style={styles.amountInput}
                                 value={amount}
                                 onChangeText={setAmount}
                                 placeholder="0,00"
-                                placeholderTextColor={COLORS.textMuted}
+                                placeholderTextColor={colors.textMuted}
                                 keyboardType="decimal-pad"
                                 autoFocus
                             />
@@ -179,37 +169,37 @@ export default function NewTransactionScreen() {
 
                         {/* Payment Method Selector (Card vs Account) */}
                         {type === 'expense' && (
-                            <View style={s.methodToggle}>
+                            <View style={styles.methodToggle}>
                                 <TouchableOpacity
-                                    style={[s.methodBtn, payMethod === 'account' && s.methodBtnActive]}
+                                    style={[styles.methodBtn, payMethod === 'account' && styles.methodBtnActive]}
                                     onPress={() => setPayMethod('account')}
                                 >
-                                    <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? '#000' : COLORS.textSecondary} />
-                                    <Text style={[s.methodTxt, payMethod === 'account' && { color: '#000' }]}>Conta / Dinheiro</Text>
+                                    <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? colors.white : colors.textSecondary} />
+                                    <Text style={[styles.methodTxt, payMethod === 'account' && { color: colors.white }]}>Conta / Dinheiro</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[s.methodBtn, payMethod === 'card' && s.methodBtnActive]}
+                                    style={[styles.methodBtn, payMethod === 'card' && styles.methodBtnActive]}
                                     onPress={() => setPayMethod('card')}
                                 >
-                                    <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? '#000' : COLORS.textSecondary} />
-                                    <Text style={[s.methodTxt, payMethod === 'card' && { color: '#000' }]}>Cartão de Crédito</Text>
+                                    <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? colors.white : colors.textSecondary} />
+                                    <Text style={[styles.methodTxt, payMethod === 'card' && { color: colors.white }]}>Cartão de Crédito</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
 
                         {/* Recurring Switch */}
                         {type === 'expense' && (
-                            <View style={s.fieldGroup}>
-                                <View style={s.switchRow}>
+                            <View style={styles.fieldGroup}>
+                                <View style={styles.switchRow}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={s.fieldLabel}>Pagamento Recorrente?</Text>
-                                        <Text style={s.fieldSub}>Assinaturas, aluguel, etc.</Text>
+                                        <Text style={styles.fieldLabel}>Pagamento Recorrente?</Text>
+                                        <Text style={styles.fieldSub}>Assinaturas, aluguel, etc.</Text>
                                     </View>
                                     <Switch
                                         value={isRecurring}
                                         onValueChange={setIsRecurring}
-                                        trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
-                                        thumbColor={isRecurring ? COLORS.primary : COLORS.textSecondary}
+                                        trackColor={{ false: colors.surface, true: colors.primary + '80' }}
+                                        thumbColor={isRecurring ? colors.primary : colors.textSecondary}
                                     />
                                 </View>
                             </View>
@@ -217,16 +207,16 @@ export default function NewTransactionScreen() {
 
                         {/* Recurrence Options */}
                         {isRecurring && (
-                            <View style={s.recurringPanel}>
-                                <Text style={s.labelInner}>Frequência</Text>
-                                <View style={s.freqRow}>
+                            <View style={styles.recurringPanel}>
+                                <Text style={styles.labelInner}>Frequência</Text>
+                                <View style={styles.freqRow}>
                                     {FREQUENCIES.map(f => (
                                         <TouchableOpacity
                                             key={f.key}
-                                            style={[s.freqBtn, frequency === f.key && s.freqBtnActive]}
+                                            style={[styles.freqBtn, frequency === f.key && styles.freqBtnActive]}
                                             onPress={() => setFrequency(f.key)}
                                         >
-                                            <Text style={[s.freqTxt, frequency === f.key && { color: '#000' }]}>{f.label}</Text>
+                                            <Text style={[styles.freqTxt, frequency === f.key && { color: colors.white }]}>{f.label}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -234,11 +224,11 @@ export default function NewTransactionScreen() {
                         )}
 
                         {/* Paid Toggle */}
-                        <View style={s.fieldGroup}>
-                            <View style={s.switchRow}>
+                        <View style={styles.fieldGroup}>
+                            <View style={styles.switchRow}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.fieldLabel}>{type === 'income' ? 'Já recebeu?' : 'Já pagou?'}</Text>
-                                    <Text style={s.fieldSub}>{isPaid
+                                    <Text style={styles.fieldLabel}>{type === 'income' ? 'Já recebeu?' : 'Já pagou?'}</Text>
+                                    <Text style={styles.fieldSub}>{isPaid
                                         ? (type === 'income' ? 'Valor já entrou na conta' : 'Valor já saiu da conta')
                                         : (type === 'income' ? 'Agendar recebimento' : 'Agendar para o vencimento')}
                                     </Text>
@@ -246,21 +236,21 @@ export default function NewTransactionScreen() {
                                 <Switch
                                     value={isPaid}
                                     onValueChange={setIsPaid}
-                                    trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
-                                    thumbColor={isPaid ? COLORS.primary : COLORS.textSecondary}
+                                    trackColor={{ false: colors.surface, true: colors.primary + '80' }}
+                                    thumbColor={isPaid ? colors.primary : colors.textSecondary}
                                 />
                             </View>
                         </View>
 
                         {/* Date Selection */}
-                        <View style={s.fieldGroup}>
-                            <Text style={s.fieldLabel}>{isPaid ? 'Data do Pagamento' : 'Data de Vencimento'}</Text>
-                            <TouchableOpacity style={s.input} onPress={() => setShowPicker(true)}>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>{isPaid ? 'Data do Pagamento' : 'Data de Vencimento'}</Text>
+                            <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ color: COLORS.text, fontSize: 15 }}>
+                                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
                                         {format(date, 'dd/MM/yyyy')}
                                     </Text>
-                                    <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                                    <Ionicons name="calendar-outline" size={20} color={colors.primary} />
                                 </View>
                             </TouchableOpacity>
 
@@ -269,7 +259,7 @@ export default function NewTransactionScreen() {
                                     value={date}
                                     mode="date"
                                     display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                                    themeVariant="dark"
+                                    themeVariant={mode}
                                     onChange={(event, selectedDate) => {
                                         if (Platform.OS !== 'ios') setShowPicker(false);
                                         if (selectedDate) setDate(selectedDate);
@@ -278,43 +268,43 @@ export default function NewTransactionScreen() {
                             )}
                             {showPicker && Platform.OS === 'ios' && (
                                 <TouchableOpacity
-                                    style={{ alignSelf: 'flex-end', marginTop: 10 }}
+                                    style={{ alignSelf: 'flex-end', marginTop: 10, padding: 8, backgroundColor: colors.primary + '20', borderRadius: 12 }}
                                     onPress={() => setShowPicker(false)}
                                 >
-                                    <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Confirmar</Text>
+                                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Confirmar</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
 
                         {/* Description */}
-                        <View style={s.fieldGroup}>
-                            <Text style={s.fieldLabel}>Descrição *</Text>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Descrição *</Text>
                             <TextInput
-                                style={s.input}
+                                style={styles.input}
                                 value={description}
                                 onChangeText={setDescription}
                                 placeholder="Ex: Supermercado, Aluguel..."
-                                placeholderTextColor={COLORS.textMuted}
+                                placeholderTextColor={colors.textMuted}
                             />
                         </View>
 
                         {/* Account Selection */}
-                        <View style={s.fieldGroup}>
-                            <Text style={s.fieldLabel}>{payMethod === 'card' ? 'Cartão' : 'Conta'} *</Text>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>{payMethod === 'card' ? 'Cartão' : 'Conta'} *</Text>
                             {filteredAccs.length === 0 ? (
-                                <TouchableOpacity style={s.emptyAcc} onPress={() => router.push(payMethod === 'card' ? '/cards' : '/account/new')}>
-                                    <Text style={s.emptyAccTxt}>+ Cadastrar {payMethod === 'card' ? 'cartão' : 'conta'}</Text>
+                                <TouchableOpacity style={styles.emptyAcc} onPress={() => router.push(payMethod === 'card' ? '/cards' : '/account/new')}>
+                                    <Text style={styles.emptyAccTxt}>+ Cadastrar {payMethod === 'card' ? 'cartão' : 'conta'}</Text>
                                 </TouchableOpacity>
                             ) : (
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
                                     {filteredAccs.map(acc => (
                                         <TouchableOpacity
                                             key={acc.id}
-                                            style={[s.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
+                                            style={[styles.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
                                             onPress={() => setSelectedAccount(acc.id)}
                                         >
-                                            <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={selectedAccount === acc.id ? '#000' : acc.color} />
-                                            <Text style={[s.chipTxt, selectedAccount === acc.id && { color: '#000' }]}>{acc.name}</Text>
+                                            <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={selectedAccount === acc.id ? colors.white : acc.color} />
+                                            <Text style={[styles.chipTxt, selectedAccount === acc.id && { color: colors.white }]}>{acc.name}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
@@ -322,35 +312,35 @@ export default function NewTransactionScreen() {
                         </View>
 
                         {/* Category Selection */}
-                        <View style={s.fieldGroup}>
-                            <Text style={s.fieldLabel}>Categoria *</Text>
-                            <View style={s.catGrid}>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Categoria *</Text>
+                            <View style={styles.catGrid}>
                                 {filteredCats.map(cat => (
                                     <TouchableOpacity
                                         key={cat.id}
-                                        style={[s.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
+                                        style={[styles.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
                                         onPress={() => setSelectedCategory(cat.id)}
                                     >
-                                        <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : COLORS.textSecondary} />
-                                        <Text style={[s.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
+                                        <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : colors.textSecondary} />
+                                        <Text style={[styles.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
                                     </TouchableOpacity>
                                 ))}
-                                <TouchableOpacity style={s.catChip} onPress={() => router.push('/(tabs)/more')}>
-                                    <Ionicons name="add" size={16} color={COLORS.primary} />
-                                    <Text style={[s.catTxt, { color: COLORS.primary }]}>Nova</Text>
+                                <TouchableOpacity style={styles.catChip} onPress={() => router.push('/(tabs)/more')}>
+                                    <Ionicons name="add" size={16} color={colors.primary} />
+                                    <Text style={[styles.catTxt, { color: colors.primary }]}>Nova</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         {/* Notes */}
-                        <View style={s.fieldGroup}>
-                            <Text style={s.fieldLabel}>Observações</Text>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.fieldLabel}>Observações</Text>
                             <TextInput
-                                style={[s.input, { height: 80, textAlignVertical: 'top' }]}
+                                style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                                 value={notes}
                                 onChangeText={setNotes}
                                 placeholder="Opcional..."
-                                placeholderTextColor={COLORS.textMuted}
+                                placeholderTextColor={colors.textMuted}
                                 multiline
                             />
                         </View>
@@ -363,53 +353,53 @@ export default function NewTransactionScreen() {
     );
 }
 
-const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background },
-    handle: { width: 40, height: 4, backgroundColor: COLORS.surfaceLight, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-    closeBtn: { padding: 8, backgroundColor: COLORS.surfaceLight, borderRadius: 20 },
-    title: { fontSize: 17, fontWeight: '700', color: COLORS.text },
-    saveBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
-    saveBtnText: { color: '#000', fontWeight: '800', fontSize: 14 },
+const s = (colors: any) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    handle: { width: 40, height: 4, backgroundColor: colors.surfaceSubtle, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border },
+    closeBtn: { padding: 8, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
+    title: { fontSize: 18, fontWeight: '800', color: colors.text },
+    saveBtn: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 14 },
 
     content: { padding: 20 },
 
-    typeToggle: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 16, padding: 4, marginBottom: 24 },
-    typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12 },
-    typeBtnExpense: { backgroundColor: COLORS.expense },
-    typeBtnIncome: { backgroundColor: COLORS.income },
-    typeBtnTxt: { fontSize: 15, fontWeight: '700', color: COLORS.textSecondary },
+    typeToggle: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 18, padding: 4, marginBottom: 24, borderWidth: 1, borderColor: colors.border },
+    typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 14 },
+    typeBtnExpense: { backgroundColor: colors.expense },
+    typeBtnIncome: { backgroundColor: colors.income },
+    typeBtnTxt: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
 
     amountWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 32 },
-    currency: { fontSize: 24, fontWeight: '700', color: COLORS.textSecondary },
-    amountInput: { fontSize: 48, fontWeight: '800', color: COLORS.text, minWidth: 150, textAlign: 'center' },
+    currency: { fontSize: 24, fontWeight: '700', color: colors.textSecondary },
+    amountInput: { fontSize: 48, fontWeight: '800', color: colors.text, minWidth: 150, textAlign: 'center' },
 
-    methodToggle: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 12, padding: 4, marginBottom: 20 },
+    methodToggle: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 14, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
     methodBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 10, borderRadius: 10 },
-    methodBtnActive: { backgroundColor: COLORS.textSecondary },
-    methodTxt: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+    methodBtnActive: { backgroundColor: colors.primary },
+    methodTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
 
     fieldGroup: { marginBottom: 24 },
-    fieldLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-    fieldSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    fieldLabel: { fontSize: 13, color: colors.textSecondary, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.8 },
+    fieldSub: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '500' },
     switchRow: { flexDirection: 'row', alignItems: 'center' },
 
-    recurringPanel: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: COLORS.border },
-    labelInner: { fontSize: 11, color: COLORS.textMuted, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase' },
+    recurringPanel: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.border },
+    labelInner: { fontSize: 11, color: colors.textMuted, fontWeight: '800', marginBottom: 12, textTransform: 'uppercase' },
     freqRow: { flexDirection: 'row', gap: 8 },
-    freqBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: COLORS.surfaceLight, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
-    freqBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    freqTxt: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+    freqBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+    freqBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    freqTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 
-    input: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, color: COLORS.text, fontSize: 15, borderWidth: 1, borderColor: COLORS.border },
+    input: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, color: colors.text, fontSize: 15, borderWidth: 1, borderColor: colors.border, fontWeight: '500' },
 
     chipRow: { flexDirection: 'row' },
-    chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, marginRight: 10 },
-    chipTxt: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-    emptyAcc: { padding: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.textMuted, borderRadius: 14, alignItems: 'center' },
-    emptyAccTxt: { color: COLORS.textMuted, fontWeight: '600' },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: 10 },
+    chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+    emptyAcc: { padding: 18, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center' },
+    emptyAccTxt: { color: colors.textMuted, fontWeight: '700' },
 
     catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    catChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
-    catTxt: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
+    catChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    catTxt: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
 });

@@ -6,7 +6,7 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function formatCurrency(v: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -14,16 +14,17 @@ function formatCurrency(v: number) {
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-function SimpleBar({ value, max, color }: { value: number; max: number; color: string }) {
+function SimpleBar({ value, max, color, colors }: { value: number; max: number; color: string; colors: any }) {
     const pct = max > 0 ? Math.min(value / max, 1) : 0;
     return (
-        <View style={{ height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: 'hidden', flex: 1 }}>
-            <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: color, borderRadius: 4 }} />
+        <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden', flex: 1 }}>
+            <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: color, borderRadius: 3 }} />
         </View>
     );
 }
 
 export default function ReportsScreen() {
+    const { colors } = useTheme();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
@@ -60,12 +61,13 @@ export default function ReportsScreen() {
     }
 
     const maxCF = Math.max(...cashflow.map(m => Math.max(m.income, m.expense)), 1);
+    const styles = s(colors);
 
     return (
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={Colors.primary} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
         >
             <View style={styles.header}>
                 <Text style={styles.title}>Relatórios</Text>
@@ -73,18 +75,18 @@ export default function ReportsScreen() {
 
             {/* Month selector */}
             <View style={styles.monthRow}>
-                <TouchableOpacity onPress={prevMonth} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={Colors.text} /></TouchableOpacity>
+                <TouchableOpacity onPress={prevMonth} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
                 <Text style={styles.monthText}>{MONTHS[month - 1]} {year}</Text>
-                <TouchableOpacity onPress={nextMonth} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={Colors.text} /></TouchableOpacity>
+                <TouchableOpacity onPress={nextMonth} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
             </View>
 
-            {loading ? <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} /> : (
+            {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> : (
                 <>
                     {/* Summary Cards */}
                     <View style={styles.summaryRow}>
                         {[
-                            { label: 'Receitas', value: summary?.income || 0, color: Colors.income, icon: 'arrow-down-circle' },
-                            { label: 'Despesas', value: summary?.expense || 0, color: Colors.expense, icon: 'arrow-up-circle' },
+                            { label: 'Receitas', value: summary?.income || 0, color: colors.income, icon: 'arrow-down-circle' },
+                            { label: 'Despesas', value: summary?.expense || 0, color: colors.expense, icon: 'arrow-up-circle' },
                         ].map(card => (
                             <View key={card.label} style={[styles.summaryCard, { borderLeftColor: card.color }]}>
                                 <Ionicons name={card.icon as any} size={20} color={card.color} />
@@ -96,29 +98,45 @@ export default function ReportsScreen() {
 
                     {/* Result */}
                     <View style={styles.resultCard}>
-                        <Text style={styles.resultLabel}>Resultado do mês</Text>
-                        <Text style={[styles.resultValue, { color: (summary?.balance || 0) >= 0 ? Colors.income : Colors.expense }]}>
-                            {formatCurrency(summary?.balance || 0)}
-                        </Text>
+                        <View>
+                            <Text style={styles.resultLabel}>Resultado do mês</Text>
+                            <Text style={[styles.resultValue, { color: (summary?.balance || 0) >= 0 ? colors.income : colors.expense }]}>
+                                {formatCurrency(summary?.balance || 0)}
+                            </Text>
+                        </View>
+                        <View style={[styles.resultBadge, { backgroundColor: (summary?.balance || 0) >= 0 ? colors.income + '15' : colors.expense + '15' }]}>
+                            <Ionicons
+                                name={(summary?.balance || 0) >= 0 ? 'trending-up' : 'trending-down'}
+                                size={20}
+                                color={(summary?.balance || 0) >= 0 ? colors.income : colors.expense}
+                            />
+                        </View>
                     </View>
 
                     {/* Cashflow 12m */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Fluxo de Caixa {year}</Text>
-                        <View style={styles.cfChart}>
-                            {cashflow.map((m) => (
-                                <View key={m.month} style={styles.cfColumn}>
-                                    <View style={styles.cfBars}>
-                                        <View style={{ height: maxCF > 0 ? (m.income / maxCF) * 80 : 0, width: 8, backgroundColor: Colors.income, borderRadius: 4 }} />
-                                        <View style={{ height: maxCF > 0 ? (m.expense / maxCF) * 80 : 0, width: 8, backgroundColor: Colors.expense, borderRadius: 4 }} />
-                                    </View>
-                                    <Text style={styles.cfLabel}>{MONTHS[m.month - 1]}</Text>
+                        <View style={styles.sectionTitleRow}>
+                            <Text style={styles.sectionTitle}>Fluxo de Caixa {year}</Text>
+                            <Ionicons name="bar-chart-outline" size={16} color={colors.textMuted} />
+                        </View>
+                        <View style={styles.cfBarContainer}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={styles.cfChart}>
+                                    {cashflow.map((m) => (
+                                        <View key={m.month} style={styles.cfColumn}>
+                                            <View style={styles.cfBars}>
+                                                <View style={{ height: maxCF > 0 ? (m.income / maxCF) * 80 : 0, width: 8, backgroundColor: colors.income, borderRadius: 4 }} />
+                                                <View style={{ height: maxCF > 0 ? (m.expense / maxCF) * 80 : 0, width: 8, backgroundColor: colors.expense, borderRadius: 4 }} />
+                                            </View>
+                                            <Text style={styles.cfLabel}>{MONTHS[m.month - 1]}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            ))}
+                            </ScrollView>
                         </View>
                         <View style={styles.cfLegend}>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.income }]} /><Text style={styles.legendText}>Receitas</Text></View>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: Colors.expense }]} /><Text style={styles.legendText}>Despesas</Text></View>
+                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.income }]} /><Text style={styles.legendText}>Receitas</Text></View>
+                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.expense }]} /><Text style={styles.legendText}>Despesas</Text></View>
                         </View>
                     </View>
 
@@ -134,27 +152,32 @@ export default function ReportsScreen() {
                             </TouchableOpacity>
                         </View>
                         {byCategory.length === 0 ? (
-                            <Text style={styles.empty}>Nenhum dado para este período</Text>
+                            <View style={styles.emptyContainer}>
+                                <Ionicons name="pie-chart-outline" size={48} color={colors.border} />
+                                <Text style={styles.empty}>Nenhum dado para este período</Text>
+                            </View>
                         ) : (
-                            byCategory.map((item) => {
-                                const total = byCategory.reduce((s, i) => s + i.total, 0);
-                                const pct = total > 0 ? ((item.total / total) * 100).toFixed(1) : '0';
-                                return (
-                                    <View key={item.category_id} style={styles.catRow}>
-                                        <View style={[styles.catDot, { backgroundColor: item.category_color }]} />
-                                        <View style={{ flex: 1, gap: 4 }}>
-                                            <View style={styles.catHeader}>
-                                                <Text style={styles.catName}>{item.category_name}</Text>
-                                                <Text style={styles.catValue}>{formatCurrency(item.total)}</Text>
-                                            </View>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                                                <SimpleBar value={item.total} max={total} color={item.category_color} />
-                                                <Text style={styles.catPct}>{pct}%</Text>
+                            <View style={styles.catListCard}>
+                                {byCategory.map((item, idx) => {
+                                    const total = byCategory.reduce((s, i) => s + i.total, 0);
+                                    const pct = total > 0 ? ((item.total / total) * 100).toFixed(1) : '0';
+                                    return (
+                                        <View key={item.category_id} style={[styles.catRow, idx === byCategory.length - 1 && { borderBottomWidth: 0 }]}>
+                                            <View style={[styles.catDot, { backgroundColor: item.category_color }]} />
+                                            <View style={{ flex: 1, gap: 6 }}>
+                                                <View style={styles.catHeader}>
+                                                    <Text style={styles.catName}>{item.category_name}</Text>
+                                                    <Text style={styles.catValue}>{formatCurrency(item.total)}</Text>
+                                                </View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                                    <SimpleBar value={item.total} max={total} color={item.category_color} colors={colors} />
+                                                    <Text style={styles.catPct}>{pct}%</Text>
+                                                </View>
                                             </View>
                                         </View>
-                                    </View>
-                                );
-                            })
+                                    );
+                                })}
+                            </View>
                         )}
                     </View>
                 </>
@@ -164,44 +187,55 @@ export default function ReportsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
-    header: { padding: Spacing.lg, paddingTop: 56 },
-    title: { fontSize: 22, fontWeight: '800', color: Colors.text },
-    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md, marginBottom: Spacing.lg },
-    arrow: { padding: Spacing.sm, backgroundColor: Colors.surfaceLight, borderRadius: Radius.full },
-    monthText: { fontSize: 15, fontWeight: '600', color: Colors.text, width: 90, textAlign: 'center' },
-    summaryRow: { flexDirection: 'row', paddingHorizontal: Spacing.lg, gap: Spacing.md, marginBottom: Spacing.md },
-    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md, borderLeftWidth: 3, gap: 4 },
-    summaryLabel: { fontSize: 12, color: Colors.textSecondary },
-    summaryValue: { fontSize: 16, fontWeight: '700' },
+const s = (colors: any) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { padding: 20, paddingTop: 64 },
+    title: { fontSize: 24, fontWeight: '800', color: colors.text },
+    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 24 },
+    arrow: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.border },
+    monthText: { fontSize: 16, fontWeight: '700', color: colors.text, width: 110, textAlign: 'center' },
+    summaryRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 16 },
+    summaryCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 20, padding: 16, borderLeftWidth: 4, gap: 6, borderWidth: 1, borderColor: colors.border },
+    summaryLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+    summaryValue: { fontSize: 17, fontWeight: '800' },
     resultCard: {
-        marginHorizontal: Spacing.lg, backgroundColor: Colors.surface,
-        borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.lg,
-        alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between',
+        marginHorizontal: 20, backgroundColor: colors.surface,
+        borderRadius: 20, padding: 18, marginBottom: 24,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        borderWidth: 1, borderColor: colors.border
     },
-    resultLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '500' },
-    resultValue: { fontSize: 20, fontWeight: '800' },
-    section: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.lg },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: Spacing.md },
-    cfChart: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md },
-    cfColumn: { alignItems: 'center', gap: 4, flex: 1 },
-    cfBars: { flexDirection: 'row', gap: 2, alignItems: 'flex-end', height: 80 },
-    cfLabel: { fontSize: 9, color: Colors.textMuted, fontWeight: '500' },
-    cfLegend: { flexDirection: 'row', gap: Spacing.lg, marginTop: Spacing.sm, justifyContent: 'center' },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    resultLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', marginBottom: 4 },
+    resultValue: { fontSize: 22, fontWeight: '900' },
+    resultBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+
+    section: { paddingHorizontal: 20, marginBottom: 24 },
+    sectionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+
+    cfBarContainer: { backgroundColor: colors.surface, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: colors.border },
+    cfChart: { flexDirection: 'row', gap: 12 },
+    cfColumn: { alignItems: 'center', gap: 6, width: 40 },
+    cfBars: { flexDirection: 'row', gap: 3, alignItems: 'flex-end', height: 80 },
+    cfLabel: { fontSize: 10, color: colors.textMuted, fontWeight: '600' },
+    cfLegend: { flexDirection: 'row', gap: 20, marginTop: 12, justifyContent: 'center' },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendText: { fontSize: 12, color: Colors.textSecondary },
-    tabRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-    tabBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.surfaceLight },
-    tabActive: { backgroundColor: Colors.primary },
-    tabText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-    tabTextActive: { color: '#000', fontWeight: '700' },
-    catRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md },
-    catDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
+    legendText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+
+    tabRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+    tabBtn: { flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+    tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    tabText: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
+    tabTextActive: { color: colors.white },
+
+    catListCard: { backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+    catRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+    catDot: { width: 12, height: 12, borderRadius: 6, marginTop: 6 },
     catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    catName: { fontSize: 14, color: Colors.text, fontWeight: '500' },
-    catValue: { fontSize: 14, color: Colors.text, fontWeight: '700' },
-    catPct: { fontSize: 11, color: Colors.textMuted, width: 36, textAlign: 'right' },
-    empty: { color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.lg },
+    catName: { fontSize: 15, color: colors.text, fontWeight: '700' },
+    catValue: { fontSize: 15, color: colors.text, fontWeight: '800' },
+    catPct: { fontSize: 12, color: colors.textMuted, fontWeight: '600', width: 40, textAlign: 'right' },
+
+    emptyContainer: { padding: 40, alignItems: 'center', gap: 16 },
+    empty: { color: colors.textMuted, textAlign: 'center', fontSize: 14, fontWeight: '500' },
 });
