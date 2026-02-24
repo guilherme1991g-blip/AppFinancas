@@ -16,7 +16,10 @@ export default function NotificationSettingsScreen() {
         bill_reminders: true,
         budget_alerts: true,
         daily_summary: false,
-        recurring_alerts: true
+        recurring_alerts: true,
+        whatsapp_transactions: false,
+        overdue_bills: true,
+        due_today_bills: true
     });
 
     const styles = s(colors);
@@ -60,30 +63,51 @@ export default function NotificationSettingsScreen() {
 
     const settings = [
         {
+            key: 'whatsapp_transactions',
+            label: 'Contas via WhatsApp',
+            sub: 'Notificar quando receber contas pelo Zap',
+            icon: 'logo-whatsapp',
+            color: '#25D366'
+        },
+        {
+            key: 'overdue_bills',
+            label: 'Contas Vencidas',
+            sub: 'Alertas de contas pendentes e atrasadas',
+            icon: 'alert-circle-outline',
+            color: colors.expense
+        },
+        {
+            key: 'due_today_bills',
+            label: 'Contas do Dia',
+            sub: 'Lembrete de contas que vencem hoje',
+            icon: 'today-outline',
+            color: colors.warning
+        },
+        {
             key: 'bill_reminders',
-            label: 'Vencimento de Faturas',
-            sub: 'Lembretes antes do fechamento e vencimento',
+            label: 'Próximas Faturas',
+            sub: 'Avisos antes do fechamento e vencimento',
             icon: 'receipt-outline',
             color: '#6366F1'
         },
         {
             key: 'budget_alerts',
-            label: 'Alertas de Orçamento',
-            sub: 'Avisar quando atingir 80% e 100% do limite',
-            icon: 'pie-chart-outline',
+            label: 'Metas e Orçamentos',
+            sub: 'Avisar quando atingir limites de gastos',
+            icon: 'trending-up-outline',
             color: colors.primary
         },
         {
             key: 'daily_summary',
             label: 'Resumo Diário',
-            sub: 'Uma visão geral dos seus gastos no final do dia',
+            sub: 'Visão geral dos gastos no fim do dia',
             icon: 'calendar-outline',
             color: colors.secondary
         },
         {
             key: 'recurring_alerts',
-            label: 'Lançamentos Recorrentes',
-            sub: 'Confirmar pagamentos automáticos do dia',
+            label: 'Movimentações Fixas',
+            sub: 'Alertas de lançamentos recorrentes',
             icon: 'repeat-outline',
             color: '#10B981'
         }

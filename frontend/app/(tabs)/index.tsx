@@ -264,9 +264,9 @@ export default function DashboardScreen() {
             {budgets.length > 0 && (
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Orçamentos</Text>
+                        <Text style={styles.sectionTitle}>Metas</Text>
                         <TouchableOpacity onPress={() => router.push('/budget/new' as any)}>
-                            <Text style={styles.seeAll}>+ Novo</Text>
+                            <Text style={styles.seeAll}>+ Nova</Text>
                         </TouchableOpacity>
                     </View>
                     {budgets.slice(0, 3).map(b => {

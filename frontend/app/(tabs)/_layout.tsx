@@ -29,16 +29,16 @@ export default function TabsLayout() {
                     height: Platform.OS === 'ios' ? 88 : 74,
                     paddingTop: 8,
                     paddingBottom: Platform.OS === 'ios' ? 28 : 14,
-                    paddingHorizontal: 20,
+                    paddingHorizontal: 12,
                     elevation: 0,
                     shadowOpacity: 0,
                 },
                 tabBarItemStyle: {
-                    marginHorizontal: 12,
+                    marginHorizontal: 5,
                 },
                 tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.textMuted,
-                tabBarLabelStyle: { fontSize: 11, fontWeight: '800', marginTop: -4, marginBottom: 4 },
+                tabBarLabelStyle: { fontSize: 10, fontWeight: '800', marginTop: -4, marginBottom: 4 },
             }}
         >
             <Tabs.Screen

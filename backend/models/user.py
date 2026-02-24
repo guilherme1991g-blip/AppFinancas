@@ -19,6 +19,9 @@ class NotificationPreferences(BaseModel):
     budget_alerts: bool = True
     daily_summary: bool = False
     recurring_alerts: bool = True
+    whatsapp_transactions: bool = False
+    overdue_bills: bool = True
+    due_today_bills: bool = True
 
 
 class UserResponse(BaseModel):

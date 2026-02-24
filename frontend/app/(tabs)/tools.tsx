@@ -73,11 +73,10 @@ export default function ToolsScreen() {
                 {/* Tabs Selector */}
                 <View style={styles.tabSelector}>
                     <TouchableOpacity
-                        style={[styles.tabBtn, activeTab === 'budgets' && styles.tabBtnActive]}
+                        style={[styles.tab, activeTab === 'budgets' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
                         onPress={() => setActiveTab('budgets')}
                     >
-                        <Ionicons name="pie-chart-outline" size={18} color={activeTab === 'budgets' ? colors.white : colors.textSecondary} />
-                        <Text style={[styles.tabBtnTxt, activeTab === 'budgets' && styles.tabBtnTxtActive]}>Orçamentos</Text>
+                        <Text style={[styles.tabText, activeTab === 'budgets' && { color: colors.primary }]}>Metas</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tabBtn, activeTab === 'recurring' && styles.tabBtnActive]}
