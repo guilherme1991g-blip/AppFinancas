@@ -28,7 +28,10 @@ export default function AccountsScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     async function fetchData() {
-        try { setAccounts(await api.getAccounts() as any[]); }
+        try {
+            const accs = await api.getAccounts() as any[];
+            setAccounts(accs.filter((a: any) => a.type !== 'credit_card'));
+        }
         catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
     }
@@ -60,10 +63,6 @@ export default function AccountsScreen() {
             <View style={styles.header}>
                 <Text style={styles.title}>Contas</Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <TouchableOpacity style={styles.cardsBtn} onPress={() => router.push('/cards' as any)}>
-                        <Ionicons name="card-outline" size={20} color={colors.primary} />
-                        <Text style={styles.cardsBtnTxt}>Cartões</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/account/new' as any)}>
                         <Ionicons name="add" size={24} color={colors.white} />
                     </TouchableOpacity>

@@ -117,4 +117,8 @@ export const api = {
     payBill: (billId: string, paymentAccountId: string) =>
         request(`/bills/${billId}/pay?payment_account_id=${paymentAccountId}`, { method: 'POST' }),
     payTransaction: (id: string) => request(`/transactions/${id}/pay`, { method: 'POST' }),
+
+    // Preferences
+    getPreferences: () => request('/preferences'),
+    updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
 };

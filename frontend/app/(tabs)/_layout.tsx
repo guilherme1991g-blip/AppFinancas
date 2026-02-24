@@ -62,7 +62,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="accounts"
                 options={{
-                    title: 'Bancos',
+                    title: 'Contas',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
                             <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={color} />

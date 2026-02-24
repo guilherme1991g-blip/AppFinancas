@@ -50,17 +50,22 @@ export default function CardBillsScreen() {
 
     const renderBill = ({ item }: { item: any }) => (
         <TouchableOpacity
-            style={styles.billCard}
+            style={[styles.billCard, item.status === 'overdue' && { backgroundColor: colors.expense + '05', borderColor: colors.expense + '30' }]}
             onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: item.id, name: `${item.month}/${item.year}` } } as any)}
         >
             <View style={styles.billInfo}>
-                <Text style={styles.billDate}>{`${new Date(item.closing_date).toLocaleString('pt-BR', { month: 'long' })} / ${item.year}`}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={styles.billDate}>{`${new Date(item.closing_date).toLocaleString('pt-BR', { month: 'long' })} / ${item.year}`}</Text>
+                    {item.status === 'overdue' && (
+                        <Ionicons name="alert-circle" size={18} color={colors.expense} />
+                    )}
+                </View>
                 <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '15', borderColor: STATUS_COLORS[item.status] + '30' }]}>
                     <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{STATUS_LABELS[item.status]}</Text>
                 </View>
             </View>
             <View style={styles.billAmountWrap}>
-                <Text style={styles.billAmount}>{formatCurrency(item.amount)}</Text>
+                <Text style={[styles.billAmount, item.status === 'overdue' && { color: colors.expense }]}>{formatCurrency(item.amount)}</Text>
                 <View style={styles.chevronWrap}>
                     <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                 </View>

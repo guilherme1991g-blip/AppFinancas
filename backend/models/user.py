@@ -14,8 +14,16 @@ class UserLogin(BaseModel):
     password: str
 
 
+class NotificationPreferences(BaseModel):
+    bill_reminders: bool = True
+    budget_alerts: bool = True
+    daily_summary: bool = False
+    recurring_alerts: bool = True
+
+
 class UserResponse(BaseModel):
     id: str
     name: str
     email: str
     created_at: datetime
+    preferences: Optional[NotificationPreferences] = Field(default_factory=NotificationPreferences)
