@@ -1,4 +1,14 @@
+import os
+import bcrypt
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from bson import ObjectId
+from database import users_collection
+from models.user import UserCreate, UserLogin, UserResponse
 from dotenv import load_dotenv
+
 load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
