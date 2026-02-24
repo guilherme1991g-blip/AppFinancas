@@ -15,6 +15,7 @@ export default function RegisterScreen() {
     const [showPass, setShowPass] = useState(false);
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [error, setError] = useState('');
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
@@ -27,19 +28,20 @@ export default function RegisterScreen() {
     }, []);
 
     async function handleRegister() {
+        setError('');
         if (!name || !email || !password) {
-            Alert.alert('Atenção', 'Preencha todos os campos');
+            setError('Preencha todos os campos');
             return;
         }
         if (password.length < 6) {
-            Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres');
+            setError('A senha deve ter pelo menos 6 caracteres');
             return;
         }
         setLoading(true);
         try {
             await register(name, email, password);
         } catch (e: any) {
-            Alert.alert('Erro ao criar conta', e.message);
+            setError(e.message || 'Erro ao criar conta');
         } finally {
             setLoading(false);
         }
@@ -113,6 +115,14 @@ export default function RegisterScreen() {
                                 </View>
                             ))}
                         </View>
+
+                        {/* Erro inline */}
+                        {error ? (
+                            <View style={styles.errorBox}>
+                                <Ionicons name="alert-circle-outline" size={16} color="#FF6B6B" />
+                                <Text style={styles.errorText}>{error}</Text>
+                            </View>
+                        ) : null}
 
                         {/* Botão */}
                         <TouchableOpacity
@@ -203,6 +213,13 @@ const styles = StyleSheet.create({
     buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     buttonText: { color: '#000000', fontWeight: '800', fontSize: 16 },
 
+    errorBox: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: 'rgba(255,107,107,0.1)',
+        borderRadius: 10, padding: 12, marginBottom: 12,
+        borderWidth: 1, borderColor: 'rgba(255,107,107,0.3)',
+    },
+    errorText: { color: '#FF6B6B', fontSize: 13, flex: 1 },
     loginRow: { flexDirection: 'row', justifyContent: 'center' },
     loginText: { color: '#6B7280', fontSize: 14 },
     loginLink: { color: '#00D09C', fontSize: 14, fontWeight: '600' },

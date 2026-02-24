@@ -15,6 +15,7 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [showPass, setShowPass] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -38,15 +39,16 @@ export default function LoginScreen() {
     }, []);
 
     async function handleLogin() {
+        setError('');
         if (!email || !password) {
-            Alert.alert('Atenção', 'Preencha email e senha');
+            setError('Preencha email e senha');
             return;
         }
         setLoading(true);
         try {
             await login(email, password);
         } catch (e: any) {
-            Alert.alert('Erro ao entrar', e.message || 'Email ou senha incorretos');
+            setError(e.message || 'Email ou senha incorretos');
         } finally {
             setLoading(false);
         }
@@ -119,6 +121,14 @@ export default function LoginScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    {/* Erro inline */}
+                    {error ? (
+                        <View style={styles.errorBox}>
+                            <Ionicons name="alert-circle-outline" size={16} color="#FF6B6B" />
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
 
                     {/* Botão */}
                     <TouchableOpacity
@@ -228,6 +238,13 @@ const styles = StyleSheet.create({
     dividerLine: { flex: 1, height: 1, backgroundColor: '#1F2937' },
     dividerText: { fontSize: 13, color: '#4B5563' },
 
+    errorBox: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: 'rgba(255,107,107,0.1)',
+        borderRadius: 10, padding: 12, marginBottom: 12,
+        borderWidth: 1, borderColor: 'rgba(255,107,107,0.3)',
+    },
+    errorText: { color: '#FF6B6B', fontSize: 13, flex: 1 },
     // Register
     registerBtn: {
         height: 54, borderRadius: 14,
