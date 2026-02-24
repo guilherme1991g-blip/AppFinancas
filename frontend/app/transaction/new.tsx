@@ -6,6 +6,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 import { api } from '@/services/api';
 
 const COLORS = {
@@ -47,7 +49,8 @@ export default function NewTransactionScreen() {
     const [frequency, setFrequency] = useState('monthly');
     const [installments, setInstallments] = useState(''); // empty means until canceled
     const [isPaid, setIsPaid] = useState(true);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(new Date());
+    const [showPicker, setShowPicker] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -102,10 +105,10 @@ export default function NewTransactionScreen() {
                     amount: val,
                     description,
                     notes,
-                    date: isPaid ? new Date().toISOString() : new Date(date).toISOString(),
+                    date: date.toISOString(),
                     is_paid: isPaid,
-                    due_date: !isPaid ? new Date(date).toISOString() : null,
-                    paid_at: isPaid ? new Date().toISOString() : null,
+                    due_date: !isPaid ? date.toISOString() : null,
+                    paid_at: isPaid ? date.toISOString() : null,
                     tags: [],
                 });
             }
@@ -246,16 +249,29 @@ export default function NewTransactionScreen() {
                             </View>
                         </View>
 
-                        {/* Date Input */}
+                        {/* Date Selection */}
                         <View style={s.fieldGroup}>
                             <Text style={s.fieldLabel}>{isPaid ? 'Data do Pagamento' : 'Data de Vencimento'}</Text>
-                            <TextInput
-                                style={s.input}
-                                value={date}
-                                onChangeText={setDate}
-                                placeholder="AAAA-MM-DD"
-                                placeholderTextColor={COLORS.textMuted}
-                            />
+                            <TouchableOpacity style={s.input} onPress={() => setShowPicker(true)}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text style={{ color: COLORS.text, fontSize: 15 }}>
+                                        {format(date, 'dd/MM/yyyy')}
+                                    </Text>
+                                    <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                                </View>
+                            </TouchableOpacity>
+
+                            {showPicker && (
+                                <DateTimePicker
+                                    value={date}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={(event, selectedDate) => {
+                                        setShowPicker(Platform.OS === 'ios');
+                                        if (selectedDate) setDate(selectedDate);
+                                    }}
+                                />
+                            )}
                         </View>
 
                         {/* Description */}
