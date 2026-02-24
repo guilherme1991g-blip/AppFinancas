@@ -62,7 +62,7 @@ export default function CardBillsScreen() {
             </View>
             <View style={styles.billInfo}>
                 <Text style={styles.billDate}>
-                    {`${new Date(item.closing_date).toLocaleString('pt-BR', { month: 'long' })} / ${item.year}`}
+                    {new Date(item.closing_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                 </Text>
                 <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '15', borderColor: STATUS_COLORS[item.status] + '30' }]}>
                     <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{STATUS_LABELS[item.status]}</Text>
@@ -70,7 +70,7 @@ export default function CardBillsScreen() {
             </View>
             <View style={styles.billAmountWrap}>
                 <Text style={[styles.billAmount, item.status === 'overdue' && { color: colors.expense }]}>
-                    {formatCurrency(item.amount)}
+                    {formatCurrency(Math.abs(item.amount))}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>

@@ -66,7 +66,10 @@ export default function TransactionsScreen() {
                 }
             }
 
-            setTransactions([...cardBills, ...txs]);
+            const cardAccIds = new Set(cards.map(c => c.id));
+            const filteredTxs = txs.filter(t => !cardAccIds.has(t.account_id));
+
+            setTransactions([...cardBills, ...filteredTxs]);
             setCategories(cats);
         } catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
@@ -123,8 +126,8 @@ export default function TransactionsScreen() {
                         <Text style={styles.txMeta}>FECHAMENTO EM {it.month}/{it.year}</Text>
                     </View>
                     <View style={styles.txRight}>
-                        <Text style={[styles.txAmount, { color: colors.text }]}>
-                            {formatCurrency(it.amount)}
+                        <Text style={[styles.txAmount, { color: it.amount < 0 ? colors.income : colors.text }]}>
+                            {formatCurrency(Math.abs(it.amount))}
                         </Text>
                         <View style={[styles.statusBadgeSmall, { backgroundColor: it.status === 'paid' ? colors.income + '15' : colors.expense + '15' }]}>
                             <Text style={[styles.statusTextSmall, { color: it.status === 'paid' ? colors.income : colors.expense }]}>
@@ -149,7 +152,7 @@ export default function TransactionsScreen() {
                 </View>
                 <View style={styles.txRight}>
                     <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : colors.expense }]}>
-                        {it.type === 'income' ? '+' : '-'}{formatCurrency(it.amount)}
+                        {it.type === 'income' ? '+' : ''}{formatCurrency(Math.abs(it.amount))}
                     </Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

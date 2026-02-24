@@ -77,7 +77,7 @@ export default function RecurringListScreen() {
                                     <Text style={styles.itemSub}>{FR_LABEL[r.frequency]}</Text>
                                 </View>
                                 <Text style={[styles.itemVal, { color: r.type === 'income' ? colors.income : colors.expense }]}>
-                                    {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
+                                    {r.type === 'income' ? '+' : '-'}{fmt(Math.abs(r.amount))}
                                 </Text>
                             </TouchableOpacity>
                         ))}

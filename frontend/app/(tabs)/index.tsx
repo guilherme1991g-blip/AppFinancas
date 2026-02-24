@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     RefreshControl, ActivityIndicator, Dimensions
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Svg, G, Path, Circle } from 'react-native-svg';
@@ -14,14 +15,19 @@ const { width } = Dimensions.get('window');
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const MONTH_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+// Função unificada para formatar valores, tratando o sinal de menos.
 function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const absValue = Math.abs(v);
+    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
+    // Só adicionamos o sinal de menos se o valor real for negativo (crédito no cartão)
+    return v < 0 ? `-${formatted}` : formatted;
 }
 
 
 export default function DashboardScreen() {
     const { user } = useAuth();
     const { mode, colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
@@ -80,6 +86,7 @@ export default function DashboardScreen() {
     return (
         <ScrollView
             style={styles.container}
+            contentContainerStyle={{ paddingTop: Math.max(insets.top, 20) }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
         >
@@ -138,7 +145,7 @@ export default function DashboardScreen() {
                                     </View>
                                     <View>
                                         <Text style={styles.balanceItemLabel}>Receitas</Text>
-                                        <Text style={styles.balanceItemVal}>{fmt(summary?.income || 0)}</Text>
+                                        <Text style={styles.balanceItemVal}>{fmt(Math.abs(summary?.income || 0))}</Text>
                                     </View>
                                 </View>
                                 <View style={styles.balanceDivider} />
@@ -148,7 +155,7 @@ export default function DashboardScreen() {
                                     </View>
                                     <View>
                                         <Text style={styles.balanceItemLabel}>Despesas</Text>
-                                        <Text style={styles.balanceItemVal}>{fmt(summary?.expense || 0)}</Text>
+                                        <Text style={styles.balanceItemVal}>{fmt(Math.abs(summary?.expense || 0))}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -174,18 +181,18 @@ export default function DashboardScreen() {
                                 <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
                             </View>
                             <View style={styles.forecastMain}>
-                                <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
+                                <Text style={styles.forecastValue}>{fmt(Math.abs(summary?.forecast || 0))}</Text>
                                 <Text style={styles.forecastSub}>Saldo projetado se tudo for recebido/pago</Text>
                             </View>
                             <View style={styles.forecastDetails}>
                                 <View style={styles.forecastDetailItem}>
                                     <Text style={styles.forecastDetailLabel}>A RECEBER</Text>
-                                    <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(summary?.pending_income || 0)}</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(Math.abs(summary?.pending_income || 0))}</Text>
                                 </View>
                                 <View style={styles.forecastDetailDivider} />
                                 <View style={styles.forecastDetailItem}>
                                     <Text style={styles.forecastDetailLabel}>A PAGAR</Text>
-                                    <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(summary?.pending_expense || 0)}</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(Math.abs(summary?.pending_expense || 0))}</Text>
                                 </View>
                             </View>
                         </View>
@@ -275,7 +282,7 @@ export default function DashboardScreen() {
                                             </Text>
                                         </View>
                                         <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={styles.invoiceAmount}>{fmt(card.balance)}</Text>
+                                            <Text style={styles.invoiceAmount}>{fmt(Math.abs(card.balance))}</Text>
                                             <View style={[styles.statusBadge, { backgroundColor: isClosed ? colors.expense + '15' : colors.income + '15' }]}>
                                                 <Text style={[styles.statusText, { color: isClosed ? colors.expense : colors.income }]}>
                                                     Fatura {isClosed ? 'Fechada' : 'Aberta'}

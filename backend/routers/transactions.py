@@ -71,6 +71,7 @@ async def list_transactions(
 async def create_transaction(data: TransactionCreate, current_user=Depends(get_current_user)):
     doc = {
         **data.dict(),
+        "amount": abs(data.amount),
         "account_id": ObjectId(data.account_id),
         "category_id": ObjectId(data.category_id),
         "company_id": ObjectId(data.company_id) if data.company_id else None,
@@ -95,6 +96,8 @@ async def update_transaction(tx_id: str, data: TransactionUpdate, current_user=D
     if not old:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if "amount" in update_data:
+        update_data["amount"] = abs(update_data["amount"])
     if "category_id" in update_data:
         update_data["category_id"] = ObjectId(update_data["category_id"])
     # Revert old balance and apply new if amount changed

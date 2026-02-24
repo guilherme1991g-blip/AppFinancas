@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
-from database import transactions_collection, accounts_collection, categories_collection
+from database import transactions_collection, accounts_collection, categories_collection, bills_collection
 from routers.auth import get_current_user
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -38,7 +38,7 @@ async def get_summary(
     income_paid = 0
     income_pending = 0
     expense_paid = 0
-    expense_pending = 0
+    tx_expense_pending = 0
     income_count = 0
     expense_count = 0
 
@@ -52,22 +52,41 @@ async def get_summary(
         else:
             expense_count += r["count"]
             if p: expense_paid += r["total"]
-            else: expense_pending += r["total"]
+            else: tx_expense_pending += r["total"]
 
-    # Total balance across all accounts
+    # Calculate pending invoices to include in "A Pagar"
+    bill_expense_pending = 0
     accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
+    for acc in accounts:
+        if acc["type"] == "credit_card":
+            # Check for explicitly created bill
+            bill = await bills_collection.find_one({
+                "account_id": acc["_id"],
+                "month": m,
+                "year": y
+            })
+            if bill:
+                if bill["status"] != "paid":
+                    bill_expense_pending += bill["amount"]
+            else:
+                # Fallback to current balance if negative (virtual bill)
+                if acc["balance"] < 0:
+                    bill_expense_pending += abs(acc["balance"])
+
     total_balance = sum(a["balance"] for a in accounts)
 
     return {
         "month": m,
         "year": y,
         "income": income_paid + income_pending,
-        "expense": expense_paid + expense_pending,
+        "expense": expense_paid + tx_expense_pending + bill_expense_pending,
         "pending_income": income_pending,
-        "pending_expense": expense_pending,
-        "balance": (income_paid + income_pending) - (expense_paid + expense_pending),
+        "pending_expense": tx_expense_pending + bill_expense_pending,
+        "balance": (income_paid + income_pending) - (expense_paid + tx_expense_pending + bill_expense_pending),
         "total_balance": total_balance,
-        "forecast": total_balance + income_pending - expense_pending,
+        # Forecast only subtracts transaction-based pending expense 
+        # because credit card debt is already in total_balance
+        "forecast": total_balance + income_pending - tx_expense_pending,
         "income_count": income_count,
         "expense_count": expense_count
     }

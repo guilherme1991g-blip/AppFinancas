@@ -75,7 +75,7 @@ export default function BillDetailsScreen() {
                 <Text style={styles.txDesc}>{item.description}</Text>
                 <Text style={styles.txDate}>{new Date(item.date).toLocaleDateString('pt-BR')}</Text>
             </View>
-            <Text style={styles.txAmount}>{formatCurrency(item.amount)}</Text>
+            <Text style={styles.txAmount}>{formatCurrency(Math.abs(item.amount))}</Text>
         </View>
     );
 
@@ -100,7 +100,7 @@ export default function BillDetailsScreen() {
                     <Ionicons name="receipt" size={24} color={colors.primary} />
                 </View>
                 <Text style={styles.summaryLabel}>Total da Fatura</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(Math.abs(total))}</Text>
                 <TouchableOpacity
                     style={[styles.payBtn, paying && { opacity: 0.7 }]}
                     onPress={handlePay}

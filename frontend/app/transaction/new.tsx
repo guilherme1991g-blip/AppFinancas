@@ -72,7 +72,7 @@ export default function NewTransactionScreen() {
         }
         setLoading(true);
         try {
-            const val = parseFloat(amount.replace(',', '.'));
+            const val = Math.abs(parseFloat(amount.replace(',', '.')));
 
             if (isRecurring) {
                 await api.createRecurring({

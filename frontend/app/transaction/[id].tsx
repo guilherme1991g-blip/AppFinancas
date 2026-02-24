@@ -87,7 +87,7 @@ export default function TransactionDetailScreen() {
                         <Ionicons name={isIncome ? 'chevron-down' : 'chevron-up'} size={24} color={colors.white} />
                     </View>
                     <Text style={[styles.amount, { color: isIncome ? colors.income : colors.expense }]}>
-                        {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                        {isIncome ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
                     </Text>
                     <Text style={styles.description}>{tx.description}</Text>
                     <View style={styles.dateLabel}>

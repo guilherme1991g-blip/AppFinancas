@@ -91,7 +91,7 @@ export default function ReportsScreen() {
                             <View key={card.label} style={[styles.summaryCard, { borderLeftColor: card.color }]}>
                                 <Ionicons name={card.icon as any} size={20} color={card.color} />
                                 <Text style={styles.summaryLabel}>{card.label}</Text>
-                                <Text style={[styles.summaryValue, { color: card.color }]}>{formatCurrency(card.value)}</Text>
+                                <Text style={[styles.summaryValue, { color: card.color }]}>{formatCurrency(Math.abs(card.value))}</Text>
                             </View>
                         ))}
                     </View>
