@@ -30,7 +30,7 @@ export default function AccountsScreen() {
     async function fetchData() {
         try {
             const accs = await api.getAccounts() as any[];
-            setAccounts(accs.filter((a: any) => a.type !== 'credit_card'));
+            setAccounts(accs);
         }
         catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
@@ -50,7 +50,10 @@ export default function AccountsScreen() {
         ]);
     }
 
-    const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+    const totalBalance = accounts.reduce((s, a) => {
+        if (a.type === 'credit_card' && a.balance < 0) return s;
+        return s + a.balance;
+    }, 0);
     const styles = s(colors);
 
     return (

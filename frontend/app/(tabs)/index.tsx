@@ -28,8 +28,9 @@ export default function DashboardScreen() {
     const { user } = useAuth();
     const { mode, colors } = useTheme();
     const insets = useSafeAreaInsets();
-    const [month, setMonth] = useState(new Date().getMonth() + 1);
-    const [year, setYear] = useState(new Date().getFullYear());
+    const now = new Date();
+    const [month, setMonth] = useState(now.getMonth() + 1);
+    const [year, setYear] = useState(now.getFullYear());
     const [summary, setSummary] = useState<any>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [accounts, setAccounts] = useState<any[]>([]);

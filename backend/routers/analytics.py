@@ -84,7 +84,7 @@ async def get_summary(
                 if acc["balance"] < 0:
                     bill_expense_pending += abs(acc["balance"])
 
-    total_balance = sum(a["balance"] for a in accounts)
+    total_balance = sum(a["balance"] for a in accounts if a["type"] != "credit_card" or a["balance"] > 0)
 
     return {
         "month": m,
