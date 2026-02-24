@@ -47,5 +47,47 @@ async def update_company(company_id: str, data: CompanyUpdate, current_user=Depe
 
 @router.delete("/{company_id}")
 async def delete_company(company_id: str, current_user=Depends(get_current_user)):
-    await companies_collection.delete_one({"_id": ObjectId(company_id), "user_id": current_user["_id"]})
+    from database import accounts_collection, transactions_collection, budgets_collection
+    
+    obj_id = ObjectId(company_id)
+    user_id = current_user["_id"]
+    
+    # Check for linked accounts
+    has_accounts = await accounts_collection.find_one({
+        "user_id": user_id,
+        "company_id": obj_id
+    })
+    if has_accounts:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma empresa que possui contas vinculadas. Remova o vínculo das contas primeiro."
+        )
+        
+    # Check for linked transactions
+    has_transactions = await transactions_collection.find_one({
+        "user_id": user_id,
+        "company_id": obj_id
+    })
+    if has_transactions:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma empresa que possui transações vinculadas. Remova o vínculo das transações primeiro."
+        )
+        
+    # Check for linked goals (metas)
+    has_metas = await budgets_collection.find_one({
+        "user_id": user_id,
+        "company_id": obj_id
+    })
+    if has_metas:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma empresa que possui metas vinculadas. Remova o vínculo das metas primeiro."
+        )
+
+    result = await companies_collection.delete_one(
+        {"_id": obj_id, "user_id": user_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return {"message": "Empresa removida"}

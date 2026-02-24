@@ -56,8 +56,46 @@ async def update_account(account_id: str, data: AccountUpdate, current_user=Depe
 
 @router.delete("/{account_id}")
 async def delete_account(account_id: str, current_user=Depends(get_current_user)):
+    from database import transactions_collection, transfers_collection, recurring_collection
+    
+    obj_id = ObjectId(account_id)
+    user_id = current_user["_id"]
+    
+    # Check for linked transactions
+    has_transactions = await transactions_collection.find_one({
+        "user_id": user_id,
+        "$or": [{"account_id": obj_id}, {"to_account_id": obj_id}]
+    })
+    if has_transactions:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma conta que possui transações vinculadas. Exclua as transações primeiro."
+        )
+        
+    # Check for linked transfers
+    has_transfers = await transfers_collection.find_one({
+        "user_id": user_id,
+        "$or": [{"from_account_id": obj_id}, {"to_account_id": obj_id}]
+    })
+    if has_transfers:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma conta que possui transferências vinculadas. Exclua as transferências primeiro."
+        )
+
+    # Check for linked recurring transactions
+    has_recurring = await recurring_collection.find_one({
+        "user_id": user_id,
+        "account_id": obj_id
+    })
+    if has_recurring:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma conta que possui lançamentos recorrentes vinculados. Remova os lançamentos recorrentes primeiro."
+        )
+
     result = await accounts_collection.delete_one(
-        {"_id": ObjectId(account_id), "user_id": current_user["_id"]}
+        {"_id": obj_id, "user_id": user_id}
     )
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Conta não encontrada")

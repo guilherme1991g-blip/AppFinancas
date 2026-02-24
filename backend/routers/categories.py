@@ -77,8 +77,46 @@ async def update_category(category_id: str, data: CategoryUpdate, current_user=D
 
 @router.delete("/{category_id}")
 async def delete_category(category_id: str, current_user=Depends(get_current_user)):
+    from database import transactions_collection, categories_collection, recurring_collection
+    
+    obj_id = ObjectId(category_id)
+    user_id = current_user["_id"]
+    
+    # Check for linked transactions
+    has_transactions = await transactions_collection.find_one({
+        "user_id": user_id,
+        "category_id": obj_id
+    })
+    if has_transactions:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma categoria que possui transações vinculadas. Mova as transações para outra categoria primeiro."
+        )
+        
+    # Check for linked recurring transactions
+    has_recurring = await recurring_collection.find_one({
+        "user_id": user_id,
+        "category_id": obj_id
+    })
+    if has_recurring:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma categoria que possui lançamentos recorrentes vinculados. Remova os lançamentos recorrentes primeiro."
+        )
+
+    # Check for child categories
+    has_children = await categories_collection.find_one({
+        "user_id": user_id,
+        "parent_id": obj_id
+    })
+    if has_children:
+        raise HTTPException(
+            status_code=400, 
+            detail="Não é possível excluir uma categoria que possui subcategorias. Exclua as subcategorias primeiro."
+        )
+
     result = await categories_collection.delete_one(
-        {"_id": ObjectId(category_id), "user_id": current_user["_id"]}
+        {"_id": obj_id, "user_id": user_id}
     )
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Categoria não encontrada")
