@@ -23,7 +23,7 @@ const BRANDS = [
 
 const CARD_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#3B82F6', '#64748B'];
 
-function CardVisual({ card, colors }: { card: any; colors: any }) {
+function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDelete: () => void }) {
     const brand = BRANDS.find(b => b.key === card.card_brand) || BRANDS[5];
     const usedPct = card.credit_limit > 0 ? Math.min(Math.abs(card.balance) / card.credit_limit, 1) : 0;
 
@@ -33,11 +33,22 @@ function CardVisual({ card, colors }: { card: any; colors: any }) {
             onPress={() => router.push({ pathname: '/cards/bills', params: { id: card.id, name: card.name } })}
         >
             <View style={cv.top}>
-                <View>
+                <View style={{ flex: 1 }}>
                     <Text style={cv.cardName}>{card.name}</Text>
                     <Text style={cv.brandLabel}>{brand.label}</Text>
                 </View>
-                <Ionicons name="card" size={24} color="rgba(255,255,255,0.8)" />
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                    <TouchableOpacity
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onDelete();
+                        }}
+                        style={cv.deleteIcon}
+                    >
+                        <Ionicons name="trash-outline" size={20} color="rgba(255,255,255,0.8)" />
+                    </TouchableOpacity>
+                    <Ionicons name="card" size={24} color="rgba(255,255,255,0.8)" />
+                </View>
             </View>
 
             <View style={cv.middle}>
@@ -76,6 +87,7 @@ const cv = StyleSheet.create({
     top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
     cardName: { fontSize: 18, fontWeight: '800', color: '#FFF' },
     brandLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+    deleteIcon: { padding: 4, marginRight: -4 },
     middle: { flex: 1, justifyContent: 'center', marginBottom: 16 },
     digits: { fontSize: 19, color: '#FFF', letterSpacing: 3, fontWeight: '700', marginBottom: 4 },
     holder: { fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '600' },
@@ -151,6 +163,22 @@ export default function CardsScreen() {
         setColor(CARD_COLORS[0]);
     }
 
+    async function handleDelete(id: string) {
+        Alert.alert('Excluir cartão', 'Deseja excluir este cartão de crédito?', [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Excluir', style: 'destructive', onPress: async () => {
+                    try {
+                        await api.deleteAccount(id);
+                        fetchCards();
+                    } catch (e: any) {
+                        Alert.alert('Erro', e.message);
+                    }
+                }
+            },
+        ]);
+    }
+
     return (
         <View style={styles.root}>
             <ScrollView
@@ -182,7 +210,7 @@ export default function CardsScreen() {
                 ) : (
                     <View style={styles.section}>
                         {cards.map(card => (
-                            <CardVisual key={card.id} card={card} colors={colors} />
+                            <CardVisual key={card.id} card={card} colors={colors} onDelete={() => handleDelete(card.id)} />
                         ))}
                     </View>
                 )}
