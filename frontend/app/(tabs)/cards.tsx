@@ -117,19 +117,9 @@ export default function CardsScreen() {
     const [modal, setModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Form state
-    const [name, setName] = useState('');
-    const [bank, setBank] = useState('');
-    const [holder, setHolder] = useState('');
-    const [lastDigits, setLastDigits] = useState('');
-    const [brand, setBrand] = useState('visa');
-    const [limit, setLimit] = useState('');
-    const [closingDay, setClosingDay] = useState('');
-    const [dueDay, setDueDay] = useState('');
-    const [color, setColor] = useState(CARD_COLORS[0]);
+    const [loading, setLoading] = useState(false);
 
     const styles = s(colors);
-    const modalStyles = m(colors);
 
     async function fetchCards() {
         try {
@@ -141,36 +131,6 @@ export default function CardsScreen() {
 
     useFocusEffect(useCallback(() => { fetchCards(); }, []));
 
-    async function createCard() {
-        if (!name.trim()) { Alert.alert('Atenção', 'Digite o nome do cartão'); return; }
-        setLoading(true);
-        try {
-            await api.createAccount({
-                name: name.trim(),
-                type: 'credit_card',
-                bank: bank.trim() || undefined,
-                balance: 0,
-                color,
-                icon: 'card',
-                credit_limit: limit ? parseFloat(limit.replace(',', '.')) : undefined,
-                closing_day: closingDay ? parseInt(closingDay) : undefined,
-                due_day: dueDay ? parseInt(dueDay) : undefined,
-                last_digits: lastDigits.trim() || undefined,
-                card_brand: brand,
-                card_holder: holder.trim() || undefined,
-            });
-            setModal(false);
-            resetForm();
-            fetchCards();
-        } catch (e: any) { Alert.alert('Erro', e.message); }
-        finally { setLoading(false); }
-    }
-
-    function resetForm() {
-        setName(''); setBank(''); setHolder(''); setLastDigits('');
-        setBrand('visa'); setLimit(''); setClosingDay(''); setDueDay('');
-        setColor(CARD_COLORS[0]);
-    }
 
     async function handleDelete(id: string) {
         Alert.alert('Excluir cartão', 'Deseja excluir este cartão de crédito?', [
@@ -199,7 +159,7 @@ export default function CardsScreen() {
                         <Text style={styles.title}>Cartões</Text>
                         <Text style={styles.sub}>{cards.length} cartão(ões) cadastrado(s)</Text>
                     </View>
-                    <TouchableOpacity style={styles.addBtn} onPress={() => setModal(true)}>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/account/new?type=credit_card' as any)}>
                         <Ionicons name="add" size={24} color={colors.white} />
                     </TouchableOpacity>
                 </View>
@@ -211,7 +171,7 @@ export default function CardsScreen() {
                         </View>
                         <Text style={styles.emptyTitle}>Nenhum cartão</Text>
                         <Text style={styles.emptySubtitle}>Adicione seu primeiro cartão de crédito para gerenciar suas faturas.</Text>
-                        <TouchableOpacity style={styles.emptyBtn} onPress={() => setModal(true)}>
+                        <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/account/new?type=credit_card' as any)}>
                             <Ionicons name="add-circle" size={18} color={colors.white} />
                             <Text style={styles.emptyBtnTxt}>Adicionar cartão</Text>
                         </TouchableOpacity>
@@ -259,88 +219,6 @@ export default function CardsScreen() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* Add Card Modal */}
-            <Modal visible={modal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModal(false)}>
-                <ScrollView style={modalStyles.container} showsVerticalScrollIndicator={false}>
-                    <View style={modalStyles.handle} />
-                    <View style={modalStyles.modalHeader}>
-                        <Text style={modalStyles.title}>Novo Cartão</Text>
-                        <TouchableOpacity onPress={() => { setModal(false); resetForm(); }}>
-                            <Ionicons name="close-circle" size={32} color={colors.textMuted} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Preview */}
-                    <View style={[modalStyles.preview, { backgroundColor: color }]}>
-                        <View style={modalStyles.previewTop}>
-                            <Text style={modalStyles.previewName}>{name || 'Nome do Cartão'}</Text>
-                            <Text style={modalStyles.previewBrand}>{BRANDS.find(b => b.key === brand)?.label || 'Bandeira'}</Text>
-                        </View>
-                        <Text style={modalStyles.previewDigits}>•••• •••• •••• {lastDigits || '****'}</Text>
-                        <View style={modalStyles.previewBottom}>
-                            <Text style={modalStyles.previewHolder}>{holder || 'NOME DO TITULAR'}</Text>
-                            <Ionicons name="card" size={20} color="rgba(255,255,255,0.6)" />
-                        </View>
-                    </View>
-
-                    <Text style={modalStyles.label}>Nome do cartão *</Text>
-                    <TextInput style={modalStyles.input} value={name} onChangeText={setName} placeholder="Ex: Nubank, Inter Gold..." placeholderTextColor={colors.textMuted} />
-
-                    <View style={modalStyles.row}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={modalStyles.label}>Banco / Emissor</Text>
-                            <TextInput style={modalStyles.input} value={bank} onChangeText={setBank} placeholder="Ex: Nubank" placeholderTextColor={colors.textMuted} />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={modalStyles.label}>Últimos 4 dígitos</Text>
-                            <TextInput style={modalStyles.input} value={lastDigits} onChangeText={(v) => setLastDigits(v.replace(/\D/g, '').slice(0, 4))} placeholder="1234" placeholderTextColor={colors.textMuted} keyboardType="numeric" maxLength={4} />
-                        </View>
-                    </View>
-
-                    <Text style={modalStyles.label}>Nome no cartão</Text>
-                    <TextInput style={modalStyles.input} value={holder} onChangeText={setHolder} placeholder="NOME SOBRENOME" placeholderTextColor={colors.textMuted} autoCapitalize="characters" />
-
-                    <Text style={modalStyles.label}>Bandeira</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.brandRow} contentContainerStyle={{ paddingBottom: 8 }}>
-                        {BRANDS.map(b => (
-                            <TouchableOpacity key={b.key} style={[modalStyles.brandBtn, brand === b.key && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setBrand(b.key)}>
-                                <Text style={[modalStyles.brandTxt, brand === b.key && { color: colors.white }]}>{b.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    <View style={modalStyles.row}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={modalStyles.label}>Limite de Crédito (R$)</Text>
-                            <TextInput style={modalStyles.input} value={limit} onChangeText={setLimit} placeholder="5000,00" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" />
-                        </View>
-                    </View>
-
-                    <View style={modalStyles.row}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={modalStyles.label}>Dia fechamento</Text>
-                            <TextInput style={modalStyles.input} value={closingDay} onChangeText={(v) => setClosingDay(v.replace(/\D/g, '').slice(0, 2))} placeholder="25" placeholderTextColor={colors.textMuted} keyboardType="numeric" maxLength={2} />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={modalStyles.label}>Dia vencimento</Text>
-                            <TextInput style={modalStyles.input} value={dueDay} onChangeText={(v) => setDueDay(v.replace(/\D/g, '').slice(0, 2))} placeholder="05" placeholderTextColor={colors.textMuted} keyboardType="numeric" maxLength={2} />
-                        </View>
-                    </View>
-
-                    <Text style={modalStyles.label}>Cor do cartão</Text>
-                    <View style={modalStyles.colorRow}>
-                        {CARD_COLORS.map(c => (
-                            <TouchableOpacity key={c} onPress={() => setColor(c)} style={[modalStyles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]} />
-                        ))}
-                    </View>
-
-                    <TouchableOpacity style={modalStyles.saveBtn} onPress={createCard} disabled={loading}>
-                        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={modalStyles.saveTxt}>Adicionar Cartão</Text>}
-                    </TouchableOpacity>
-
-                    <View style={{ height: 40 }} />
-                </ScrollView>
-            </Modal>
         </View>
     );
 }

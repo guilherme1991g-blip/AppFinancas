@@ -146,10 +146,12 @@ export default function NewAccountScreen() {
                                 </View>
                             )}
 
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.label}>Banco / Instituição</Text>
-                                <TextInput style={styles.input} value={bank} onChangeText={setBank} placeholder="Ex: Nubank" placeholderTextColor={colors.textMuted} />
-                            </View>
+                            {type !== 'credit_card' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Banco / Instituição</Text>
+                                    <TextInput style={styles.input} value={bank} onChangeText={setBank} placeholder="Ex: Nubank" placeholderTextColor={colors.textMuted} />
+                                </View>
+                            )}
 
                             <View style={styles.fieldGroup}>
                                 <Text style={styles.label}>{type === 'credit_card' ? 'Saldo Atual (Opcional)' : 'Saldo Inicial'}</Text>
