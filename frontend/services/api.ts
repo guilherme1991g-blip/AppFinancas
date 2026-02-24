@@ -109,4 +109,10 @@ export const api = {
         ) : '';
         return request(`/analytics/dre${query}`);
     },
+
+    // Bills (Faturas)
+    getBills: (accountId: string) => request(`/bills/${accountId}`),
+    getBillTransactions: (billId: string) => request(`/bills/${billId}/transactions`),
+    payBill: (billId: string, paymentAccountId: string) =>
+        request(`/bills/${billId}/pay?payment_account_id=${paymentAccountId}`, { method: 'POST' }),
 };
