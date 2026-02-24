@@ -21,7 +21,15 @@ async def get_summary(
     start = datetime(y, m, 1)
     end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
 
-    query = {"user_id": current_user["_id"], "date": {"$gte": start, "$lt": end}}
+    # Identify credit card accounts to exclude their individual transactions
+    accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
+    cc_account_ids = [acc["_id"] for acc in accounts if acc["type"] == "credit_card"]
+    
+    query = {
+        "user_id": current_user["_id"], 
+        "date": {"$gte": start, "$lt": end},
+        "account_id": {"$nin": cc_account_ids}
+    }
     if company_id:
         query["company_id"] = ObjectId(company_id)
 
@@ -35,28 +43,10 @@ async def get_summary(
     ]
     result = await transactions_collection.aggregate(pipeline).to_list(20)
     
-    income_paid = 0
-    income_pending = 0
-    expense_paid = 0
-    tx_expense_pending = 0
-    income_count = 0
-    expense_count = 0
-
-    for r in result:
-        t = r["_id"]["type"]
-        p = r["_id"]["is_paid"]
-        if t == "income":
-            income_count += r["count"]
-            if p: income_paid += r["total"]
-            else: income_pending += r["total"]
-        else:
-            expense_count += r["count"]
-            if p: expense_paid += r["total"]
-            else: tx_expense_pending += r["total"]
-
-    # Calculate pending invoices to include in "A Pagar"
+    # Calculate bill totals
+    bill_expense_paid = 0
     bill_expense_pending = 0
-    accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
+    
     for acc in accounts:
         if acc["type"] == "credit_card":
             # Check for explicitly created bill
@@ -66,7 +56,9 @@ async def get_summary(
                 "year": y
             })
             if bill:
-                if bill["status"] != "paid":
+                if bill["status"] == "paid":
+                    bill_expense_paid += bill["amount"]
+                else:
                     bill_expense_pending += bill["amount"]
             else:
                 # Fallback to current balance if negative (virtual bill)
@@ -79,13 +71,13 @@ async def get_summary(
         "month": m,
         "year": y,
         "income": income_paid + income_pending,
-        "expense": expense_paid + tx_expense_pending + bill_expense_pending,
+        "expense": expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending,
         "pending_income": income_pending,
         "pending_expense": tx_expense_pending + bill_expense_pending,
-        "balance": (income_paid + income_pending) - (expense_paid + tx_expense_pending + bill_expense_pending),
+        "balance": (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending),
         "total_balance": total_balance,
-        # Forecast only subtracts transaction-based pending expense 
-        # because credit card debt is already in total_balance
+        # Forecast subtracts pending non-CC transactions. 
+        # CC debt is already in total_balance.
         "forecast": total_balance + income_pending - tx_expense_pending,
         "income_count": income_count,
         "expense_count": expense_count
@@ -106,7 +98,16 @@ async def get_by_category(
     start = datetime(y, m, 1)
     end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
 
-    query = {"user_id": current_user["_id"], "type": type, "date": {"$gte": start, "$lt": end}}
+    # Identify credit card accounts to exclude
+    accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
+    cc_account_ids = [acc["_id"] for acc in accounts if acc["type"] == "credit_card"]
+
+    query = {
+        "user_id": current_user["_id"], 
+        "type": type, 
+        "date": {"$gte": start, "$lt": end},
+        "account_id": {"$nin": cc_account_ids}
+    }
     if company_id:
         query["company_id"] = ObjectId(company_id)
 

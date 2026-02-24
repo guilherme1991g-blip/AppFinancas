@@ -9,7 +9,9 @@ import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
 function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const absValue = Math.abs(v);
+    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
+    return v < 0 ? `-${formatted}` : formatted;
 }
 
 export default function BillDetailsScreen() {
@@ -100,7 +102,7 @@ export default function BillDetailsScreen() {
                     <Ionicons name="receipt" size={24} color={colors.primary} />
                 </View>
                 <Text style={styles.summaryLabel}>Total da Fatura</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(Math.abs(total))}</Text>
+                <Text style={[styles.summaryValue, { color: total < 0 ? colors.income : colors.text }]}>{formatCurrency(total)}</Text>
                 <TouchableOpacity
                     style={[styles.payBtn, paying && { opacity: 0.7 }]}
                     onPress={handlePay}
@@ -137,7 +139,7 @@ export default function BillDetailsScreen() {
 
 const s = (colors: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    headerSpacer: { height: 110 },
+    headerSpacer: { height: 60 },
     backBtn: { paddingRight: 20 },
     summaryCard: {
         margin: 20, backgroundColor: colors.surface, borderRadius: 32,

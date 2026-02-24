@@ -181,18 +181,18 @@ export default function DashboardScreen() {
                                 <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
                             </View>
                             <View style={styles.forecastMain}>
-                                <Text style={styles.forecastValue}>{fmt(Math.abs(summary?.forecast || 0))}</Text>
+                                <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
                                 <Text style={styles.forecastSub}>Saldo projetado se tudo for recebido/pago</Text>
                             </View>
                             <View style={styles.forecastDetails}>
                                 <View style={styles.forecastDetailItem}>
                                     <Text style={styles.forecastDetailLabel}>A RECEBER</Text>
-                                    <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(Math.abs(summary?.pending_income || 0))}</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.income }]}>{fmt(Math.abs(summary?.pending_income || 0))}</Text>
                                 </View>
                                 <View style={styles.forecastDetailDivider} />
                                 <View style={styles.forecastDetailItem}>
                                     <Text style={styles.forecastDetailLabel}>A PAGAR</Text>
-                                    <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(Math.abs(summary?.pending_expense || 0))}</Text>
+                                    <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>{fmt(Math.abs(summary?.pending_expense || 0))}</Text>
                                 </View>
                             </View>
                         </View>

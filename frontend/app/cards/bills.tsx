@@ -69,8 +69,8 @@ export default function CardBillsScreen() {
                 </View>
             </View>
             <View style={styles.billAmountWrap}>
-                <Text style={[styles.billAmount, item.status === 'overdue' && { color: colors.expense }]}>
-                    {formatCurrency(Math.abs(item.amount))}
+                <Text style={[styles.billAmount, item.amount < 0 ? { color: colors.income } : (item.status === 'overdue' && { color: colors.expense })]}>
+                    {formatCurrency(item.amount)}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>
