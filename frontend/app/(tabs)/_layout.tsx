@@ -77,7 +77,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="more"
                 options={{
-                    title: 'Mais',
+                    title: 'Ajustes',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
                             <Ionicons name={focused ? 'menu' : 'menu-outline'} size={22} color={color} />
@@ -86,6 +86,7 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen name="cards" options={{ href: null }} />
+            <Tabs.Screen name="transactions" options={{ href: null }} />
         </Tabs>
     );
 }

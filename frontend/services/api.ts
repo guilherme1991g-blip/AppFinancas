@@ -17,12 +17,29 @@ async function request<T>(
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({ detail: 'Erro na requisição' }));
-        throw new Error(err.detail || 'Erro desconhecido');
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    try {
+        const response = await fetch(`${BASE_URL}${path}`, {
+            ...options,
+            headers,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Erro na requisição' }));
+            throw new Error(err.detail || 'Erro desconhecido');
+        }
+        return response.json();
+    } catch (error: any) {
+        clearTimeout(id);
+        if (error.name === 'AbortError') {
+            throw new Error('A requisição demorou demais. Verifique sua conexão.');
+        }
+        throw error;
     }
-    return response.json();
 }
 
 export const api = {

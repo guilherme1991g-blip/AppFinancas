@@ -25,9 +25,10 @@ export default function NotificationSettingsScreen() {
         async function load() {
             try {
                 const data = await api.getPreferences();
-                setPrefs(data);
+                if (data) setPrefs(data as any);
             } catch (e) {
-                console.error(e);
+                console.error('Error loading preferences:', e);
+                // On error, we keep default prefs but stop loading
             } finally {
                 setLoading(false);
             }
@@ -90,19 +91,6 @@ export default function NotificationSettingsScreen() {
 
     return (
         <View style={styles.root}>
-            <Stack.Screen options={{
-                title: 'Notificações',
-                headerShown: true,
-                headerTransparent: true,
-                headerTintColor: colors.text,
-                headerTitleStyle: { fontWeight: '900' },
-                headerLeft: () => (
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                        <Ionicons name="chevron-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                )
-            }} />
-
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <View style={styles.headerSpacer} />
 

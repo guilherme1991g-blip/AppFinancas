@@ -184,16 +184,51 @@ export default function DashboardScreen() {
 
             {/* Credit Cards Highlight Card */}
             <View style={styles.section}>
-                <TouchableOpacity style={styles.cardsPrimaryCard} onPress={() => router.push('/(tabs)/cards' as any)}>
-                    <View style={styles.cardsIconCircle}>
-                        <Ionicons name="card" size={28} color={colors.white} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.cardsCardTitle}>Meus Cartões</Text>
-                        <Text style={styles.cardsCardSub}>Gerencie limites, faturas e controle seus gastos no crédito.</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </TouchableOpacity>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Meus Cartões</Text>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/cards' as any)}>
+                        <Text style={styles.seeAll}>Gerenciar</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {accounts.filter(acc => acc.type === 'credit_card').length === 0 ? (
+                    <TouchableOpacity style={styles.cardsPrimaryCard} onPress={() => router.push('/(tabs)/cards' as any)}>
+                        <View style={styles.cardsIconCircle}>
+                            <Ionicons name="card" size={28} color={colors.white} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.cardsCardTitle}>Nenhum cartão</Text>
+                            <Text style={styles.cardsCardSub}>Toque para cadastrar seu primeiro cartão de crédito.</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+                ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                        {accounts.filter(acc => acc.type === 'credit_card').map(card => (
+                            <TouchableOpacity
+                                key={card.id}
+                                style={[styles.miniCreditCard, { backgroundColor: card.color || colors.primary }]}
+                                onPress={() => router.push('/(tabs)/cards' as any)}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.cardChip} />
+                                    <Text style={styles.cardBrand}>CARD</Text>
+                                </View>
+                                <View>
+                                    <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
+                                    <Text style={styles.cardBalance}>{fmt(card.balance)}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={styles.addCardMini}
+                            onPress={() => router.push('/account/new?type=credit_card' as any)}
+                        >
+                            <Ionicons name="add" size={24} color={colors.textMuted} />
+                            <Text style={styles.addCardTxt}>Novo Cartão</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                )}
             </View>
 
             {/* Charts */}
@@ -342,6 +377,23 @@ const s = (colors: any) => StyleSheet.create({
     cardsIconCircle: { width: 56, height: 56, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
     cardsCardTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
     cardsCardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 18, fontWeight: '500' },
+
+    miniCreditCard: {
+        width: 180, height: 110, borderRadius: 24, padding: 18,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
+        justifyContent: 'space-between'
+    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    cardBrand: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+    cardChip: { width: 32, height: 24, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 8 },
+    cardName: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+    cardBalance: { color: colors.white, fontSize: 18, fontWeight: '900', marginTop: 2 },
+    addCardMini: {
+        width: 120, height: 110, borderRadius: 24, backgroundColor: colors.surface,
+        borderWidth: 2, borderColor: colors.border, borderStyle: 'dotted',
+        alignItems: 'center', justifyContent: 'center', gap: 8
+    },
+    addCardTxt: { fontSize: 11, color: colors.textMuted, fontWeight: '700' },
 
     chartCard: { marginHorizontal: 20, backgroundColor: colors.surface, borderRadius: 28, padding: 24, marginBottom: 28, borderWidth: 1, borderColor: colors.border },
 
