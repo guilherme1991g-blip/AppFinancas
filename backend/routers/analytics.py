@@ -27,14 +27,32 @@ async def get_summary(
 
     pipeline = [
         {"$match": query},
-        {"$group": {"_id": "$type", "total": {"$sum": "$amount"}, "count": {"$sum": 1}}}
+        {"$group": {
+            "_id": {"type": "$type", "is_paid": {"$ifNull": ["$is_paid", True]}},
+            "total": {"$sum": "$amount"},
+            "count": {"$sum": 1}
+        }}
     ]
-    result = await transactions_collection.aggregate(pipeline).to_list(10)
-    totals = {r["_id"]: {"total": r["total"], "count": r["count"]} for r in result}
+    result = await transactions_collection.aggregate(pipeline).to_list(20)
+    
+    income_paid = 0
+    income_pending = 0
+    expense_paid = 0
+    expense_pending = 0
+    income_count = 0
+    expense_count = 0
 
-    income = totals.get("income", {"total": 0, "count": 0})
-    expense = totals.get("expense", {"total": 0, "count": 0})
-    balance = income["total"] - expense["total"]
+    for r in result:
+        t = r["_id"]["type"]
+        p = r["_id"]["is_paid"]
+        if t == "income":
+            income_count += r["count"]
+            if p: income_paid += r["total"]
+            else: income_pending += r["total"]
+        else:
+            expense_count += r["count"]
+            if p: expense_paid += r["total"]
+            else: expense_pending += r["total"]
 
     # Total balance across all accounts
     accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
@@ -43,12 +61,15 @@ async def get_summary(
     return {
         "month": m,
         "year": y,
-        "income": income["total"],
-        "expense": expense["total"],
-        "balance": balance,
+        "income": income_paid + income_pending,
+        "expense": expense_paid + expense_pending,
+        "pending_income": income_pending,
+        "pending_expense": expense_pending,
+        "balance": (income_paid + income_pending) - (expense_paid + expense_pending),
         "total_balance": total_balance,
-        "income_count": income["count"],
-        "expense_count": expense["count"]
+        "forecast": total_balance + income_pending - expense_pending,
+        "income_count": income_count,
+        "expense_count": expense_count
     }
 
 

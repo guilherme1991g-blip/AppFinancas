@@ -146,6 +146,32 @@ export default function DashboardScreen() {
                 </View>
             </View>
 
+            {/* Monthly Forecast Card */}
+            <View style={styles.forecastCard}>
+                <View style={styles.forecastTop}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ionicons name="trending-up" size={18} color={colors.primary} />
+                        <Text style={styles.forecastTitle}>Previsão do Mês</Text>
+                    </View>
+                    <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
+                </View>
+                <View style={styles.forecastMain}>
+                    <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
+                    <Text style={styles.forecastSub}>Saldo projetado se tudo for pago/recebido</Text>
+                </View>
+                <View style={styles.forecastDetails}>
+                    <View style={styles.forecastDetailItem}>
+                        <Text style={styles.forecastDetailLabel}>A RECEBER</Text>
+                        <Text style={[styles.forecastDetailVal, { color: colors.income }]}>+{fmt(summary?.pending_income || 0)}</Text>
+                    </View>
+                    <View style={styles.forecastDetailDivider} />
+                    <View style={styles.forecastDetailItem}>
+                        <Text style={styles.forecastDetailLabel}>A PAGAR</Text>
+                        <Text style={[styles.forecastDetailVal, { color: colors.expense }]}>-{fmt(summary?.pending_expense || 0)}</Text>
+                    </View>
+                </View>
+            </View>
+
             {/* Quick Actions */}
             <View style={styles.quickRow}>
                 {[
@@ -325,6 +351,23 @@ const s = (colors: any) => StyleSheet.create({
     savingsLabel: { fontSize: 11, color: colors.white + 'D0', fontWeight: '800' },
     savingsBar: { height: 8, backgroundColor: colors.white + '20', borderRadius: 4, overflow: 'hidden' },
     savingsFill: { height: '100%', backgroundColor: colors.white, borderRadius: 4 },
+
+    forecastCard: {
+        marginHorizontal: 20, backgroundColor: colors.surface, borderRadius: 28,
+        padding: 20, marginBottom: 24, borderWidth: 1, borderColor: colors.border,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2
+    },
+    forecastTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    forecastTitle: { fontSize: 13, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase' },
+    forecastDate: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+    forecastMain: { alignItems: 'center', marginBottom: 20 },
+    forecastValue: { fontSize: 28, fontWeight: '900', color: colors.text },
+    forecastSub: { fontSize: 11, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
+    forecastDetails: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 20, padding: 12 },
+    forecastDetailItem: { flex: 1, alignItems: 'center' },
+    forecastDetailDivider: { width: 1, height: '60%', backgroundColor: colors.border, alignSelf: 'center' },
+    forecastDetailLabel: { fontSize: 9, fontWeight: '800', color: colors.textMuted, marginBottom: 4 },
+    forecastDetailVal: { fontSize: 14, fontWeight: '900' },
 
     quickRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 28 },
     quickItem: { flex: 1, alignItems: 'center', gap: 10 },
