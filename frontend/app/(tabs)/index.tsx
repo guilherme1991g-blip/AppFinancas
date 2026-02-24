@@ -289,6 +289,50 @@ export default function DashboardScreen() {
                 })()}
             </View>
 
+            {/* Overdue Expenses (Conditional) */}
+            {overdueTransactions.length > 0 && (
+                <View style={[styles.section, { marginBottom: 12 }]}>
+                    <View style={styles.sectionHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Ionicons name="alert-circle" size={20} color={colors.expense} />
+                            <Text style={[styles.sectionTitle, { color: colors.expense }]}>Despesas Vencidas</Text>
+                        </View>
+                        <Text style={[styles.overdueCount, { color: colors.expense }]}>{overdueTransactions.length}</Text>
+                    </View>
+                    {overdueTransactions.map(tx => {
+                        const cat = getCat(tx.category_id);
+                        return (
+                            <TouchableOpacity key={tx.id} style={styles.overdueRow} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
+                                <View style={[styles.txIcon, { backgroundColor: colors.expense + '15' }]}>
+                                    <Ionicons name={(cat?.icon || 'alert-circle-outline') as any} size={18} color={colors.expense} />
+                                </View>
+                                <View style={styles.txInfo}>
+                                    <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                                    <Text style={[styles.txDate, { color: colors.expense }]}>Venceu em {new Date(tx.date).toLocaleDateString('pt-BR')}</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                                    <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
+                                    <TouchableOpacity
+                                        style={styles.payNowBtn}
+                                        onPress={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                                await api.payTransaction(tx.id);
+                                                fetchData();
+                                            } catch (err: any) {
+                                                alert(err.message);
+                                            }
+                                        }}
+                                    >
+                                        <Text style={styles.payNowTxt}>Pagar</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            )}
+
 
             {/* Spending by Category Chart */}
             <View style={styles.section}>
@@ -325,53 +369,6 @@ export default function DashboardScreen() {
                         );
                     })}
                 </View>
-            </View>
-
-            {/* Overdue Expenses */}
-            <View style={[styles.section, { marginBottom: 12 }]}>
-                <View style={styles.sectionHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Ionicons name="alert-circle" size={20} color={colors.expense} />
-                        <Text style={[styles.sectionTitle, { color: colors.expense }]}>Despesas Vencidas</Text>
-                    </View>
-                    <Text style={[styles.overdueCount, { color: colors.expense }]}>{overdueTransactions.length}</Text>
-                </View>
-                {overdueTransactions.length === 0 ? (
-                    <View style={styles.overdueEmpty}>
-                        <Ionicons name="checkmark-done-circle-outline" size={24} color={colors.income} />
-                        <Text style={styles.overdueEmptyTxt}>Tudo em dia! Nenhuma despesa vencida.</Text>
-                    </View>
-                ) : overdueTransactions.map(tx => {
-                    const cat = getCat(tx.category_id);
-                    return (
-                        <TouchableOpacity key={tx.id} style={styles.overdueRow} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
-                            <View style={[styles.txIcon, { backgroundColor: colors.expense + '15' }]}>
-                                <Ionicons name={(cat?.icon || 'alert-circle-outline') as any} size={18} color={colors.expense} />
-                            </View>
-                            <View style={styles.txInfo}>
-                                <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
-                                <Text style={[styles.txDate, { color: colors.expense }]}>Venceu em {new Date(tx.date).toLocaleDateString('pt-BR')}</Text>
-                            </View>
-                            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                                <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
-                                <TouchableOpacity
-                                    style={styles.payNowBtn}
-                                    onPress={async (e) => {
-                                        e.stopPropagation();
-                                        try {
-                                            await api.payTransaction(tx.id);
-                                            fetchData();
-                                        } catch (err: any) {
-                                            alert(err.message);
-                                        }
-                                    }}
-                                >
-                                    <Text style={styles.payNowTxt}>Pagar</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
             </View>
 
             {/* Budgets overview */}
