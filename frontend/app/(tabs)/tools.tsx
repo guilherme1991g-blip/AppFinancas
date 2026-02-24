@@ -41,7 +41,7 @@ export default function ToolsScreen() {
             sub: 'Planeje e acompanhe seus objetivos financeiros de longo prazo.',
             icon: 'rocket',
             color: '#EC4899',
-            route: '/tools/sonhos'
+            route: '/tools/objetivos'
         },
         {
             id: 'agenda',

@@ -34,7 +34,7 @@ async function request<T>(
         });
         clearTimeout(id);
 
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
             if (onUnauthorized) onUnauthorized();
             const err = await response.json().catch(() => ({ detail: 'Sessão expirada' }));
             throw new Error(err.detail || 'Não autenticado');

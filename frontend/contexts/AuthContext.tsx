@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '@/services/api';
+import { api, setUnauthorizedListener } from '@/services/api';
 
 interface User {
     id: string;
@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const { setUnauthorizedListener } = require('@/services/api');
         setUnauthorizedListener(() => {
             logout();
         });
