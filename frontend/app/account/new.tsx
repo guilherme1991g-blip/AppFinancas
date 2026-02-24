@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -26,11 +26,20 @@ const CUSTOM_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#
 
 export default function NewAccountScreen() {
     const { colors } = useTheme();
+    const { type: typeParam } = useLocalSearchParams();
+
     const [name, setName] = useState('');
     const [bank, setBank] = useState('');
     const [balance, setBalance] = useState('0');
     const [type, setType] = useState('checking');
     const [color, setColor] = useState(CUSTOM_COLORS[0]);
+
+    // Pre-select type from URL
+    React.useEffect(() => {
+        if (typeParam) {
+            setType(typeParam as string);
+        }
+    }, [typeParam]);
 
     // Credit card specific state
     const [limit, setLimit] = useState('');
