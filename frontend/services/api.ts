@@ -66,7 +66,7 @@ export const api = {
     getAccounts: () => request('/accounts'),
     createAccount: (data: any) => request('/accounts', { method: 'POST', body: JSON.stringify(data) }),
     updateAccount: (id: string, data: any) => request(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deleteBankAccount: (id: string) => request(`/accounts/${id}`, { method: 'DELETE' }),
+    deleteAccount: (id: string) => request(`/accounts/${id}`, { method: 'DELETE' }),
 
     // Categories
     getCategories: () => request('/categories'),
