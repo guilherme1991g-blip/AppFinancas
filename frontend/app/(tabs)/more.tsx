@@ -24,17 +24,16 @@ export default function SettingsScreen() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'budgets' | 'recurring' | 'companies'>('budgets');
+    const [activeTab, setActiveTab] = useState<'recurring' | 'companies'>('recurring');
 
     async function fetchData() {
         try {
-            const [b, r, c, cats] = await Promise.all([
-                api.getBudgets({ month: now.getMonth() + 1, year: now.getFullYear() }) as Promise<any[]>,
+            const [r, c, cats] = await Promise.all([
                 api.getRecurring() as Promise<any[]>,
                 api.getCompanies() as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
             ]);
-            setBudgets(b); setRecurring(r); setCompanies(c); setCategories(cats);
+            setRecurring(r); setCompanies(c); setCategories(cats);
         } catch (e) { console.error(e); }
         finally { setRefreshing(false); }
     }
@@ -44,7 +43,6 @@ export default function SettingsScreen() {
     function getCat(id: string) { return categories.find(c => c.id === id); }
 
     const tabs = [
-        { key: 'budgets', label: 'Metas', icon: 'pie-chart' },
         { key: 'recurring', label: 'Recorrentes', icon: 'repeat' },
         { key: 'companies', label: 'Empresas', icon: 'business' },
     ] as const;

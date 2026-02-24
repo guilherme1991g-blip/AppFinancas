@@ -34,30 +34,6 @@ export default function ToolsScreen() {
             icon: 'trending-up',
             color: '#6366F1',
             route: '/tools/metas'
-        },
-        {
-            id: 'recurring',
-            title: 'Lançamentos Recorrentes',
-            sub: 'Automatize transações que se repetem todos os meses ou semanas.',
-            icon: 'repeat',
-            color: colors.secondary,
-            route: '/tools/recurring'
-        },
-        {
-            id: 'categories',
-            title: 'Categorias',
-            sub: 'Personalize suas categorias de gastos e receitas.',
-            icon: 'pricetags',
-            color: '#F59E0B',
-            route: '/category'
-        },
-        {
-            id: 'notifications',
-            title: 'Notificações',
-            sub: 'Configure alertas de vencimento e relatórios via WhatsApp.',
-            icon: 'notifications',
-            color: '#10B981',
-            route: '/notification-settings'
         }
     ];
 
