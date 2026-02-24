@@ -52,10 +52,10 @@ export default function DashboardScreen() {
                 api.getCategories() as Promise<any[]>,
                 api.getBudgets({ month, year }) as Promise<any[]>,
                 api.getTransactions({ is_paid: false, type: 'expense', limit: 10 }) as Promise<any[]>,
-                api.getByCategory({ month, year, type: 'expense' }) as Promise<any[]>,
+                api.getByCategory({ month, year, type: 'expense', is_paid: true }) as Promise<any[]>,
             ]);
             setSummary(s); setTransactions(txs); setAccounts(accs);
-            setCategories(cats); setBudgets(buds); setByCategory(byCat.slice(0, 4));
+            setCategories(cats); setBudgets(buds); setByCategory(byCat);
 
             // Filter only those that are truly overdue (date < today)
             const today = new Date();
@@ -403,16 +403,19 @@ export default function DashboardScreen() {
 
                             {/* Legend */}
                             <View style={styles.legendContainer}>
-                                {byCategory.slice(0, 4).map((cat) => {
-                                    const pct = summary?.expense > 0 ? (cat.total / summary.expense) * 100 : 0;
-                                    return (
-                                        <View key={cat.category_id} style={styles.legendItem}>
-                                            <View style={[styles.legendDot, { backgroundColor: cat.category_color }]} />
-                                            <Text style={styles.legendName} numberOfLines={1}>{cat.category_name}</Text>
-                                            <Text style={styles.legendPct}>{pct.toFixed(0)}%</Text>
-                                        </View>
-                                    );
-                                })}
+                                {(() => {
+                                    const totalCat = byCategory.reduce((acc, c) => acc + c.total, 0);
+                                    return byCategory.slice(0, 4).map((cat) => {
+                                        const pct = totalCat > 0 ? (cat.total / totalCat) * 100 : 0;
+                                        return (
+                                            <View key={cat.category_id} style={styles.legendItem}>
+                                                <View style={[styles.legendDot, { backgroundColor: cat.category_color }]} />
+                                                <Text style={styles.legendName} numberOfLines={1}>{cat.category_name}</Text>
+                                                <Text style={styles.legendPct}>{pct.toFixed(0)}%</Text>
+                                            </View>
+                                        );
+                                    });
+                                })()}
                             </View>
                         </View>
                     )}

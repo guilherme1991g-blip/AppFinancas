@@ -39,7 +39,7 @@ export default function ReportsScreen() {
         try {
             const [s, bc, cf] = await Promise.all([
                 api.getSummary({ month, year }) as Promise<any>,
-                api.getByCategory({ month, year, type: tab }) as Promise<any[]>,
+                api.getByCategory({ month, year, type: tab, is_paid: true }) as Promise<any[]>,
                 api.getCashflow({ year }) as Promise<any[]>,
             ]);
             setSummary(s);

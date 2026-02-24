@@ -4,12 +4,15 @@ import {
     RefreshControl, Alert, ActivityIndicator
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
 function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const absValue = Math.abs(v);
+    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
+    return v < 0 ? `-${formatted}` : formatted;
 }
 
 const ACCOUNT_ICONS: Record<string, string> = {
@@ -23,6 +26,7 @@ const ACCOUNT_LABELS: Record<string, string> = {
 
 export default function AccountsScreen() {
     const { mode, colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -56,11 +60,12 @@ export default function AccountsScreen() {
     return (
         <ScrollView
             style={styles.container}
+            contentContainerStyle={{ paddingTop: Math.max(insets.top, 20) }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
         >
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: 0 }]}>
                 <Text style={styles.title}>Contas</Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                     <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/account/new' as any)}>

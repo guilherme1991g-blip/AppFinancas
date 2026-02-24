@@ -121,7 +121,7 @@ export const api = {
         ) : '';
         return request(`/analytics/summary${query}`);
     },
-    getByCategory: (params?: { month?: number; year?: number; type?: string }) => {
+    getByCategory: (params?: { month?: number; year?: number; type?: string; is_paid?: boolean }) => {
         const query = params ? '?' + new URLSearchParams(
             Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
         ) : '';

@@ -4,12 +4,15 @@ import {
     RefreshControl, ActivityIndicator, Alert
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
 function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const absValue = Math.abs(v);
+    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
+    return v < 0 ? `-${formatted}` : formatted;
 }
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -17,6 +20,7 @@ const FILTERS = ['Todos', 'Receitas', 'Despesas'];
 
 export default function TransactionsScreen() {
     const { mode, colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
@@ -127,7 +131,7 @@ export default function TransactionsScreen() {
                     </View>
                     <View style={styles.txRight}>
                         <Text style={[styles.txAmount, { color: it.amount < 0 ? colors.income : colors.text }]}>
-                            {formatCurrency(Math.abs(it.amount))}
+                            {formatCurrency(it.amount)}
                         </Text>
                         <View style={[styles.statusBadgeSmall, { backgroundColor: it.status === 'paid' ? colors.income + '15' : colors.expense + '15' }]}>
                             <Text style={[styles.statusTextSmall, { color: it.status === 'paid' ? colors.income : colors.expense }]}>
@@ -152,7 +156,7 @@ export default function TransactionsScreen() {
                 </View>
                 <View style={styles.txRight}>
                     <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : colors.expense }]}>
-                        {it.type === 'income' ? '+' : ''}{formatCurrency(Math.abs(it.amount))}
+                        {it.type === 'income' ? '+' : ''}{formatCurrency(it.amount)}
                     </Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -176,7 +180,7 @@ export default function TransactionsScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                 <Text style={styles.title}>Transações</Text>
                 <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/transaction/new' as any)}>
                     <Ionicons name="add" size={24} color={colors.white} />

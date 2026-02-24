@@ -108,6 +108,7 @@ async def get_by_category(
     month: Optional[int] = None,
     year: Optional[int] = None,
     type: str = "expense",
+    is_paid: Optional[bool] = None,
     company_id: Optional[str] = None,
     current_user=Depends(get_current_user)
 ):
@@ -115,7 +116,11 @@ async def get_by_category(
     m = month or now.month
     y = year or now.year
     start = datetime(y, m, 1)
-    end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
+    # Ensure next month logic is robust
+    if m == 12:
+        end = datetime(y + 1, 1, 1)
+    else:
+        end = datetime(y, m + 1, 1)
 
     # Identify credit card accounts to exclude
     accounts = await accounts_collection.find({"user_id": current_user["_id"]}).to_list(100)
@@ -127,6 +132,8 @@ async def get_by_category(
         "date": {"$gte": start, "$lt": end},
         "account_id": {"$nin": cc_account_ids}
     }
+    if is_paid is not None:
+        query["is_paid"] = is_paid
     if company_id:
         query["company_id"] = ObjectId(company_id)
 
