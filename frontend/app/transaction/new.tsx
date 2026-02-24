@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, Alert, Switch, Platform
+    TextInput, Alert, Switch, ActivityIndicator, Platform
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+
+const COLORS = {
+    background: '#0A0F1E',
+    surface: '#111827',
+    surfaceLight: '#1F2937',
+    primary: '#00D09C',
+    expense: '#FF6B6B',
+    income: '#00D09C',
+    text: '#FFFFFF',
+    textSecondary: '#9CA3AF',
+    textMuted: '#4B5563',
+    border: 'rgba(255,255,255,0.07)',
+};
+
+const FREQUENCIES = [
+    { key: 'daily', label: 'Diário' },
+    { key: 'weekly', label: 'Semanal' },
+    { key: 'monthly', label: 'Mensal' },
+    { key: 'yearly', label: 'Anual' },
+];
 
 export default function NewTransactionScreen() {
     const { type: initialType } = useLocalSearchParams<{ type?: string }>();
     const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
+    const [payMethod, setPayMethod] = useState<'account' | 'card'>('account');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [notes, setNotes] = useState('');
@@ -19,6 +39,12 @@ export default function NewTransactionScreen() {
     const [accounts, setAccounts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
+
+    // Recurring state
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [frequency, setFrequency] = useState('monthly');
+    const [installments, setInstallments] = useState(''); // empty means until canceled
 
     useEffect(() => {
         async function load() {
@@ -26,13 +52,24 @@ export default function NewTransactionScreen() {
                 const [accs, cats] = await Promise.all([api.getAccounts() as Promise<any[]>, api.getCategories() as Promise<any[]>]);
                 setAccounts(accs);
                 setCategories(cats);
-                if (accs.length > 0) setSelectedAccount(accs[0].id);
+                // Default account selection based on payMethod
+                const filteredAccs = accs.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
+                if (filteredAccs.length > 0) setSelectedAccount(filteredAccs[0].id);
             } catch (e) { console.error(e); }
+            finally { setFetching(false); }
         }
         load();
     }, []);
 
+    useEffect(() => {
+        const filteredAccs = accounts.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
+        if (filteredAccs.length > 0 && !filteredAccs.find(a => a.id === selectedAccount)) {
+            setSelectedAccount(filteredAccs[0].id);
+        }
+    }, [payMethod, accounts]);
+
     const filteredCats = categories.filter(c => c.type === type);
+    const filteredAccs = accounts.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
 
     async function handleSave() {
         if (!amount || !description || !selectedAccount || !selectedCategory) {
@@ -41,16 +78,31 @@ export default function NewTransactionScreen() {
         }
         setLoading(true);
         try {
-            await api.createTransaction({
-                account_id: selectedAccount,
-                category_id: selectedCategory,
-                type,
-                amount: parseFloat(amount.replace(',', '.')),
-                description,
-                notes,
-                date: new Date().toISOString(),
-                tags: [],
-            });
+            const val = parseFloat(amount.replace(',', '.'));
+
+            if (isRecurring) {
+                await api.createRecurring({
+                    account_id: selectedAccount,
+                    category_id: selectedCategory,
+                    type,
+                    amount: val,
+                    description,
+                    frequency,
+                    start_date: new Date().toISOString(),
+                    is_active: true,
+                });
+            } else {
+                await api.createTransaction({
+                    account_id: selectedAccount,
+                    category_id: selectedCategory,
+                    type,
+                    amount: val,
+                    description,
+                    notes,
+                    date: new Date().toISOString(),
+                    tags: [],
+                });
+            }
             router.back();
         } catch (e: any) {
             Alert.alert('Erro', e.message);
@@ -59,139 +111,236 @@ export default function NewTransactionScreen() {
         }
     }
 
+    if (fetching) return (
+        <View style={[s.container, { justifyContent: 'center' }]}>
+            <ActivityIndicator color={COLORS.primary} size="large" />
+        </View>
+    );
+
     return (
-        <View style={styles.container}>
-            <View style={styles.handle} />
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                    <Ionicons name="close" size={22} color={Colors.text} />
+        <View style={s.container}>
+            <View style={s.handle} />
+            <View style={s.header}>
+                <TouchableOpacity onPress={() => router.back()} style={s.closeBtn}>
+                    <Ionicons name="close" size={22} color={COLORS.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Nova Transação</Text>
-                <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
-                    <Text style={styles.saveBtnText}>{loading ? '...' : 'Salvar'}</Text>
+                <Text style={s.title}>{isRecurring ? 'Novo Recorrente' : 'Nova Transação'}</Text>
+                <TouchableOpacity onPress={handleSave} disabled={loading} style={s.saveBtn}>
+                    {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={s.saveBtnText}>Salvar</Text>}
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                {/* Type Toggle */}
-                <View style={styles.typeRow}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
+                {/* Type selector (Income/Expense) */}
+                <View style={s.typeToggle}>
                     <TouchableOpacity
-                        style={[styles.typeBtn, type === 'expense' && styles.typeExpenseActive]}
-                        onPress={() => { setType('expense'); setSelectedCategory(''); }}
+                        style={[s.typeBtn, type === 'expense' && s.typeBtnExpense]}
+                        onPress={() => setType('expense')}
                     >
-                        <Ionicons name="arrow-up" size={16} color={type === 'expense' ? Colors.white : Colors.textSecondary} />
-                        <Text style={[styles.typeText, type === 'expense' && { color: Colors.white }]}>Despesa</Text>
+                        <Ionicons name="arrow-up-circle" size={18} color={type === 'expense' ? '#000' : COLORS.expense} />
+                        <Text style={[s.typeBtnTxt, type === 'expense' && { color: '#000' }]}>Despesa</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.typeBtn, type === 'income' && styles.typeIncomeActive]}
-                        onPress={() => { setType('income'); setSelectedCategory(''); }}
+                        style={[s.typeBtn, type === 'income' && s.typeBtnIncome]}
+                        onPress={() => setType('income')}
                     >
-                        <Ionicons name="arrow-down" size={16} color={type === 'income' ? Colors.white : Colors.textSecondary} />
-                        <Text style={[styles.typeText, type === 'income' && { color: Colors.white }]}>Receita</Text>
+                        <Ionicons name="arrow-down-circle" size={18} color={type === 'income' ? '#000' : COLORS.income} />
+                        <Text style={[s.typeBtnTxt, type === 'income' && { color: '#000' }]}>Receita</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Amount */}
-                <View style={styles.amountContainer}>
-                    <Text style={styles.currency}>R$</Text>
+                {/* Amount Input */}
+                <View style={s.amountWrap}>
+                    <Text style={s.currency}>R$</Text>
                     <TextInput
-                        style={styles.amountInput}
+                        style={s.amountInput}
                         value={amount}
                         onChangeText={setAmount}
                         placeholder="0,00"
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={COLORS.textMuted}
                         keyboardType="decimal-pad"
+                        autoFocus
                     />
                 </View>
+
+                {/* Payment Method Selector (Card vs Account) */}
+                {type === 'expense' && (
+                    <View style={s.methodToggle}>
+                        <TouchableOpacity
+                            style={[s.methodBtn, payMethod === 'account' && s.methodBtnActive]}
+                            onPress={() => setPayMethod('account')}
+                        >
+                            <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? '#000' : COLORS.textSecondary} />
+                            <Text style={[s.methodTxt, payMethod === 'account' && { color: '#000' }]}>Conta / Dinheiro</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[s.methodBtn, payMethod === 'card' && s.methodBtnActive]}
+                            onPress={() => setPayMethod('card')}
+                        >
+                            <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? '#000' : COLORS.textSecondary} />
+                            <Text style={[s.methodTxt, payMethod === 'card' && { color: '#000' }]}>Cartão de Crédito</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Recurring Switch */}
+                {type === 'expense' && (
+                    <View style={s.fieldGroup}>
+                        <View style={s.switchRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={s.fieldLabel}>Pagamento Recorrente?</Text>
+                                <Text style={s.fieldSub}>Assinaturas, aluguel, etc.</Text>
+                            </View>
+                            <Switch
+                                value={isRecurring}
+                                onValueChange={setIsRecurring}
+                                trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
+                                thumbColor={isRecurring ? COLORS.primary : COLORS.textSecondary}
+                            />
+                        </View>
+                    </View>
+                )}
+
+                {/* Recurrence Options */}
+                {isRecurring && (
+                    <View style={s.recurringPanel}>
+                        <Text style={s.labelInner}>Frequência</Text>
+                        <View style={s.freqRow}>
+                            {FREQUENCIES.map(f => (
+                                <TouchableOpacity
+                                    key={f.key}
+                                    style={[s.freqBtn, frequency === f.key && s.freqBtnActive]}
+                                    onPress={() => setFrequency(f.key)}
+                                >
+                                    <Text style={[s.freqTxt, frequency === f.key && { color: '#000' }]}>{f.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
 
                 {/* Description */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Descrição *</Text>
+                <View style={s.fieldGroup}>
+                    <Text style={s.fieldLabel}>Descrição *</Text>
                     <TextInput
-                        style={styles.fieldInput}
+                        style={s.input}
                         value={description}
                         onChangeText={setDescription}
-                        placeholder="Ex: Supermercado, Salário..."
-                        placeholderTextColor={Colors.textMuted}
+                        placeholder="Ex: Supermercado, Aluguel..."
+                        placeholderTextColor={COLORS.textMuted}
                     />
                 </View>
 
-                {/* Account */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Conta *</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-                        {accounts.map(acc => (
-                            <TouchableOpacity
-                                key={acc.id}
-                                style={[styles.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
-                                onPress={() => setSelectedAccount(acc.id)}
-                            >
-                                <Text style={[styles.chipText, selectedAccount === acc.id && { color: '#000' }]}>{acc.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                {/* Account Selection */}
+                <View style={s.fieldGroup}>
+                    <Text style={s.fieldLabel}>{payMethod === 'card' ? 'Cartão' : 'Conta'} *</Text>
+                    {filteredAccs.length === 0 ? (
+                        <TouchableOpacity style={s.emptyAcc} onPress={() => router.push(payMethod === 'card' ? '/cards' : '/account/new')}>
+                            <Text style={s.emptyAccTxt}>+ Cadastrar {payMethod === 'card' ? 'cartão' : 'conta'}</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
+                            {filteredAccs.map(acc => (
+                                <TouchableOpacity
+                                    key={acc.id}
+                                    style={[s.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
+                                    onPress={() => setSelectedAccount(acc.id)}
+                                >
+                                    <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={selectedAccount === acc.id ? '#000' : acc.color} />
+                                    <Text style={[s.chipTxt, selectedAccount === acc.id && { color: '#000' }]}>{acc.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    )}
                 </View>
 
-                {/* Category */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Categoria *</Text>
-                    <View style={styles.categoryGrid}>
+                {/* Category Selection */}
+                <View style={s.fieldGroup}>
+                    <Text style={s.fieldLabel}>Categoria *</Text>
+                    <View style={s.catGrid}>
                         {filteredCats.map(cat => (
                             <TouchableOpacity
                                 key={cat.id}
-                                style={[styles.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
+                                style={[s.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
                                 onPress={() => setSelectedCategory(cat.id)}
                             >
-                                <Ionicons name={cat.icon as any} size={16} color={selectedCategory === cat.id ? cat.color : Colors.textSecondary} />
-                                <Text style={[styles.catChipText, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>
-                                    {cat.name}
-                                </Text>
+                                <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : COLORS.textSecondary} />
+                                <Text style={[s.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
                             </TouchableOpacity>
                         ))}
+                        <TouchableOpacity style={s.catChip} onPress={() => router.push('/(tabs)/more')}>
+                            <Ionicons name="add" size={16} color={COLORS.primary} />
+                            <Text style={[s.catTxt, { color: COLORS.primary }]}>Nova</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Notes */}
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Observações</Text>
+                <View style={s.fieldGroup}>
+                    <Text style={s.fieldLabel}>Observações</Text>
                     <TextInput
-                        style={[styles.fieldInput, { height: 80, textAlignVertical: 'top' }]}
+                        style={[s.input, { height: 80, textAlignVertical: 'top' }]}
                         value={notes}
                         onChangeText={setNotes}
                         placeholder="Opcional..."
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={COLORS.textMuted}
                         multiline
                     />
                 </View>
+
+                <View style={{ height: 100 }} />
             </ScrollView>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.surface },
-    handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border },
-    closeBtn: { padding: Spacing.sm, backgroundColor: Colors.surfaceLight, borderRadius: Radius.full },
-    title: { fontSize: 17, fontWeight: '700', color: Colors.text },
-    saveBtn: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full },
-    saveBtnText: { color: '#000', fontWeight: '700', fontSize: 14 },
-    content: { padding: Spacing.lg, paddingBottom: 100 },
-    typeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
-    typeBtn: { flex: 1, flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', justifyContent: 'center', padding: Spacing.md, borderRadius: Radius.lg, backgroundColor: Colors.surfaceLight },
-    typeExpenseActive: { backgroundColor: Colors.expense },
-    typeIncomeActive: { backgroundColor: Colors.income },
-    typeText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
-    amountContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl, gap: Spacing.sm },
-    currency: { fontSize: 28, fontWeight: '700', color: Colors.textSecondary },
-    amountInput: { fontSize: 48, fontWeight: '800', color: Colors.text, minWidth: 120, textAlign: 'center' },
-    fieldGroup: { marginBottom: Spacing.lg },
-    fieldLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500', marginBottom: Spacing.sm },
-    fieldInput: { backgroundColor: Colors.surfaceLight, borderRadius: Radius.md, padding: Spacing.md, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
-    chipsRow: { flexDirection: 'row' },
-    chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border, marginRight: Spacing.sm },
-    chipText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-    categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-    catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceLight },
-    catChipText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.background },
+    handle: { width: 40, height: 4, backgroundColor: COLORS.surfaceLight, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+    closeBtn: { padding: 8, backgroundColor: COLORS.surfaceLight, borderRadius: 20 },
+    title: { fontSize: 17, fontWeight: '700', color: COLORS.text },
+    saveBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
+    saveBtnText: { color: '#000', fontWeight: '800', fontSize: 14 },
+
+    content: { padding: 20 },
+
+    typeToggle: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 16, padding: 4, marginBottom: 24 },
+    typeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12 },
+    typeBtnExpense: { backgroundColor: COLORS.expense },
+    typeBtnIncome: { backgroundColor: COLORS.income },
+    typeBtnTxt: { fontSize: 15, fontWeight: '700', color: COLORS.textSecondary },
+
+    amountWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 32 },
+    currency: { fontSize: 24, fontWeight: '700', color: COLORS.textSecondary },
+    amountInput: { fontSize: 48, fontWeight: '800', color: COLORS.text, minWidth: 150, textAlign: 'center' },
+
+    methodToggle: { flexDirection: 'row', backgroundColor: COLORS.surface, borderRadius: 12, padding: 4, marginBottom: 20 },
+    methodBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 10, borderRadius: 10 },
+    methodBtnActive: { backgroundColor: COLORS.textSecondary },
+    methodTxt: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+
+    fieldGroup: { marginBottom: 24 },
+    fieldLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+    fieldSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    switchRow: { flexDirection: 'row', alignItems: 'center' },
+
+    recurringPanel: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: COLORS.border },
+    labelInner: { fontSize: 11, color: COLORS.textMuted, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase' },
+    freqRow: { flexDirection: 'row', gap: 8 },
+    freqBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: COLORS.surfaceLight, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+    freqBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    freqTxt: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+
+    input: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, color: COLORS.text, fontSize: 15, borderWidth: 1, borderColor: COLORS.border },
+
+    chipRow: { flexDirection: 'row' },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, marginRight: 10 },
+    chipTxt: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+    emptyAcc: { padding: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.textMuted, borderRadius: 14, alignItems: 'center' },
+    emptyAccTxt: { color: COLORS.textMuted, fontWeight: '600' },
+
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    catChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+    catTxt: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
 });

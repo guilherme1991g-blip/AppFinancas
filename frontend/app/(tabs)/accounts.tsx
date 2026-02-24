@@ -57,9 +57,15 @@ export default function AccountsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.title}>Contas</Text>
-                <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/account/new' as any)}>
-                    <Ionicons name="add" size={22} color={Colors.background} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity style={styles.cardsBtn} onPress={() => router.push('/cards' as any)}>
+                        <Ionicons name="card-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.cardsBtnTxt}>Cartões</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/account/new' as any)}>
+                        <Ionicons name="add" size={22} color={Colors.background} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Total */}
@@ -138,4 +144,6 @@ const styles = StyleSheet.create({
     emptyText: { color: Colors.textSecondary, fontSize: 15 },
     emptyBtn: { backgroundColor: Colors.primary + '20', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.full },
     emptyBtnText: { color: Colors.primary, fontWeight: '600' },
+    cardsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surface, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: Colors.border },
+    cardsBtnTxt: { color: Colors.primary, fontSize: 13, fontWeight: '700' },
 });

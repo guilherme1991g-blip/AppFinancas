@@ -123,11 +123,12 @@ export default function SettingsScreen() {
                             { icon: 'add-circle', label: 'Nova Transação', color: '#00D09C', route: '/transaction/new?type=expense' },
                             { icon: 'wallet', label: 'Nova Conta', color: '#6C5ECF', route: '/account/new' },
                             { icon: 'pie-chart', label: 'Novo Orçamento', color: '#F59E0B', route: '/budget/new' },
-                            { icon: 'repeat', label: 'Novo Recorrente', color: '#3B82F6', route: '/recurring/new' },
-                            { icon: 'business', label: 'Nova Empresa', color: '#EC4899', route: '/company/new' },
-                            { icon: 'swap-horizontal', label: 'Transferência', color: '#10B981', route: '/transfer/new' },
+                            { label: 'Recorrentes', icon: 'repeat', color: '#3B82F6', action: () => setActiveTab('recurring') },
+                            { label: 'Empresas', icon: 'business', color: '#EC4899', action: () => setActiveTab('companies') },
+                            { label: 'Categorias', icon: 'pricetag', color: '#FD79A8', action: () => setActiveTab('categories') },
+                            { label: 'Cartões', icon: 'card', color: '#6C5ECF', action: () => router.push('/cards' as any) },
                         ].map(item => (
-                            <TouchableOpacity key={item.label} style={s.quickGridItem} onPress={() => router.push(item.route as any)}>
+                            <TouchableOpacity key={item.label} style={s.quickGridItem} onPress={item.route ? () => router.push(item.route as any) : item.action}>
                                 <View style={[s.quickGridIcon, { backgroundColor: item.color + '20' }]}>
                                     <Ionicons name={item.icon as any} size={22} color={item.color} />
                                 </View>

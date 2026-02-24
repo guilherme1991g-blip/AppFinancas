@@ -11,6 +11,15 @@ class AccountType(str, Enum):
     investment = "investment"
 
 
+class CardBrand(str, Enum):
+    visa = "visa"
+    mastercard = "mastercard"
+    elo = "elo"
+    amex = "amex"
+    hipercard = "hipercard"
+    other = "other"
+
+
 class AccountCreate(BaseModel):
     name: str
     type: AccountType
@@ -19,6 +28,13 @@ class AccountCreate(BaseModel):
     color: Optional[str] = "#00D09C"
     icon: Optional[str] = "wallet"
     company_id: Optional[str] = None
+    # Credit card specific fields
+    credit_limit: Optional[float] = None
+    closing_day: Optional[int] = None   # day of month billing closes
+    due_day: Optional[int] = None       # day of month payment is due
+    last_digits: Optional[str] = None   # last 4 digits
+    card_brand: Optional[CardBrand] = None
+    card_holder: Optional[str] = None
 
 
 class AccountUpdate(BaseModel):
@@ -26,6 +42,12 @@ class AccountUpdate(BaseModel):
     bank: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    credit_limit: Optional[float] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
+    last_digits: Optional[str] = None
+    card_brand: Optional[str] = None
+    card_holder: Optional[str] = None
 
 
 class AccountResponse(BaseModel):
@@ -38,3 +60,10 @@ class AccountResponse(BaseModel):
     color: str
     icon: str
     company_id: Optional[str]
+    # Credit card fields
+    credit_limit: Optional[float] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
+    last_digits: Optional[str] = None
+    card_brand: Optional[str] = None
+    card_holder: Optional[str] = None
