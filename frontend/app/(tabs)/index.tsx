@@ -215,53 +215,78 @@ export default function DashboardScreen() {
                 ))}
             </View>
 
-            {/* Credit Cards Highlight Card */}
+            {/* Credit Cards Highlight Section */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Meus Cartões</Text>
+                    <Text style={styles.sectionTitle}>Cartões de Crédito</Text>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/cards' as any)}>
                         <Text style={styles.seeAll}>Gerenciar</Text>
                     </TouchableOpacity>
                 </View>
 
-                {accounts.filter(acc => acc.type === 'credit_card').length === 0 ? (
-                    <TouchableOpacity style={styles.cardsPrimaryCard} onPress={() => router.push('/(tabs)/cards' as any)}>
-                        <View style={styles.cardsIconCircle}>
-                            <Ionicons name="card" size={28} color={colors.white} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.cardsCardTitle}>Nenhum cartão</Text>
-                            <Text style={styles.cardsCardSub}>Toque para cadastrar seu primeiro cartão de crédito.</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                    </TouchableOpacity>
-                ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                        {accounts.filter(acc => acc.type === 'credit_card').map(card => (
-                            <TouchableOpacity
-                                key={card.id}
-                                style={[styles.miniCreditCard, { backgroundColor: card.color || colors.primary }]}
-                                onPress={() => router.push('/(tabs)/cards' as any)}
-                            >
-                                <View style={styles.cardHeader}>
-                                    <View style={styles.cardChip} />
-                                    <Text style={styles.cardBrand}>CARD</Text>
+                {(() => {
+                    const creditCards = accounts.filter(acc => acc.type === 'credit_card');
+                    if (creditCards.length === 0) {
+                        return (
+                            <TouchableOpacity style={styles.cardsPrimaryCard} onPress={() => router.push('/(tabs)/cards' as any)}>
+                                <View style={styles.cardsIconCircle}>
+                                    <Ionicons name="card" size={28} color={colors.white} />
                                 </View>
-                                <View>
-                                    <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
-                                    <Text style={styles.cardBalance}>{fmt(card.balance)}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.cardsCardTitle}>Nenhum cartão</Text>
+                                    <Text style={styles.cardsCardSub}>Toque para cadastrar seu primeiro cartão de crédito.</Text>
                                 </View>
+                                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity
-                            style={styles.addCardMini}
-                            onPress={() => router.push('/account/new?type=credit_card' as any)}
-                        >
-                            <Ionicons name="add" size={24} color={colors.textMuted} />
-                            <Text style={styles.addCardTxt}>Novo Cartão</Text>
-                        </TouchableOpacity>
-                    </ScrollView>
-                )}
+                        );
+                    }
+
+                    return (
+                        <View style={styles.invoiceList}>
+                            {creditCards.map(card => {
+                                const today = new Date().getDate();
+                                const cDay = card.closing_day || 25;
+                                const dDay = card.due_day || 5;
+
+                                // Simple logic: if between closing and due, it's CLOSED. 
+                                // Else it's OPEN (spending for next cycle or current till close)
+                                let isClosed = false;
+                                if (dDay > cDay) {
+                                    isClosed = today > cDay && today <= dDay;
+                                } else {
+                                    // Crosses month boundary (e.g close 25, due 05)
+                                    isClosed = today > cDay || today <= dDay;
+                                }
+
+                                return (
+                                    <TouchableOpacity
+                                        key={card.id}
+                                        style={styles.invoiceRow}
+                                        onPress={() => router.push('/(tabs)/cards' as any)}
+                                    >
+                                        <View style={[styles.invoiceIcon, { backgroundColor: (card.color || colors.primary) + '15' }]}>
+                                            <Ionicons name="card" size={20} color={card.color || colors.primary} />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.invoiceName}>{card.name}</Text>
+                                            <Text style={styles.invoiceDue}>
+                                                Vence dia {String(dDay).padStart(2, '0')}
+                                            </Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={styles.invoiceAmount}>{fmt(card.balance)}</Text>
+                                            <View style={[styles.statusBadge, { backgroundColor: isClosed ? colors.expense + '15' : colors.income + '15' }]}>
+                                                <Text style={[styles.statusText, { color: isClosed ? colors.expense : colors.income }]}>
+                                                    Fatura {isClosed ? 'Fechada' : 'Aberta'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    );
+                })()}
             </View>
 
 
@@ -497,21 +522,14 @@ const s = (colors: any) => StyleSheet.create({
     cardsCardTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
     cardsCardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 18, fontWeight: '500' },
 
-    miniCreditCard: {
-        width: 180, height: 110, borderRadius: 24, padding: 18,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
-        justifyContent: 'space-between'
-    },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    cardBrand: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
-    cardChip: { width: 32, height: 24, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 8 },
-    cardName: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
-    cardBalance: { color: colors.white, fontSize: 18, fontWeight: '900', marginTop: 2 },
-    addCardMini: {
-        width: 120, height: 110, borderRadius: 24, backgroundColor: colors.surface,
-        borderWidth: 2, borderColor: colors.border, borderStyle: 'dotted',
-        alignItems: 'center', justifyContent: 'center', gap: 8
-    },
+    invoiceList: { gap: 10 },
+    invoiceRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 16, borderWidth: 1, borderColor: colors.border },
+    invoiceIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    invoiceName: { fontSize: 16, fontWeight: '800', color: colors.text },
+    invoiceDue: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
+    invoiceAmount: { fontSize: 16, fontWeight: '900', color: colors.text },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: 4 },
+    statusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
     section: { paddingHorizontal: 20, marginBottom: 20 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
