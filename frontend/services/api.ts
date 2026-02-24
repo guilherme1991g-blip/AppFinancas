@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://217.216.86.94:8000';
 
 async function getToken(): Promise<string | null> {
     return await AsyncStorage.getItem('auth_token');
@@ -115,4 +115,5 @@ export const api = {
     getBillTransactions: (billId: string) => request(`/bills/${billId}/transactions`),
     payBill: (billId: string, paymentAccountId: string) =>
         request(`/bills/${billId}/pay?payment_account_id=${paymentAccountId}`, { method: 'POST' }),
+    payTransaction: (id: string) => request(`/transactions/${id}/pay`, { method: 'POST' }),
 };

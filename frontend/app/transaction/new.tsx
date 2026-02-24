@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, Alert, Switch, ActivityIndicator, Platform
+    TextInput, Alert, Switch, ActivityIndicator, Platform,
+    KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +46,8 @@ export default function NewTransactionScreen() {
     const [isRecurring, setIsRecurring] = useState(false);
     const [frequency, setFrequency] = useState('monthly');
     const [installments, setInstallments] = useState(''); // empty means until canceled
+    const [isPaid, setIsPaid] = useState(true);
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
         async function load() {
@@ -99,7 +102,10 @@ export default function NewTransactionScreen() {
                     amount: val,
                     description,
                     notes,
-                    date: new Date().toISOString(),
+                    date: isPaid ? new Date().toISOString() : new Date(date).toISOString(),
+                    is_paid: isPaid,
+                    due_date: !isPaid ? new Date(date).toISOString() : null,
+                    paid_at: isPaid ? new Date().toISOString() : null,
                     tags: [],
                 });
             }
@@ -130,166 +136,201 @@ export default function NewTransactionScreen() {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
-                {/* Type selector (Income/Expense) */}
-                <View style={s.typeToggle}>
-                    <TouchableOpacity
-                        style={[s.typeBtn, type === 'expense' && s.typeBtnExpense]}
-                        onPress={() => setType('expense')}
-                    >
-                        <Ionicons name="arrow-up-circle" size={18} color={type === 'expense' ? '#000' : COLORS.expense} />
-                        <Text style={[s.typeBtnTxt, type === 'expense' && { color: '#000' }]}>Despesa</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[s.typeBtn, type === 'income' && s.typeBtnIncome]}
-                        onPress={() => setType('income')}
-                    >
-                        <Ionicons name="arrow-down-circle" size={18} color={type === 'income' ? '#000' : COLORS.income} />
-                        <Text style={[s.typeBtnTxt, type === 'income' && { color: '#000' }]}>Receita</Text>
-                    </TouchableOpacity>
-                </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
+                        {/* Type selector (Income/Expense) */}
+                        <View style={s.typeToggle}>
+                            <TouchableOpacity
+                                style={[s.typeBtn, type === 'expense' && s.typeBtnExpense]}
+                                onPress={() => setType('expense')}
+                            >
+                                <Ionicons name="arrow-up-circle" size={18} color={type === 'expense' ? '#000' : COLORS.expense} />
+                                <Text style={[s.typeBtnTxt, type === 'expense' && { color: '#000' }]}>Despesa</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[s.typeBtn, type === 'income' && s.typeBtnIncome]}
+                                onPress={() => setType('income')}
+                            >
+                                <Ionicons name="arrow-down-circle" size={18} color={type === 'income' ? '#000' : COLORS.income} />
+                                <Text style={[s.typeBtnTxt, type === 'income' && { color: '#000' }]}>Receita</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                {/* Amount Input */}
-                <View style={s.amountWrap}>
-                    <Text style={s.currency}>R$</Text>
-                    <TextInput
-                        style={s.amountInput}
-                        value={amount}
-                        onChangeText={setAmount}
-                        placeholder="0,00"
-                        placeholderTextColor={COLORS.textMuted}
-                        keyboardType="decimal-pad"
-                        autoFocus
-                    />
-                </View>
-
-                {/* Payment Method Selector (Card vs Account) */}
-                {type === 'expense' && (
-                    <View style={s.methodToggle}>
-                        <TouchableOpacity
-                            style={[s.methodBtn, payMethod === 'account' && s.methodBtnActive]}
-                            onPress={() => setPayMethod('account')}
-                        >
-                            <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? '#000' : COLORS.textSecondary} />
-                            <Text style={[s.methodTxt, payMethod === 'account' && { color: '#000' }]}>Conta / Dinheiro</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[s.methodBtn, payMethod === 'card' && s.methodBtnActive]}
-                            onPress={() => setPayMethod('card')}
-                        >
-                            <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? '#000' : COLORS.textSecondary} />
-                            <Text style={[s.methodTxt, payMethod === 'card' && { color: '#000' }]}>Cartão de Crédito</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Recurring Switch */}
-                {type === 'expense' && (
-                    <View style={s.fieldGroup}>
-                        <View style={s.switchRow}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={s.fieldLabel}>Pagamento Recorrente?</Text>
-                                <Text style={s.fieldSub}>Assinaturas, aluguel, etc.</Text>
-                            </View>
-                            <Switch
-                                value={isRecurring}
-                                onValueChange={setIsRecurring}
-                                trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
-                                thumbColor={isRecurring ? COLORS.primary : COLORS.textSecondary}
+                        {/* Amount Input */}
+                        <View style={s.amountWrap}>
+                            <Text style={s.currency}>R$</Text>
+                            <TextInput
+                                style={s.amountInput}
+                                value={amount}
+                                onChangeText={setAmount}
+                                placeholder="0,00"
+                                placeholderTextColor={COLORS.textMuted}
+                                keyboardType="decimal-pad"
+                                autoFocus
                             />
                         </View>
-                    </View>
-                )}
 
-                {/* Recurrence Options */}
-                {isRecurring && (
-                    <View style={s.recurringPanel}>
-                        <Text style={s.labelInner}>Frequência</Text>
-                        <View style={s.freqRow}>
-                            {FREQUENCIES.map(f => (
+                        {/* Payment Method Selector (Card vs Account) */}
+                        {type === 'expense' && (
+                            <View style={s.methodToggle}>
                                 <TouchableOpacity
-                                    key={f.key}
-                                    style={[s.freqBtn, frequency === f.key && s.freqBtnActive]}
-                                    onPress={() => setFrequency(f.key)}
+                                    style={[s.methodBtn, payMethod === 'account' && s.methodBtnActive]}
+                                    onPress={() => setPayMethod('account')}
                                 >
-                                    <Text style={[s.freqTxt, frequency === f.key && { color: '#000' }]}>{f.label}</Text>
+                                    <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? '#000' : COLORS.textSecondary} />
+                                    <Text style={[s.methodTxt, payMethod === 'account' && { color: '#000' }]}>Conta / Dinheiro</Text>
                                 </TouchableOpacity>
-                            ))}
+                                <TouchableOpacity
+                                    style={[s.methodBtn, payMethod === 'card' && s.methodBtnActive]}
+                                    onPress={() => setPayMethod('card')}
+                                >
+                                    <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? '#000' : COLORS.textSecondary} />
+                                    <Text style={[s.methodTxt, payMethod === 'card' && { color: '#000' }]}>Cartão de Crédito</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Recurring Switch */}
+                        {type === 'expense' && (
+                            <View style={s.fieldGroup}>
+                                <View style={s.switchRow}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={s.fieldLabel}>Pagamento Recorrente?</Text>
+                                        <Text style={s.fieldSub}>Assinaturas, aluguel, etc.</Text>
+                                    </View>
+                                    <Switch
+                                        value={isRecurring}
+                                        onValueChange={setIsRecurring}
+                                        trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
+                                        thumbColor={isRecurring ? COLORS.primary : COLORS.textSecondary}
+                                    />
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Recurrence Options */}
+                        {isRecurring && (
+                            <View style={s.recurringPanel}>
+                                <Text style={s.labelInner}>Frequência</Text>
+                                <View style={s.freqRow}>
+                                    {FREQUENCIES.map(f => (
+                                        <TouchableOpacity
+                                            key={f.key}
+                                            style={[s.freqBtn, frequency === f.key && s.freqBtnActive]}
+                                            onPress={() => setFrequency(f.key)}
+                                        >
+                                            <Text style={[s.freqTxt, frequency === f.key && { color: '#000' }]}>{f.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Paid Toggle */}
+                        <View style={s.fieldGroup}>
+                            <View style={s.switchRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={s.fieldLabel}>Está Pago?</Text>
+                                    <Text style={s.fieldSub}>{isPaid ? 'Valor já saiu da conta' : 'Agendar para o vencimento'}</Text>
+                                </View>
+                                <Switch
+                                    value={isPaid}
+                                    onValueChange={setIsPaid}
+                                    trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '80' }}
+                                    thumbColor={isPaid ? COLORS.primary : COLORS.textSecondary}
+                                />
+                            </View>
                         </View>
-                    </View>
-                )}
 
-                {/* Description */}
-                <View style={s.fieldGroup}>
-                    <Text style={s.fieldLabel}>Descrição *</Text>
-                    <TextInput
-                        style={s.input}
-                        value={description}
-                        onChangeText={setDescription}
-                        placeholder="Ex: Supermercado, Aluguel..."
-                        placeholderTextColor={COLORS.textMuted}
-                    />
-                </View>
+                        {/* Date Input */}
+                        <View style={s.fieldGroup}>
+                            <Text style={s.fieldLabel}>{isPaid ? 'Data do Pagamento' : 'Data de Vencimento'}</Text>
+                            <TextInput
+                                style={s.input}
+                                value={date}
+                                onChangeText={setDate}
+                                placeholder="AAAA-MM-DD"
+                                placeholderTextColor={COLORS.textMuted}
+                            />
+                        </View>
 
-                {/* Account Selection */}
-                <View style={s.fieldGroup}>
-                    <Text style={s.fieldLabel}>{payMethod === 'card' ? 'Cartão' : 'Conta'} *</Text>
-                    {filteredAccs.length === 0 ? (
-                        <TouchableOpacity style={s.emptyAcc} onPress={() => router.push(payMethod === 'card' ? '/cards' : '/account/new')}>
-                            <Text style={s.emptyAccTxt}>+ Cadastrar {payMethod === 'card' ? 'cartão' : 'conta'}</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
-                            {filteredAccs.map(acc => (
-                                <TouchableOpacity
-                                    key={acc.id}
-                                    style={[s.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
-                                    onPress={() => setSelectedAccount(acc.id)}
-                                >
-                                    <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={selectedAccount === acc.id ? '#000' : acc.color} />
-                                    <Text style={[s.chipTxt, selectedAccount === acc.id && { color: '#000' }]}>{acc.name}</Text>
+                        {/* Description */}
+                        <View style={s.fieldGroup}>
+                            <Text style={s.fieldLabel}>Descrição *</Text>
+                            <TextInput
+                                style={s.input}
+                                value={description}
+                                onChangeText={setDescription}
+                                placeholder="Ex: Supermercado, Aluguel..."
+                                placeholderTextColor={COLORS.textMuted}
+                            />
+                        </View>
+
+                        {/* Account Selection */}
+                        <View style={s.fieldGroup}>
+                            <Text style={s.fieldLabel}>{payMethod === 'card' ? 'Cartão' : 'Conta'} *</Text>
+                            {filteredAccs.length === 0 ? (
+                                <TouchableOpacity style={s.emptyAcc} onPress={() => router.push(payMethod === 'card' ? '/cards' : '/account/new')}>
+                                    <Text style={s.emptyAccTxt}>+ Cadastrar {payMethod === 'card' ? 'cartão' : 'conta'}</Text>
                                 </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    )}
-                </View>
+                            ) : (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipRow}>
+                                    {filteredAccs.map(acc => (
+                                        <TouchableOpacity
+                                            key={acc.id}
+                                            style={[s.chip, selectedAccount === acc.id && { backgroundColor: acc.color, borderColor: acc.color }]}
+                                            onPress={() => setSelectedAccount(acc.id)}
+                                        >
+                                            <Ionicons name={(acc.icon || 'wallet') as any} size={14} color={selectedAccount === acc.id ? '#000' : acc.color} />
+                                            <Text style={[s.chipTxt, selectedAccount === acc.id && { color: '#000' }]}>{acc.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            )}
+                        </View>
 
-                {/* Category Selection */}
-                <View style={s.fieldGroup}>
-                    <Text style={s.fieldLabel}>Categoria *</Text>
-                    <View style={s.catGrid}>
-                        {filteredCats.map(cat => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[s.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
-                                onPress={() => setSelectedCategory(cat.id)}
-                            >
-                                <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : COLORS.textSecondary} />
-                                <Text style={[s.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity style={s.catChip} onPress={() => router.push('/(tabs)/more')}>
-                            <Ionicons name="add" size={16} color={COLORS.primary} />
-                            <Text style={[s.catTxt, { color: COLORS.primary }]}>Nova</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                        {/* Category Selection */}
+                        <View style={s.fieldGroup}>
+                            <Text style={s.fieldLabel}>Categoria *</Text>
+                            <View style={s.catGrid}>
+                                {filteredCats.map(cat => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[s.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
+                                        onPress={() => setSelectedCategory(cat.id)}
+                                    >
+                                        <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : COLORS.textSecondary} />
+                                        <Text style={[s.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity style={s.catChip} onPress={() => router.push('/(tabs)/more')}>
+                                    <Ionicons name="add" size={16} color={COLORS.primary} />
+                                    <Text style={[s.catTxt, { color: COLORS.primary }]}>Nova</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
 
-                {/* Notes */}
-                <View style={s.fieldGroup}>
-                    <Text style={s.fieldLabel}>Observações</Text>
-                    <TextInput
-                        style={[s.input, { height: 80, textAlignVertical: 'top' }]}
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholder="Opcional..."
-                        placeholderTextColor={COLORS.textMuted}
-                        multiline
-                    />
-                </View>
+                        {/* Notes */}
+                        <View style={s.fieldGroup}>
+                            <Text style={s.fieldLabel}>Observações</Text>
+                            <TextInput
+                                style={[s.input, { height: 80, textAlignVertical: 'top' }]}
+                                value={notes}
+                                onChangeText={setNotes}
+                                placeholder="Opcional..."
+                                placeholderTextColor={COLORS.textMuted}
+                                multiline
+                            />
+                        </View>
 
-                <View style={{ height: 100 }} />
-            </ScrollView>
+                        <View style={{ height: 100 }} />
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </View>
     );
 }

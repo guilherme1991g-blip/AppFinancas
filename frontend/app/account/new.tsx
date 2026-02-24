@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -46,54 +46,58 @@ export default function NewAccountScreen() {
                     <Text style={styles.saveBtnText}>{loading ? '...' : 'Salvar'}</Text>
                 </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={styles.content}>
-                {/* Preview */}
-                <View style={[styles.preview, { borderLeftColor: color }]}>
-                    <Ionicons name="wallet" size={24} color={color} />
-                    <Text style={styles.previewName}>{name || 'Nome da conta'}</Text>
-                    <Text style={styles.previewBalance}>R$ {parseFloat(balance.replace(',', '.') || '0').toFixed(2)}</Text>
-                </View>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView contentContainerStyle={styles.content}>
+                        {/* Preview */}
+                        <View style={[styles.preview, { borderLeftColor: color }]}>
+                            <Ionicons name="wallet" size={24} color={color} />
+                            <Text style={styles.previewName}>{name || 'Nome da conta'}</Text>
+                            <Text style={styles.previewBalance}>R$ {parseFloat(balance.replace(',', '.') || '0').toFixed(2)}</Text>
+                        </View>
 
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Nome *</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ex: Nubank, Inter..." placeholderTextColor={Colors.textMuted} />
-                </View>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Nome *</Text>
+                            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ex: Nubank, Inter..." placeholderTextColor={Colors.textMuted} />
+                        </View>
 
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Banco / Instituição</Text>
-                    <TextInput style={styles.input} value={bank} onChangeText={setBank} placeholder="Opcional" placeholderTextColor={Colors.textMuted} />
-                </View>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Banco / Instituição</Text>
+                            <TextInput style={styles.input} value={bank} onChangeText={setBank} placeholder="Opcional" placeholderTextColor={Colors.textMuted} />
+                        </View>
 
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Saldo inicial</Text>
-                    <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
-                </View>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Saldo inicial</Text>
+                            <TextInput style={styles.input} value={balance} onChangeText={setBalance} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={Colors.textMuted} />
+                        </View>
 
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Tipo de conta</Text>
-                    <View style={styles.typeGrid}>
-                        {ACC_TYPES.map(t => (
-                            <TouchableOpacity
-                                key={t.value}
-                                style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '20' }]}
-                                onPress={() => setType(t.value)}
-                            >
-                                <Ionicons name={t.icon as any} size={16} color={type === t.value ? color : Colors.textSecondary} />
-                                <Text style={[styles.typeText, type === t.value && { color }]}>{t.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Tipo de conta</Text>
+                            <View style={styles.typeGrid}>
+                                {ACC_TYPES.map(t => (
+                                    <TouchableOpacity
+                                        key={t.value}
+                                        style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '20' }]}
+                                        onPress={() => setType(t.value)}
+                                    >
+                                        <Ionicons name={t.icon as any} size={16} color={type === t.value ? color : Colors.textSecondary} />
+                                        <Text style={[styles.typeText, type === t.value && { color }]}>{t.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
 
-                <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Cor</Text>
-                    <View style={styles.colorRow}>
-                        {COLORS.map(c => (
-                            <TouchableOpacity key={c} style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorSelected]} onPress={() => setColor(c)} />
-                        ))}
-                    </View>
-                </View>
-            </ScrollView>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Cor</Text>
+                            <View style={styles.colorRow}>
+                                {COLORS.map(c => (
+                                    <TouchableOpacity key={c} style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorSelected]} onPress={() => setColor(c)} />
+                                ))}
+                            </View>
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         </View>
     );
 }

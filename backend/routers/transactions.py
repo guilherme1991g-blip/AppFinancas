@@ -22,6 +22,9 @@ def tx_doc(doc) -> dict:
         "notes": doc.get("notes"),
         "tags": doc.get("tags", []),
         "company_id": str(doc["company_id"]) if doc.get("company_id") else None,
+        "is_paid": doc.get("is_paid", True),
+        "due_date": doc.get("due_date"),
+        "paid_at": doc.get("paid_at"),
         "created_at": doc["created_at"]
     }
 
@@ -72,12 +75,13 @@ async def create_transaction(data: TransactionCreate, current_user=Depends(get_c
         "created_at": datetime.utcnow()
     }
     result = await transactions_collection.insert_one(doc)
-    # Update account balance
-    delta = data.amount if data.type == "income" else -data.amount
-    await accounts_collection.update_one(
-        {"_id": ObjectId(data.account_id)},
-        {"$inc": {"balance": delta}}
-    )
+    # Update account balance ONLY if paid
+    if data.is_paid:
+        delta = data.amount if data.type == "income" else -data.amount
+        await accounts_collection.update_one(
+            {"_id": ObjectId(data.account_id)},
+            {"$inc": {"balance": delta}}
+        )
     doc["_id"] = result.inserted_id
     return tx_doc(doc)
 
@@ -113,3 +117,27 @@ async def delete_transaction(tx_id: str, current_user=Depends(get_current_user))
     await accounts_collection.update_one({"_id": doc["account_id"]}, {"$inc": {"balance": -delta}})
     await transactions_collection.delete_one({"_id": ObjectId(tx_id)})
     return {"message": "Transação removida"}
+
+
+@router.post("/{tx_id}/pay")
+async def pay_transaction(tx_id: str, current_user=Depends(get_current_user)):
+    tx = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    if tx.get("is_paid"):
+        raise HTTPException(status_code=400, detail="Transação já está paga")
+    
+    # Update transaction
+    await transactions_collection.update_one(
+        {"_id": ObjectId(tx_id)},
+        {"$set": {"is_paid": True, "paid_at": datetime.utcnow()}}
+    )
+    
+    # Update account balance
+    delta = tx["amount"] if tx["type"] == "income" else -tx["amount"]
+    await accounts_collection.update_one(
+        {"_id": tx["account_id"]},
+        {"$inc": {"balance": delta}}
+    )
+    
+    return {"message": "Transação marcada como paga"}

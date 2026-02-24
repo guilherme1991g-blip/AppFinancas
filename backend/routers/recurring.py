@@ -45,6 +45,31 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
         "created_at": datetime.utcnow()
     }
     result = await recurring_collection.insert_one(doc)
+    
+    # Create the first transaction immediately
+    from database import transactions_collection, accounts_collection
+    tx_doc_first = {
+        "user_id": current_user["_id"],
+        "account_id": ObjectId(data.account_id),
+        "category_id": ObjectId(data.category_id),
+        "company_id": ObjectId(data.company_id) if data.company_id else None,
+        "type": data.type,
+        "amount": data.amount,
+        "description": data.description,
+        "date": datetime.utcnow(),
+        "is_paid": True, # First occurrence of recurring is usually paid or at least created as a record
+        "created_at": datetime.utcnow(),
+        "recurring_id": result.inserted_id
+    }
+    await transactions_collection.insert_one(tx_doc_first)
+    
+    # Update account balance
+    delta = data.amount if data.type == "income" else -data.amount
+    await accounts_collection.update_one(
+        {"_id": ObjectId(data.account_id)},
+        {"$inc": {"balance": delta}}
+    )
+
     doc["_id"] = result.inserted_id
     return rec_doc(doc)
 

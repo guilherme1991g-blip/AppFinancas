@@ -20,6 +20,9 @@ class TransactionCreate(BaseModel):
     tags: Optional[list[str]] = []
     company_id: Optional[str] = None
     recurring_id: Optional[str] = None
+    is_paid: bool = True
+    due_date: Optional[datetime] = None
+    paid_at: Optional[datetime] = None
 
 
 class TransactionUpdate(BaseModel):
@@ -43,4 +46,7 @@ class TransactionResponse(BaseModel):
     notes: Optional[str]
     tags: list[str]
     company_id: Optional[str]
+    is_paid: bool
+    due_date: Optional[datetime]
+    paid_at: Optional[datetime]
     created_at: datetime
