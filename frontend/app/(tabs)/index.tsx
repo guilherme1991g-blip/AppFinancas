@@ -17,32 +17,6 @@ function fmt(v: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 }
 
-// Simple bar chart component
-function SpendingBar({ income, expense, colors }: { income: number; expense: number; colors: any }) {
-    const max = Math.max(income, expense, 1);
-    const incomeH = (income / max) * 80;
-    const expenseH = (expense / max) * 80;
-    const barStyles = b(colors);
-    return (
-        <View style={barStyles.container}>
-            <View style={barStyles.col}>
-                <View style={[barStyles.fill, { height: incomeH, backgroundColor: colors.income }]} />
-                <Text style={barStyles.label}>Receita</Text>
-            </View>
-            <View style={barStyles.col}>
-                <View style={[barStyles.fill, { height: expenseH, backgroundColor: colors.expense }]} />
-                <Text style={barStyles.label}>Despesa</Text>
-            </View>
-        </View>
-    );
-}
-
-const b = (colors: any) => StyleSheet.create({
-    container: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, height: 100, paddingBottom: 20 },
-    col: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-    fill: { width: '100%', borderRadius: 8, minHeight: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-    label: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
-});
 
 export default function DashboardScreen() {
     const { user } = useAuth();
@@ -230,34 +204,6 @@ export default function DashboardScreen() {
                 )}
             </View>
 
-            {/* Charts */}
-            <View style={styles.chartCard}>
-                <Text style={styles.sectionTitle}>Receita vs Despesa</Text>
-                <SpendingBar income={summary?.income || 0} expense={summary?.expense || 0} colors={colors} />
-            </View>
-
-            {/* Accounts */}
-            {accounts.length > 0 && (
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Minhas Contas</Text>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/accounts' as any)}>
-                            <Text style={styles.seeAll}>Ver todas</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {accounts.map(acc => (
-                            <View key={acc.id} style={[styles.accCard, { borderTopColor: acc.color }]}>
-                                <Ionicons name={acc.icon || 'wallet'} size={20} color={acc.color} />
-                                <Text style={styles.accName} numberOfLines={1}>{acc.name}</Text>
-                                <Text style={[styles.accBalance, { color: acc.balance >= 0 ? colors.income : colors.expense }]}>
-                                    {balanceVisible ? fmt(acc.balance) : '••••'}
-                                </Text>
-                            </View>
-                        ))}
-                    </ScrollView>
-                </View>
-            )}
 
             {/* Budgets overview */}
             {budgets.length > 0 && (
@@ -289,40 +235,6 @@ export default function DashboardScreen() {
                 </View>
             )}
 
-            {/* Recent Transactions */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Últimas Transações</Text>
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/transactions' as any)}>
-                        <Text style={styles.seeAll}>Ver todas</Text>
-                    </TouchableOpacity>
-                </View>
-                {transactions.length === 0 ? (
-                    <View style={styles.emptyBox}>
-                        <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
-                        <Text style={styles.emptyText}>Nenhuma transação neste mês</Text>
-                        <TouchableOpacity onPress={() => router.push('/transaction/new?type=expense' as any)} style={styles.emptyBtn}>
-                            <Text style={styles.emptyBtnTxt}>Adicionar transação</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : transactions.map(tx => {
-                    const cat = getCat(tx.category_id);
-                    return (
-                        <TouchableOpacity key={tx.id} style={styles.txRow} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
-                            <View style={[styles.txIcon, { backgroundColor: (cat?.color || colors.textMuted) + '15' }]}>
-                                <Ionicons name={(cat?.icon || 'ellipsis-horizontal') as any} size={18} color={cat?.color || colors.textMuted} />
-                            </View>
-                            <View style={styles.txInfo}>
-                                <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
-                                <Text style={styles.txCat}>{cat?.name || 'Sem categoria'}</Text>
-                            </View>
-                            <Text style={[styles.txAmount, { color: tx.type === 'income' ? colors.income : colors.expense }]}>
-                                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
 
             <View style={{ height: 100 }} />
         </ScrollView>
@@ -394,35 +306,4 @@ const s = (colors: any) => StyleSheet.create({
     },
     addCardTxt: { fontSize: 11, color: colors.textMuted, fontWeight: '700' },
 
-    chartCard: { marginHorizontal: 20, backgroundColor: colors.surface, borderRadius: 28, padding: 24, marginBottom: 28, borderWidth: 1, borderColor: colors.border },
-
-    section: { paddingHorizontal: 20, marginBottom: 28 },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-    sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
-    seeAll: { fontSize: 13, color: colors.primary, fontWeight: '800' },
-
-    accCard: { backgroundColor: colors.surface, borderRadius: 24, padding: 18, marginRight: 14, minWidth: 160, borderTopWidth: 6, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
-    accName: { fontSize: 13, color: colors.textMuted, marginTop: 12, marginBottom: 4, fontWeight: '700' },
-    accBalance: { fontSize: 17, fontWeight: '900' },
-
-    budgetItem: { backgroundColor: colors.surface, borderRadius: 24, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.border, gap: 12 },
-    budgetItemHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    catDot: { width: 12, height: 12, borderRadius: 6 },
-    budgetName: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '800' },
-    budgetPct: { fontSize: 15, fontWeight: '900' },
-    progressBg: { height: 8, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
-    progressFg: { height: '100%', borderRadius: 4 },
-    budgetSub: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
-
-    emptyBox: { backgroundColor: colors.surface, borderRadius: 28, padding: 40, alignItems: 'center', gap: 18, borderWidth: 1, borderColor: colors.border },
-    emptyText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
-    emptyBtn: { backgroundColor: colors.primary + '15', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, borderWidth: 1, borderColor: colors.primary + '30' },
-    emptyBtnTxt: { color: colors.primary, fontWeight: '800', fontSize: 15 },
-
-    txRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, padding: 16, marginBottom: 12, gap: 16, borderWidth: 1, borderColor: colors.border },
-    txIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    txInfo: { flex: 1 },
-    txDesc: { fontSize: 16, fontWeight: '800', color: colors.text },
-    txCat: { fontSize: 12, color: colors.textMuted, marginTop: 2, fontWeight: '700', textTransform: 'uppercase' },
-    txAmount: { fontSize: 16, fontWeight: '900' },
 });
