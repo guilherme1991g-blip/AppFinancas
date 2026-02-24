@@ -171,7 +171,7 @@ export default function DashboardScreen() {
                     { icon: 'add-circle', label: 'Receita', color: colors.income, route: '/transaction/new?type=income' },
                     { icon: 'remove-circle', label: 'Despesa', color: colors.expense, route: '/transaction/new?type=expense' },
                     { icon: 'swap-horizontal', label: 'Transferir', color: colors.secondary, route: '/transfer/new' },
-                    { icon: 'settings-outline', label: 'Config.', color: colors.warning, route: '/(tabs)/more' },
+                    { icon: 'receipt-outline', label: 'Extrato', color: colors.primary, route: '/(tabs)/transactions' },
                 ].map(a => (
                     <TouchableOpacity key={a.label} style={styles.quickItem} onPress={() => router.push(a.route as any)}>
                         <View style={[styles.quickIcon, { backgroundColor: a.color + '15' }]}>

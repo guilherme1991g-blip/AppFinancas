@@ -26,11 +26,15 @@ export default function TabsLayout() {
                     backgroundColor: colors.surface,
                     borderTopColor: colors.border,
                     borderTopWidth: 1,
-                    height: Platform.OS === 'ios' ? 88 : 68,
+                    height: Platform.OS === 'ios' ? 88 : 74,
                     paddingTop: 8,
-                    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+                    paddingBottom: Platform.OS === 'ios' ? 28 : 14,
+                    paddingHorizontal: 12,
                     elevation: 0,
                     shadowOpacity: 0,
+                },
+                tabBarItemStyle: {
+                    marginHorizontal: 10,
                 },
                 tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.textMuted,
@@ -40,21 +44,10 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Dashboard',
+                    title: 'Início',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
                             <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="transactions"
-                options={{
-                    title: 'Extrato',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'receipt' : 'receipt-outline'} size={22} color={color} />
                         </View>
                     ),
                 }}
@@ -82,12 +75,12 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="reports"
+                name="tools"
                 options={{
-                    title: 'Análise',
+                    title: 'Ferramentas',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'pie-chart' : 'pie-chart-outline'} size={22} color={color} />
+                            <Ionicons name={focused ? 'apps' : 'apps-outline'} size={22} color={color} />
                         </View>
                     ),
                 }}
@@ -95,10 +88,10 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="more"
                 options={{
-                    title: 'Ajustes',
+                    title: 'Mais',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'options' : 'options-outline'} size={22} color={color} />
+                            <Ionicons name={focused ? 'menu' : 'menu-outline'} size={22} color={color} />
                         </View>
                     ),
                 }}
