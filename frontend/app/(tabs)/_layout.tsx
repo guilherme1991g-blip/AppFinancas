@@ -1,12 +1,41 @@
-import { Tabs, Redirect } from 'expo-router';
+import { Tabs, Redirect, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator, Platform } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 export default function TabsLayout() {
     const { user, isLoading } = useAuth();
     const { colors } = useTheme();
+    const router = useRouter();
+    const segments = useSegments();
+
+    const TABS = ['index', 'transactions', 'accounts', 'tools', 'more'];
+    const currentTab = segments[1] || 'index';
+    const currentIndex = TABS.indexOf(currentTab);
+
+    const onGestureEvent = (event: any) => {
+        const { translationX, velocityX, state } = event.nativeEvent;
+
+        if (state === State.END) {
+            // Thresholds to avoid accidental swipes (especially for the carousel in 'index')
+            const swipeThreshold = 100;
+            const velocityThreshold = 500;
+
+            if (Math.abs(translationX) > swipeThreshold && Math.abs(velocityX) > velocityThreshold) {
+                if (translationX > 0 && currentIndex > 0) {
+                    // Swipe Right -> Go Left
+                    const nextTab = TABS[currentIndex - 1];
+                    router.push(`/(tabs)/${nextTab}` as any);
+                } else if (translationX < 0 && currentIndex < TABS.length - 1) {
+                    // Swipe Left -> Go Right
+                    const nextTab = TABS[currentIndex + 1];
+                    router.push(`/(tabs)/${nextTab}` as any);
+                }
+            }
+        }
+    };
 
     if (isLoading) {
         return (
@@ -19,84 +48,92 @@ export default function TabsLayout() {
     if (!user) return <Redirect href="/(auth)/login" />;
 
     return (
-        <Tabs
-            screenOptions={{
-                headerShown: false,
-                tabBarStyle: {
-                    backgroundColor: colors.surface,
-                    borderTopColor: colors.border,
-                    borderTopWidth: 1,
-                    height: Platform.OS === 'ios' ? 88 : 74,
-                    paddingTop: 8,
-                    paddingBottom: Platform.OS === 'ios' ? 28 : 14,
-                    paddingHorizontal: 8,
-                    elevation: 0,
-                    shadowOpacity: 0,
-                },
-                tabBarItemStyle: {
-                    marginHorizontal: 2,
-                },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.textMuted,
-                tabBarLabelStyle: { fontSize: 9.5, fontWeight: '800', marginTop: -4, marginBottom: 4 },
-            }}
+        <PanGestureHandler
+            onHandlerStateChange={onGestureEvent}
+            activeOffsetX={[-50, 50]} // Start tracking only after some movement
+            failOffsetY={[-20, 20]}    // Fail if vertical movement is significant (allow vertical scroll)
         >
-            <Tabs.Screen
-                name="index"
-                options={{
-                    title: 'Início',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="transactions"
-                options={{
-                    title: 'Transações',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'list' : 'list-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="accounts"
-                options={{
-                    title: 'Contas',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="tools"
-                options={{
-                    title: 'Ferramentas',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'apps' : 'apps-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="more"
-                options={{
-                    title: 'Ajustes',
-                    tabBarIcon: ({ color, focused }) => (
-                        <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
-                            <Ionicons name={focused ? 'menu' : 'menu-outline'} size={22} color={color} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen name="cards" options={{ href: null }} />
-        </Tabs>
+            <View style={{ flex: 1 }}>
+                <Tabs
+                    screenOptions={{
+                        headerShown: false,
+                        tabBarStyle: {
+                            backgroundColor: colors.surface,
+                            borderTopColor: colors.border,
+                            borderTopWidth: 1,
+                            height: Platform.OS === 'ios' ? 88 : 74,
+                            paddingTop: 8,
+                            paddingBottom: Platform.OS === 'ios' ? 28 : 14,
+                            paddingHorizontal: 8,
+                            elevation: 0,
+                            shadowOpacity: 0,
+                        },
+                        tabBarItemStyle: {
+                            marginHorizontal: 2,
+                        },
+                        tabBarActiveTintColor: colors.primary,
+                        tabBarInactiveTintColor: colors.textMuted,
+                        tabBarLabelStyle: { fontSize: 9.5, fontWeight: '800', marginTop: -4, marginBottom: 4 },
+                    }}
+                >
+                    <Tabs.Screen
+                        name="index"
+                        options={{
+                            title: 'Início',
+                            tabBarIcon: ({ color, focused }) => (
+                                <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                                    <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="transactions"
+                        options={{
+                            title: 'Transações',
+                            tabBarIcon: ({ color, focused }) => (
+                                <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                                    <Ionicons name={focused ? 'list' : 'list-outline'} size={22} color={color} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="accounts"
+                        options={{
+                            title: 'Contas',
+                            tabBarIcon: ({ color, focused }) => (
+                                <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                                    <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={color} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="tools"
+                        options={{
+                            title: 'Ferramentas',
+                            tabBarIcon: ({ color, focused }) => (
+                                <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                                    <Ionicons name={focused ? 'apps' : 'apps-outline'} size={22} color={color} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="more"
+                        options={{
+                            title: 'Ajustes',
+                            tabBarIcon: ({ color, focused }) => (
+                                <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : null}>
+                                    <Ionicons name={focused ? 'menu' : 'menu-outline'} size={22} color={color} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen name="cards" options={{ href: null }} />
+                </Tabs>
+            </View>
+        </PanGestureHandler>
     );
 }

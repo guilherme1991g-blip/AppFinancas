@@ -310,7 +310,7 @@ export default function DashboardScreen() {
                     {overdueTransactions.map(tx => {
                         const cat = getCat(tx.category_id);
                         return (
-                            <TouchableOpacity key={tx.id} style={styles.overdueRow} onPress={() => router.push(`/transaction/${tx.id}`)}>
+                            <TouchableOpacity key={tx.id} style={styles.overdueRow} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
                                 <View style={[styles.txIcon, { backgroundColor: colors.expense + '15' }]}>
                                     <Ionicons name={(cat?.icon || 'alert-circle-outline') as any} size={18} color={colors.expense} />
                                 </View>
