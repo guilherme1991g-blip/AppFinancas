@@ -33,7 +33,7 @@ def cat_doc(doc) -> dict:
         "user_id": str(doc["user_id"]),
         "name": doc["name"],
         "type": doc["type"],
-        "icon": doc.get("icon", "tag"),
+        "icon": doc.get("icon", "pricetag"),
         "color": doc.get("color", "#6C5ECF"),
         "parent_id": str(doc["parent_id"]) if doc.get("parent_id") else None,
         "is_default": doc.get("is_default", False)
@@ -78,8 +78,8 @@ async def update_category(category_id: str, data: CategoryUpdate, current_user=D
 @router.delete("/{category_id}")
 async def delete_category(category_id: str, current_user=Depends(get_current_user)):
     result = await categories_collection.delete_one(
-        {"_id": ObjectId(category_id), "user_id": current_user["_id"], "is_default": False}
+        {"_id": ObjectId(category_id), "user_id": current_user["_id"]}
     )
     if result.deleted_count == 0:
-        raise HTTPException(status_code=400, detail="Não é possível remover categoria padrão")
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
     return {"message": "Categoria removida"}

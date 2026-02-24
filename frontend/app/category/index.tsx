@@ -1,16 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, Alert, TextInput, Modal, ActivityIndicator, Platform
+    RefreshControl, Alert, TextInput, Modal, ActivityIndicator, Platform,
+    Animated
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
 
 const ICONS = ['cart', 'car', 'restaurant', 'home', 'medkit', 'school', 'airplane', 'game-controller',
     'shirt', 'gift', 'trending-up', 'briefcase', 'phone-portrait', 'musical-notes', 'paw', 'fitness',
-    'wallet', 'card', 'cash', 'pie-chart', 'analytics', 'save', 'receipt', 'list', 'tag'];
+    'wallet', 'card', 'cash', 'pie-chart', 'analytics', 'save', 'receipt', 'list', 'pricetag'];
 
 export default function CategoryManagementScreen() {
     const { mode, colors } = useTheme();
@@ -18,7 +20,6 @@ export default function CategoryManagementScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Modal state
     const [modalVisible, setModalVisible] = useState(false);
     const [editingCat, setEditingCat] = useState<any>(null);
     const [catName, setCatName] = useState('');
@@ -105,6 +106,19 @@ export default function CategoryManagementScreen() {
         ]);
     }
 
+    const renderRightActions = (id: string, name: string) => {
+        return (
+            <TouchableOpacity
+                style={styles.swipeDeleteBtn}
+                onPress={() => handleDelete(id, name)}
+            >
+                <Animated.View>
+                    <Ionicons name="trash-outline" size={24} color={colors.white} />
+                </Animated.View>
+            </TouchableOpacity>
+        );
+    };
+
     const styles = s(colors, mode);
     const mStyles = m(colors, mode);
 
@@ -142,30 +156,22 @@ export default function CategoryManagementScreen() {
                             <Text style={styles.sectionTitle}>{type === 'expense' ? 'DESPESAS' : 'RECEITAS'}</Text>
                             <View style={styles.list}>
                                 {filtered.map((cat, idx) => (
-                                    <TouchableOpacity
+                                    <Swipeable
                                         key={cat.id}
-                                        style={[styles.item, idx === filtered.length - 1 && { borderBottomWidth: 0 }]}
-                                        onPress={() => openModal(cat)}
+                                        renderRightActions={() => renderRightActions(cat.id, cat.name)}
+                                        containerStyle={{ borderBottomWidth: idx === filtered.length - 1 ? 0 : 1, borderBottomColor: colors.border }}
                                     >
-                                        <View style={[styles.iconWrap, { backgroundColor: cat.color + '15' }]}>
-                                            <Ionicons name={(cat.icon || 'tag') as any} size={20} color={cat.color} />
-                                        </View>
-                                        <Text style={styles.name}>{cat.name}</Text>
-                                        {cat.is_default ? (
-                                            <View style={styles.badge}>
-                                                <Text style={styles.badgeTxt}>Padrão</Text>
+                                        <TouchableOpacity
+                                            style={styles.item}
+                                            onPress={() => openModal(cat)}
+                                        >
+                                            <View style={[styles.iconWrap, { backgroundColor: cat.color + '15' }]}>
+                                                <Ionicons name={(cat.icon || 'pricetag') as any} size={20} color={cat.color} />
                                             </View>
-                                        ) : (
-                                            <View style={styles.actions}>
-                                                <TouchableOpacity onPress={() => openModal(cat)} style={styles.editBtn}>
-                                                    <Ionicons name="pencil-outline" size={18} color={colors.primary} />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity onPress={() => handleDelete(cat.id, cat.name)} style={styles.delBtn}>
-                                                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
+                                            <Text style={styles.name}>{cat.name}</Text>
+                                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                                        </TouchableOpacity>
+                                    </Swipeable>
                                 ))}
                             </View>
                         </View>
@@ -211,9 +217,9 @@ export default function CategoryManagementScreen() {
 
                         <Text style={mStyles.label}>COR</Text>
                         <View style={mStyles.colors}>
-                            {defaultColors.map(c => (
+                            {defaultColors.map((c, idx) => (
                                 <TouchableOpacity
-                                    key={c}
+                                    key={`color-${idx}`}
                                     onPress={() => setCatColor(c)}
                                     style={[mStyles.colorBtn, { backgroundColor: c }, catColor === c && { borderWidth: 3, borderColor: colors.text }]}
                                 />
@@ -222,9 +228,9 @@ export default function CategoryManagementScreen() {
 
                         <Text style={mStyles.label}>ÍCONE</Text>
                         <View style={mStyles.icons}>
-                            {ICONS.map(i => (
+                            {ICONS.map((i, idx) => (
                                 <TouchableOpacity
-                                    key={i}
+                                    key={`icon-${idx}`}
                                     onPress={() => setCatIcon(i)}
                                     style={[mStyles.iconBtn, catIcon === i && { backgroundColor: catColor }]}
                                 >
@@ -254,21 +260,24 @@ const s = (colors: any, mode: string) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 20 },
-    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.surface, borderWeight: 1, borderColor: colors.border },
+    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
     title: { fontSize: 22, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
     addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     section: { marginTop: 24, paddingHorizontal: 20 },
     sectionTitle: { fontSize: 12, fontWeight: '800', color: colors.textMuted, letterSpacing: 1, marginBottom: 12 },
     list: { backgroundColor: colors.surface, borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-    item: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+    item: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: colors.surface },
     iconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     name: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text, marginLeft: 14 },
-    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
-    badgeTxt: { fontSize: 11, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase' },
-    actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    editBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: colors.primary + '10' },
-    delBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: colors.danger + '10' }
+
+    swipeDeleteBtn: {
+        backgroundColor: colors.danger,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+    }
 });
 
 const m = (colors: any, mode: string) => StyleSheet.create({
