@@ -268,12 +268,21 @@ export default function NewTransactionScreen() {
                                 <DateTimePicker
                                     value={date}
                                     mode="date"
-                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                                    themeVariant="dark"
                                     onChange={(event, selectedDate) => {
-                                        setShowPicker(Platform.OS === 'ios');
+                                        if (Platform.OS !== 'ios') setShowPicker(false);
                                         if (selectedDate) setDate(selectedDate);
                                     }}
                                 />
+                            )}
+                            {showPicker && Platform.OS === 'ios' && (
+                                <TouchableOpacity
+                                    style={{ alignSelf: 'flex-end', marginTop: 10 }}
+                                    onPress={() => setShowPicker(false)}
+                                >
+                                    <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Confirmar</Text>
+                                </TouchableOpacity>
                             )}
                         </View>
 

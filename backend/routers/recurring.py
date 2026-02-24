@@ -75,11 +75,18 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
 
     # Generate future occurrences (next 11 months, as unpaid)
     if data.frequency == 'monthly':
+        start_date = datetime.utcnow()
         for i in range(1, 12):
-            # Calculate future date
-            future_month = (datetime.utcnow().month + i - 1) % 12 + 1
-            future_year = datetime.utcnow().year + (datetime.utcnow().month + i - 1) // 12
-            future_date = datetime(future_year, future_month, datetime.utcnow().day)
+            # Safe month addition
+            new_month = (start_date.month + i - 1) % 12 + 1
+            new_year = start_date.year + (start_date.month + i - 1) // 12
+            
+            # Find the last valid day of the target month
+            import calendar
+            last_day = calendar.monthrange(new_year, new_month)[1]
+            future_day = min(start_date.day, last_day)
+            
+            future_date = datetime(new_year, new_month, future_day)
             
             tx_future = {
                 "user_id": current_user["_id"],
