@@ -143,6 +143,25 @@ export default function NewTransactionScreen() {
                     });
                 }
             } else {
+                let finalDate = date;
+                let finalIsPaid = isPaid;
+
+                if (payMethod === 'card') {
+                    const account = accounts.find(a => a.id === selectedAccount);
+                    const closingDay = account?.closing_day || 10;
+                    const purchaseDate = new Date(date);
+
+                    if (purchaseDate.getDate() > closingDay) {
+                        // Move to next month's bill
+                        const nextBillDate = new Date(purchaseDate);
+                        nextBillDate.setMonth(nextBillDate.getMonth() + 1);
+                        const dueDay = account?.due_day || closingDay + 7;
+                        nextBillDate.setDate(dueDay);
+                        finalDate = nextBillDate;
+                    }
+                    finalIsPaid = true; // Always true for cards to update debt balance
+                }
+
                 await api.createTransaction({
                     account_id: selectedAccount,
                     category_id: selectedCategory,
@@ -150,10 +169,10 @@ export default function NewTransactionScreen() {
                     amount: val,
                     description,
                     notes,
-                    date: date.toISOString(),
-                    is_paid: isPaid,
-                    due_date: !isPaid ? date.toISOString() : null,
-                    paid_at: isPaid ? date.toISOString() : null,
+                    date: finalDate.toISOString(),
+                    is_paid: finalIsPaid,
+                    due_date: !finalIsPaid ? finalDate.toISOString() : null,
+                    paid_at: finalIsPaid ? finalDate.toISOString() : null,
                     tags: [],
                 });
             }
