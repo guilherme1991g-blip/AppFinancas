@@ -281,8 +281,8 @@ export default function DashboardScreen() {
                                     const cDay = card.closing_day || 25;
                                     const dDay = card.due_day || 5;
                                     const limit = card.credit_limit || 0;
-                                    const balance = Math.abs(card.balance);
-                                    const available = Math.max(0, limit - balance);
+                                    const available = limit + (card.balance || 0);
+                                    const used = Math.max(0, -(card.balance || 0));
 
                                     let isClosed = false;
                                     if (dDay > cDay) {

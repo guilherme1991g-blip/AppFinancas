@@ -26,7 +26,9 @@ const CARD_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F5
 
 function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDelete: () => void }) {
     const brand = BRANDS.find(b => b.key === card.card_brand) || BRANDS[5];
-    const usedPct = card.credit_limit > 0 ? Math.min(Math.abs(card.balance) / card.credit_limit, 1) : 0;
+    const balance = card.balance || 0;
+    const used = Math.max(0, -balance);
+    const usedPct = card.credit_limit > 0 ? Math.min(used / card.credit_limit, 1) : 0;
 
     return (
         <TouchableOpacity
@@ -70,7 +72,7 @@ function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDele
                 <View>
                     <Text style={cv.infoLabel}>Limite disponível</Text>
                     <Text style={cv.infoValue}>
-                        {fmt((card.credit_limit || 0) - Math.abs(card.balance))}
+                        {fmt((card.credit_limit || 0) + (card.balance || 0))}
                     </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
@@ -84,7 +86,7 @@ function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDele
                     <View style={[cv.progressFg, { width: `${usedPct * 100}%` as any, backgroundColor: usedPct > 0.8 ? '#FF6B6B' : 'rgba(255,255,255,0.9)' }]} />
                 </View>
                 <View style={cv.limitRow}>
-                    <Text style={cv.limitTxt}>{fmt(Math.abs(card.balance))} usado</Text>
+                    <Text style={cv.limitTxt}>{fmt(used)} usado</Text>
                     <Text style={cv.limitTxt}>Limite: {fmt(card.credit_limit || 0)}</Text>
                 </View>
             </View>
@@ -201,7 +203,7 @@ export default function CardsScreen() {
                                     <View style={[styles.dot, { backgroundColor: colors.expense }]} />
                                     <Text style={styles.summaryLabel}>Total utilizado</Text>
                                 </View>
-                                <Text style={[styles.summaryValue, { color: colors.expense }]}>{fmt(cards.reduce((a, c) => a + Math.abs(Math.min(c.balance, 0)), 0))}</Text>
+                                <Text style={[styles.summaryValue, { color: colors.expense }]}>{fmt(cards.reduce((a, c) => a + Math.max(0, -(c.balance || 0)), 0))}</Text>
                             </View>
                             <View style={[styles.summaryRow, { borderBottomWidth: 0 }]}>
                                 <View style={styles.summaryLabelRow}>
@@ -209,7 +211,7 @@ export default function CardsScreen() {
                                     <Text style={styles.summaryLabel}>Disponível</Text>
                                 </View>
                                 <Text style={[styles.summaryValue, { color: colors.income }]}>
-                                    {fmt(cards.reduce((a, c) => a + Math.max((c.credit_limit || 0) - Math.abs(Math.min(c.balance, 0)), 0), 0))}
+                                    {fmt(cards.reduce((a, c) => a + (c.credit_limit || 0) + (c.balance || 0), 0))}
                                 </Text>
                             </View>
                         </View>

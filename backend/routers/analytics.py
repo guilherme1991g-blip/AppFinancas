@@ -100,8 +100,11 @@ async def get_summary(
                 "status": bill["status"] if bill else "open"
             })
 
-    total_balance = sum(a["balance"] for a in accounts if a["type"] != "credit_card" or a["balance"] > 0)
-
+    total_balance = sum(a["balance"] for a in accounts)
+    
+    # Balance for the month
+    month_balance = (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending)
+ 
     return {
         "month": m,
         "year": y,
@@ -109,11 +112,11 @@ async def get_summary(
         "expense": expense_paid + bill_expense_paid,
         "pending_income": income_pending,
         "pending_expense": tx_expense_pending + bill_expense_pending,
-        "balance": (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending),
+        "balance": month_balance,
         "total_balance": total_balance,
-        # Forecast subtracts pending non-CC transactions and pending CC bills.
-        # total_balance only includes assets (non-CC or CC with positive balance).
-        "forecast": total_balance + income_pending - tx_expense_pending - bill_expense_pending,
+        # Forecast is current Net Worth + expected surplus/deficit of pending items.
+        # Since card transactions already updated 'total_balance', we only add pending non-card items.
+        "forecast": total_balance + income_pending - tx_expense_pending,
         "income_count": income_count,
         "expense_count": expense_count,
         "credit_cards": cc_details
