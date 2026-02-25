@@ -87,7 +87,7 @@ export default function RecurringListScreen() {
                                                 }
                                             },
                                             {
-                                                text: 'Toda a série',
+                                                text: 'Todos (incluindo pagos)',
                                                 style: 'destructive',
                                                 onPress: async () => {
                                                     try {

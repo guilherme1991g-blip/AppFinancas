@@ -55,7 +55,7 @@ export default function TransactionDetailScreen() {
                         }
                     },
                     {
-                        text: 'Este e próximos',
+                        text: 'Este e todos pendentes',
                         style: 'destructive',
                         onPress: async () => {
                             try { await api.deleteTransaction(id, 'future'); router.back(); }
@@ -63,7 +63,7 @@ export default function TransactionDetailScreen() {
                         }
                     },
                     {
-                        text: 'Toda a série',
+                        text: 'Todos (incluindo pagos)',
                         style: 'destructive',
                         onPress: async () => {
                             try { await api.deleteTransaction(id, 'series'); router.back(); }
