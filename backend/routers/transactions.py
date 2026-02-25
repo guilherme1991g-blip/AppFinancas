@@ -25,6 +25,7 @@ def tx_doc(doc) -> dict:
         "is_paid": doc.get("is_paid", True),
         "due_date": doc.get("due_date"),
         "paid_at": doc.get("paid_at"),
+        "recurring_id": str(doc["recurring_id"]) if doc.get("recurring_id") else None,
         "created_at": doc["created_at"]
     }
 
