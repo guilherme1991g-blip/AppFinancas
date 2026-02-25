@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
@@ -16,6 +17,7 @@ function fmt(v: number) {
 const FR_LABEL: Record<string, string> = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' };
 
 export default function SettingsScreen() {
+    const insets = useSafeAreaInsets();
     const { user, logout } = useAuth();
     const { mode, colors, toggleTheme } = useTheme();
     const now = new Date();
@@ -53,10 +55,11 @@ export default function SettingsScreen() {
         <View style={styles.root}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
             >
                 {/* Header */}
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                     <View>
                         <Text style={styles.title}>Ajustes</Text>
                         <Text style={styles.sub}>Gerenciamento da sua conta</Text>
@@ -170,7 +173,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <View style={{ height: 120 }} />
+                <View style={{ height: 20 }} />
             </ScrollView>
         </View>
     );

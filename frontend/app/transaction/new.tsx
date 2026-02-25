@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { api } from '@/services/api';
@@ -15,6 +16,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 const FREQUENCY = 'monthly';
 
 export default function NewTransactionScreen() {
+    const insets = useSafeAreaInsets();
     const { mode, colors } = useTheme();
     const { type: initialType } = useLocalSearchParams<{ type?: string }>();
     const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
@@ -37,6 +39,10 @@ export default function NewTransactionScreen() {
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+    // Credit Card specific state
+    const [isInstallment, setIsInstallment] = useState(false);
+    const [installmentsCount, setInstallmentsCount] = useState('2');
 
     useEffect(() => {
         async function load() {
@@ -97,8 +103,45 @@ export default function NewTransactionScreen() {
                     start_date: date.toISOString(),
                     installments: isUnlimited ? null : parseInt(installments) || 1,
                     is_active: true,
-                    company_id: null // To be implemented later if needed
+                    company_id: null
                 });
+            } else if (payMethod === 'card' && isInstallment) {
+                const count = parseInt(installmentsCount) || 2;
+                const installmentValue = val / count;
+                const account = accounts.find(a => a.id === selectedAccount);
+                const closingDay = account?.closing_day || 10;
+
+                // Purchase date
+                const purchaseDate = new Date(date);
+
+                for (let i = 0; i < count; i++) {
+                    const installmentDate = new Date(purchaseDate);
+                    // If purchase day is after closing day, the first installment is for next month
+                    let targetMonth = purchaseDate.getMonth() + i;
+                    if (purchaseDate.getDate() > closingDay) {
+                        targetMonth += 1;
+                    }
+
+                    installmentDate.setMonth(targetMonth);
+                    // We don't need to be exact here, usually bill dates are just month/year
+                    // But we set a "due date" based on due_day if exists
+                    const dueDay = account?.due_day || closingDay + 7;
+                    installmentDate.setDate(dueDay);
+
+                    await api.createTransaction({
+                        account_id: selectedAccount,
+                        category_id: selectedCategory,
+                        type,
+                        amount: installmentValue,
+                        description: `${description} (${i + 1}/${count})`,
+                        notes,
+                        date: installmentDate.toISOString(),
+                        is_paid: false, // Credit card installments are usually unpaid until bill is paid
+                        due_date: installmentDate.toISOString(),
+                        paid_at: null,
+                        tags: [],
+                    });
+                }
             } else {
                 await api.createTransaction({
                     account_id: selectedAccount,
@@ -131,7 +174,7 @@ export default function NewTransactionScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
             <View style={styles.handle} />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -186,14 +229,21 @@ export default function NewTransactionScreen() {
                             <View style={styles.methodToggle}>
                                 <TouchableOpacity
                                     style={[styles.methodBtn, payMethod === 'account' && styles.methodBtnActive]}
-                                    onPress={() => setPayMethod('account')}
+                                    onPress={() => {
+                                        setPayMethod('account');
+                                        setIsPaid(true); // Default to paid when switching back to account
+                                    }}
                                 >
                                     <Ionicons name="wallet-outline" size={16} color={payMethod === 'account' ? colors.white : colors.textSecondary} />
                                     <Text style={[styles.methodTxt, payMethod === 'account' && { color: colors.white }]}>Conta / Dinheiro</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.methodBtn, payMethod === 'card' && styles.methodBtnActive]}
-                                    onPress={() => setPayMethod('card')}
+                                    onPress={() => {
+                                        setPayMethod('card');
+                                        setIsPaid(false); // Default to unpaid for card
+                                        setIsRecurring(false); // Ensure recurring is off for card
+                                    }}
                                 >
                                     <Ionicons name="card-outline" size={16} color={payMethod === 'card' ? colors.white : colors.textSecondary} />
                                     <Text style={[styles.methodTxt, payMethod === 'card' && { color: colors.white }]}>Cartão de Crédito</Text>
@@ -201,66 +251,116 @@ export default function NewTransactionScreen() {
                             </View>
                         )}
 
-                        {/* Recurring Switch & Options */}
-                        <View style={styles.settingsGroup}>
-                            <View style={styles.settingRow}>
-                                <View style={styles.settingIconWrap}>
-                                    <Ionicons name="repeat" size={20} color={colors.primary} />
+                        {/* Credit Card Installments Option */}
+                        {payMethod === 'card' && !isRecurring && (
+                            <View style={styles.settingsGroup}>
+                                <View style={styles.settingRow}>
+                                    <View style={[styles.settingIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                                        <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.settingLabel}>Pagamento</Text>
+                                        <Text style={styles.settingSub}>{isInstallment ? 'Parcelado' : 'À vista'}</Text>
+                                    </View>
+                                    <View style={styles.miniToggle}>
+                                        <TouchableOpacity
+                                            style={[styles.miniBtn, !isInstallment && styles.miniBtnActive]}
+                                            onPress={() => setIsInstallment(false)}
+                                        >
+                                            <Text style={[styles.miniBtnTxt, !isInstallment && { color: colors.white }]}>À vista</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.miniBtn, isInstallment && styles.miniBtnActive]}
+                                            onPress={() => setIsInstallment(true)}
+                                        >
+                                            <Text style={[styles.miniBtnTxt, isInstallment && { color: colors.white }]}>Parcelado</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.settingLabel}>Lançamento Recorrente</Text>
-                                    <Text style={styles.settingSub}>Repetir mensalmente</Text>
-                                </View>
-                                <Switch
-                                    value={isRecurring}
-                                    onValueChange={setIsRecurring}
-                                    trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                                    thumbColor={isRecurring ? colors.primary : colors.textSecondary}
-                                />
-                            </View>
 
-                            {isRecurring && (
-                                <>
+                                {isInstallment && (
                                     <View style={styles.settingRow}>
-                                        <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
-                                            <Ionicons name="infinite" size={20} color={colors.secondary} />
+                                        <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
+                                            <Ionicons name="list" size={20} color="#FF9F43" />
                                         </View>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.settingLabel}>Ilimitado</Text>
-                                            <Text style={styles.settingSub}>Sem data de término</Text>
+                                            <Text style={styles.settingLabel}>Número de Parcelas</Text>
                                         </View>
-                                        <Switch
-                                            value={isUnlimited}
-                                            onValueChange={setIsUnlimited}
-                                            trackColor={{ false: colors.border, true: colors.secondary + '80' }}
-                                            thumbColor={isUnlimited ? colors.secondary : colors.textSecondary}
+                                        <TextInput
+                                            style={styles.installmentInput}
+                                            value={installmentsCount}
+                                            onChangeText={setInstallmentsCount}
+                                            keyboardType="numeric"
+                                            placeholder="Ex: 3"
+                                            placeholderTextColor={colors.textMuted}
                                         />
                                     </View>
+                                )}
+                            </View>
+                        )}
 
-                                    {!isUnlimited && (
+                        {/* Recurring Switch & Options */}
+                        {payMethod !== 'card' && (
+                            <View style={styles.settingsGroup}>
+                                <View style={styles.settingRow}>
+                                    <View style={styles.settingIconWrap}>
+                                        <Ionicons name="repeat" size={20} color={colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.settingLabel}>Lançamento Recorrente</Text>
+                                        <Text style={styles.settingSub}>Repetir mensalmente</Text>
+                                    </View>
+                                    <Switch
+                                        value={isRecurring}
+                                        onValueChange={setIsRecurring}
+                                        trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                                        thumbColor={isRecurring ? colors.primary : colors.textSecondary}
+                                    />
+                                </View>
+
+                                {isRecurring && (
+                                    <>
                                         <View style={styles.settingRow}>
-                                            <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
-                                                <Ionicons name="list" size={20} color="#FF9F43" />
+                                            <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
+                                                <Ionicons name="infinite" size={20} color={colors.secondary} />
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={styles.settingLabel}>Quantidade de Vezes</Text>
+                                                <Text style={styles.settingLabel}>Ilimitado</Text>
+                                                <Text style={styles.settingSub}>Sem data de término</Text>
                                             </View>
-                                            <TextInput
-                                                style={styles.installmentInput}
-                                                value={installments}
-                                                onChangeText={setInstallments}
-                                                keyboardType="numeric"
-                                                placeholder="Ex: 12"
-                                                placeholderTextColor={colors.textMuted}
+                                            <Switch
+                                                value={isUnlimited}
+                                                onValueChange={setIsUnlimited}
+                                                trackColor={{ false: colors.border, true: colors.secondary + '80' }}
+                                                thumbColor={isUnlimited ? colors.secondary : colors.textSecondary}
                                             />
                                         </View>
-                                    )}
-                                </>
-                            )}
-                        </View>
 
-                        {/* Paid Toggle (only for non-recurring) */}
-                        {!isRecurring && (
+                                        {!isUnlimited && (
+                                            <View style={styles.settingRow}>
+                                                <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
+                                                    <Ionicons name="list" size={20} color="#FF9F43" />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.settingLabel}>Quantidade de Vezes</Text>
+                                                </View>
+                                                <TextInput
+                                                    style={styles.installmentInput}
+                                                    value={installments}
+                                                    onChangeText={setInstallments}
+                                                    keyboardType="numeric"
+                                                    placeholder="Ex: 12"
+                                                    placeholderTextColor={colors.textMuted}
+                                                />
+                                            </View>
+                                        )}
+                                    </>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Paid Toggle (only for non-recurring and non-card) */}
+                        {!isRecurring && payMethod !== 'card' && (
                             <View style={styles.fieldGroup}>
                                 <View style={styles.switchRow}>
                                     <View style={{ flex: 1 }}>
@@ -282,7 +382,7 @@ export default function NewTransactionScreen() {
 
                         {/* Date Selection */}
                         <View style={styles.fieldGroup}>
-                            <Text style={styles.fieldLabel}>{isPaid ? 'Data do Pagamento' : 'Data de Vencimento'}</Text>
+                            <Text style={styles.fieldLabel}>{payMethod === 'card' ? 'Data da Compra' : (isPaid ? 'Data do Pagamento' : 'Data de Vencimento')}</Text>
                             <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
@@ -398,7 +498,7 @@ export default function NewTransactionScreen() {
                                                 <Ionicons name="close" size={24} color={colors.text} />
                                             </TouchableOpacity>
                                         </View>
-                                        <ScrollView contentContainerStyle={{ padding: 20 }}>
+                                        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
                                             <View style={styles.catGrid}>
                                                 {filteredCats.map(cat => (
                                                     <TouchableOpacity
@@ -451,7 +551,7 @@ export default function NewTransactionScreen() {
                     </ScrollView>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
-        </View>
+        </View >
     );
 }
 
@@ -497,6 +597,11 @@ const s = (colors: any) => StyleSheet.create({
     freqBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
     freqBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     freqTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+
+    miniToggle: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 10, padding: 2, borderWidth: 1, borderColor: colors.border },
+    miniBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    miniBtnActive: { backgroundColor: colors.primary },
+    miniBtnTxt: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
 
     input: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, color: colors.text, fontSize: 15, borderWidth: 1, borderColor: colors.border, fontWeight: '500' },
 
