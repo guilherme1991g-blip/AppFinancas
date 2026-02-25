@@ -321,7 +321,9 @@ export default function DashboardScreen() {
                                                 <View style={styles.ccMain}>
                                                     <View>
                                                         <Text style={styles.ccLabel}>Fatura Atual</Text>
-                                                        <Text style={styles.ccValue}>{fmt(balance)}</Text>
+                                                        <Text style={styles.ccValue}>
+                                                            {fmt(summary?.credit_cards?.find((c: any) => c.account_id === card.id)?.bill_total || 0)}
+                                                        </Text>
                                                     </View>
                                                     <View style={{ alignItems: 'flex-end' }}>
                                                         <Text style={styles.ccLabel}>Vencimento</Text>
@@ -653,6 +655,7 @@ const s = (colors: any) => StyleSheet.create({
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
     seeAll: { fontSize: 13, color: colors.primary, fontWeight: '800' },
+    spendingCard: { backgroundColor: colors.surface, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: colors.border },
 
     overdueCount: { fontSize: 13, fontWeight: '800', backgroundColor: colors.expense + '20', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
     overdueRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, padding: 14, marginBottom: 10, gap: 12, borderWidth: 1, borderColor: colors.expense + '30' },

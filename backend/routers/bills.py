@@ -27,8 +27,50 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
     if not acc:
         raise HTTPException(status_code=404, detail="Cartão não encontrado")
     
-    docs = await bills_collection.find({"account_id": ObjectId(account_id)}).sort([("year", -1), ("month", -1)]).to_list(length=24)
-    return [bill_doc(d) for d in docs]
+    # 1. Get existing bills
+    existing_docs = await bills_collection.find({"account_id": ObjectId(account_id)}).sort([("year", -1), ("month", -1)]).to_list(length=24)
+    bills = [bill_doc(d) for d in existing_docs]
+    existing_keys = {(b["month"], b["year"]) for b in bills}
+
+    # 2. Find months with transactions to generate virtual bills
+    pipeline = [
+        {"$match": {"account_id": ObjectId(account_id)}},
+        {"$group": {
+            "_id": {
+                "month": {"$month": "$date"},
+                "year": {"$year": "$date"}
+            },
+            "total": {"$sum": "$amount"}
+        }},
+        {"$sort": {"_id.year": -1, "_id.month": -1}}
+    ]
+    results = await transactions_collection.aggregate(pipeline).to_list(24)
+    
+    for r in results:
+        m, y = r["_id"]["month"], r["_id"]["year"]
+        if (m, y) not in existing_keys:
+            # Create a virtual bill
+            closing_day = acc.get("closing_day", 10)
+            closing_date = datetime(y, m, closing_day)
+            due_day = acc.get("due_day", closing_day + 7)
+            # Find due date (can be next month if closing is late)
+            due_date = datetime(y, m, due_day) if due_day > closing_day else (datetime(y, m+1, due_day) if m < 12 else datetime(y+1, 1, due_day))
+            
+            bills.append({
+                "id": f"v_{account_id}_{m}_{y}",
+                "account_id": account_id,
+                "month": m,
+                "year": y,
+                "amount": r["total"],
+                "status": "open",
+                "due_date": due_date.isoformat(),
+                "closing_date": closing_date.isoformat(),
+                "created_at": datetime.utcnow().isoformat()
+            })
+
+    # Sort final list
+    bills.sort(key=lambda x: (x["year"], x["month"]), reverse=True)
+    return bills[:24]
 
 @router.get("/{bill_id}/transactions")
 async def get_bill_transactions(bill_id: str, current_user=Depends(get_current_user)):

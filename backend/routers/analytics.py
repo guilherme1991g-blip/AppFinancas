@@ -65,6 +65,7 @@ async def get_summary(
     # Calculate bill totals
     bill_expense_paid = 0
     bill_expense_pending = 0
+    cc_details = []
     
     for acc in accounts:
         if acc["type"] == "credit_card":
@@ -74,7 +75,10 @@ async def get_summary(
                 "month": m,
                 "year": y
             })
+            
+            bill_total = 0
             if bill:
+                bill_total = bill["amount"]
                 if bill["status"] == "paid":
                     bill_expense_paid += bill["amount"]
                 else:
@@ -85,11 +89,16 @@ async def get_summary(
                     "account_id": acc["_id"],
                     "date": {"$gte": start, "$lt": end}
                 }
-                cc_total = 0
                 async for tx in transactions_collection.find(cc_tx_query):
-                    cc_total += tx["amount"]
+                    bill_total += tx["amount"]
                 
-                bill_expense_pending += cc_total
+                bill_expense_pending += bill_total
+
+            cc_details.append({
+                "account_id": str(acc["_id"]),
+                "bill_total": bill_total,
+                "status": bill["status"] if bill else "open"
+            })
 
     total_balance = sum(a["balance"] for a in accounts if a["type"] != "credit_card" or a["balance"] > 0)
 
@@ -106,7 +115,8 @@ async def get_summary(
         # total_balance only includes assets (non-CC or CC with positive balance).
         "forecast": total_balance + income_pending - tx_expense_pending - bill_expense_pending,
         "income_count": income_count,
-        "expense_count": expense_count
+        "expense_count": expense_count,
+        "credit_cards": cc_details
     }
 
 
