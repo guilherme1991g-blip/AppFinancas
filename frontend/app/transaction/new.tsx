@@ -50,6 +50,12 @@ export default function NewTransactionScreen() {
                 setCategories(cats);
                 const filteredAccs = accs.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
                 if (filteredAccs.length > 0) setSelectedAccount(filteredAccs[0].id);
+
+                // Default category selection
+                if (!selectedCategory) {
+                    const outros = cats.find(c => c.name === 'Outros' && c.type === (initialType === 'income' ? 'income' : 'expense'));
+                    if (outros) setSelectedCategory(outros.id);
+                }
             } catch (e) { console.error(e); }
             finally { setFetching(false); }
         }
@@ -62,6 +68,15 @@ export default function NewTransactionScreen() {
             setSelectedAccount(filteredAccs[0].id);
         }
     }, [payMethod, accounts]);
+
+    useEffect(() => {
+        // Update default category when type changes
+        const currentCat = categories.find(c => c.id === selectedCategory);
+        if (!currentCat || currentCat.type !== type) {
+            const outros = categories.find(c => c.name === 'Outros' && c.type === type);
+            if (outros) setSelectedCategory(outros.id);
+        }
+    }, [type, categories]);
 
     const filteredCats = categories.filter(c => c.type === type);
     const filteredAccs = accounts.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
@@ -262,7 +277,7 @@ export default function NewTransactionScreen() {
                                     display={Platform.OS === 'ios' ? 'inline' : 'default'}
                                     themeVariant={mode}
                                     onChange={(event, selectedDate) => {
-                                        if (Platform.OS !== 'ios') setShowPicker(false);
+                                        setShowPicker(false); // Auto-close on selection
                                         if (selectedDate) setDate(selectedDate);
                                     }}
                                 />

@@ -66,12 +66,23 @@ async def create_category(data: CategoryCreate, current_user=Depends(get_current
 
 @router.put("/{category_id}")
 async def update_category(category_id: str, data: CategoryUpdate, current_user=Depends(get_current_user)):
+    obj_id = ObjectId(category_id)
+    user_id = current_user["_id"]
+    
+    # Check if it's the protected "Outros" category
+    cat = await categories_collection.find_one({"_id": obj_id, "user_id": user_id})
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
+    
+    if cat.get("is_default") and cat.get("name") == "Outros":
+        raise HTTPException(status_code=400, detail="A categoria 'Outros' é padrão do sistema e não pode ser editada.")
+
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     await categories_collection.update_one(
-        {"_id": ObjectId(category_id), "user_id": current_user["_id"]},
+        {"_id": obj_id, "user_id": user_id},
         {"$set": update_data}
     )
-    doc = await categories_collection.find_one({"_id": ObjectId(category_id)})
+    doc = await categories_collection.find_one({"_id": obj_id})
     return cat_doc(doc)
 
 
@@ -113,6 +124,17 @@ async def delete_category(category_id: str, current_user=Depends(get_current_use
         raise HTTPException(
             status_code=400, 
             detail="Não é possível excluir uma categoria que possui subcategorias. Exclua as subcategorias primeiro."
+        )
+
+    # Check if it's the protected "Outros" category
+    cat = await categories_collection.find_one({
+        "_id": obj_id,
+        "user_id": user_id
+    })
+    if cat and cat.get("is_default") and cat.get("name") == "Outros":
+        raise HTTPException(
+            status_code=400,
+            detail="A categoria 'Outros' é padrão do sistema e não pode ser removida."
         )
 
     result = await categories_collection.delete_one(

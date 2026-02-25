@@ -107,11 +107,12 @@ export default function CategoryManagementScreen() {
         ]);
     }
 
-    const renderRightActions = (id: string, name: string, closeSwipe: () => void) => {
+    const renderRightActions = (cat: any, closeSwipe: () => void) => {
+        if (cat.is_default && cat.name === 'Outros') return null;
         return (
             <RNTouchableOpacity
                 style={styles.swipeDeleteBtn}
-                onPress={() => handleDelete(id, name, closeSwipe)}
+                onPress={() => handleDelete(cat.id, cat.name, closeSwipe)}
             >
                 <Ionicons name="trash-outline" size={24} color={colors.white} />
             </RNTouchableOpacity>
@@ -159,8 +160,8 @@ export default function CategoryManagementScreen() {
                                     return (
                                         <Swipeable
                                             key={cat.id}
-                                            ref={ref => (swipeRef = ref)}
-                                            renderRightActions={() => renderRightActions(cat.id, cat.name, () => swipeRef?.close())}
+                                            ref={ref => { swipeRef = ref; }}
+                                            renderRightActions={() => renderRightActions(cat, () => swipeRef?.close())}
                                             containerStyle={{ borderBottomWidth: idx === filtered.length - 1 ? 0 : 1, borderBottomColor: colors.border }}
                                             friction={2}
                                             enableTrackpadTwoFingerGesture
@@ -253,11 +254,13 @@ export default function CategoryManagementScreen() {
                             <Text style={mStyles.previewTitle}>{catName || 'Visualização'}</Text>
                         </View>
 
-                        <RNTouchableOpacity style={mStyles.saveBtn} onPress={handleSave} disabled={actionLoading}>
-                            {actionLoading ? <ActivityIndicator color={colors.white} /> : <Text style={mStyles.saveBtnTxt}>Salvar</Text>}
-                        </RNTouchableOpacity>
+                        {(!editingCat || !(editingCat.is_default && editingCat.name === 'Outros')) && (
+                            <RNTouchableOpacity style={mStyles.saveBtn} onPress={handleSave} disabled={actionLoading}>
+                                {actionLoading ? <ActivityIndicator color={colors.white} /> : <Text style={mStyles.saveBtnTxt}>Salvar</Text>}
+                            </RNTouchableOpacity>
+                        )}
 
-                        {editingCat && (
+                        {editingCat && !(editingCat.is_default && editingCat.name === 'Outros') && (
                             <RNTouchableOpacity
                                 style={mStyles.deleteBtn}
                                 onPress={() => handleDelete(editingCat.id, editingCat.name)}
@@ -266,6 +269,12 @@ export default function CategoryManagementScreen() {
                                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
                                 <Text style={mStyles.deleteBtnTxt}>Excluir Categoria</Text>
                             </RNTouchableOpacity>
+                        )}
+                        {(editingCat?.is_default && editingCat?.name === 'Outros') && (
+                            <View style={[styles.infoBox, { marginTop: 20 }]}>
+                                <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                                <Text style={styles.infoBoxTxt}>Esta é uma categoria padrão do sistema e não pode ser alterada.</Text>
+                            </View>
                         )}
                     </ScrollView>
                 </View>
@@ -295,7 +304,9 @@ const s = (colors: any, mode: string) => StyleSheet.create({
         alignItems: 'center',
         width: 80,
         height: '100%',
-    }
+    },
+    infoBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+    infoBoxTxt: { flex: 1, fontSize: 13, color: colors.textSecondary, fontWeight: '500', lineHeight: 18 }
 });
 
 const m = (colors: any, mode: string) => StyleSheet.create({
