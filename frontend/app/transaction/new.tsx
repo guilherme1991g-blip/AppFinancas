@@ -11,12 +11,8 @@ import { format } from 'date-fns';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const FREQUENCIES = [
-    { key: 'daily', label: 'Diário' },
-    { key: 'weekly', label: 'Semanal' },
-    { key: 'monthly', label: 'Mensal' },
-    { key: 'yearly', label: 'Anual' },
-];
+// Forces monthly frequency for simplicity
+const FREQUENCY = 'monthly';
 
 export default function NewTransactionScreen() {
     const { mode, colors } = useTheme();
@@ -35,7 +31,6 @@ export default function NewTransactionScreen() {
 
     // Recurring state
     const [isRecurring, setIsRecurring] = useState(false);
-    const [frequency, setFrequency] = useState('monthly');
     const [installments, setInstallments] = useState('12');
     const [isUnlimited, setIsUnlimited] = useState(true);
     const [isPaid, setIsPaid] = useState(true);
@@ -98,7 +93,7 @@ export default function NewTransactionScreen() {
                     type,
                     amount: val,
                     description,
-                    frequency,
+                    frequency: FREQUENCY,
                     start_date: date.toISOString(),
                     installments: isUnlimited ? null : parseInt(installments) || 1,
                     is_active: true,
@@ -260,22 +255,6 @@ export default function NewTransactionScreen() {
                                             />
                                         </View>
                                     )}
-                                    {isRecurring && (
-                                        <View style={[styles.settingRow, { flexDirection: 'column', alignItems: 'flex-start', borderBottomWidth: 0 }]}>
-                                            <Text style={styles.settingLabel}>Frequência</Text>
-                                            <View style={styles.freqRow}>
-                                                {FREQUENCIES.map(f => (
-                                                    <TouchableOpacity
-                                                        key={f.key}
-                                                        style={[styles.freqBtn, frequency === f.key && styles.freqBtnActive]}
-                                                        onPress={() => setFrequency(f.key)}
-                                                    >
-                                                        <Text style={[styles.freqTxt, frequency === f.key && { color: colors.white }]}>{f.label}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </View>
-                                    )}
                                 </>
                             )}
                         </View>
@@ -320,18 +299,22 @@ export default function NewTransactionScreen() {
                                     display={Platform.OS === 'ios' ? 'inline' : 'default'}
                                     themeVariant={mode}
                                     onChange={(event, selectedDate) => {
-                                        setShowPicker(false); // Auto-close on selection
-                                        if (selectedDate) setDate(selectedDate);
+                                        setShowPicker(false);
+                                        if (selectedDate) {
+                                            setDate(selectedDate);
+                                            // Normalizar datas para comparação (apenas ano/mês/dia)
+                                            const today = new Date();
+                                            today.setHours(0, 0, 0, 0);
+
+                                            const pickDate = new Date(selectedDate);
+                                            pickDate.setHours(0, 0, 0, 0);
+
+                                            if (pickDate > today) {
+                                                setIsPaid(false);
+                                            }
+                                        }
                                     }}
                                 />
-                            )}
-                            {showPicker && Platform.OS === 'ios' && (
-                                <TouchableOpacity
-                                    style={{ alignSelf: 'flex-end', marginTop: 10, padding: 8, backgroundColor: colors.primary + '20', borderRadius: 12 }}
-                                    onPress={() => setShowPicker(false)}
-                                >
-                                    <Text style={{ color: colors.primary, fontWeight: '700' }}>Confirmar</Text>
-                                </TouchableOpacity>
                             )}
                         </View>
 
