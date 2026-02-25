@@ -136,9 +136,9 @@ export default function NewTransactionScreen() {
                         description: `${description} (${i + 1}/${count})`,
                         notes,
                         date: installmentDate.toISOString(),
-                        is_paid: false, // Credit card installments are usually unpaid until bill is paid
+                        is_paid: true, // Always true for cards to update debt balance
                         due_date: installmentDate.toISOString(),
-                        paid_at: null,
+                        paid_at: installmentDate.toISOString(),
                         tags: [],
                     });
                 }

@@ -80,9 +80,16 @@ async def get_summary(
                 else:
                     bill_expense_pending += bill["amount"]
             else:
-                # Fallback to current balance if negative (virtual bill)
-                if acc["balance"] < 0:
-                    bill_expense_pending += abs(acc["balance"])
+                # Calculate virtual bill for this specific month/year
+                cc_tx_query = {
+                    "account_id": acc["_id"],
+                    "date": {"$gte": start, "$lt": end}
+                }
+                cc_total = 0
+                async for tx in transactions_collection.find(cc_tx_query):
+                    cc_total += tx["amount"]
+                
+                bill_expense_pending += cc_total
 
     total_balance = sum(a["balance"] for a in accounts if a["type"] != "credit_card" or a["balance"] > 0)
 
