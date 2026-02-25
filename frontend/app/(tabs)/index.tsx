@@ -42,6 +42,7 @@ export default function DashboardScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [balanceVisible, setBalanceVisible] = useState(true);
     const [cardIndex, setCardIndex] = useState(0);
+    const [ccCardIndex, setCcCardIndex] = useState(0);
 
     async function fetchData() {
         try {
@@ -118,7 +119,7 @@ export default function DashboardScreen() {
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
-                    onMomentumScrollEnd={(e) => {
+                    onMomentumScrollEnd={(e: any) => {
                         const idx = Math.round(e.nativeEvent.contentOffset.x / width);
                         setCardIndex(idx);
                     }}
@@ -223,10 +224,10 @@ export default function DashboardScreen() {
                 ))}
             </View>
 
-            {/* Credit Cards Highlight Section */}
+            {/* Credit Cards Carousel Section */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Cartões de Crédito</Text>
+                    <Text style={styles.sectionTitle}>Meus Cartões</Text>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/cards' as any)}>
                         <Text style={styles.seeAll}>Gerenciar</Text>
                     </TouchableOpacity>
@@ -250,48 +251,91 @@ export default function DashboardScreen() {
                     }
 
                     return (
-                        <View style={styles.invoiceList}>
-                            {creditCards.map(card => {
-                                const today = new Date().getDate();
-                                const cDay = card.closing_day || 25;
-                                const dDay = card.due_day || 5;
+                        <View>
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                onMomentumScrollEnd={(e) => {
+                                    const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 40));
+                                    setCcCardIndex(idx);
+                                }}
+                                contentContainerStyle={{ gap: 0 }}
+                            >
+                                {creditCards.map(card => {
+                                    const today = new Date().getDate();
+                                    const cDay = card.closing_day || 25;
+                                    const dDay = card.due_day || 5;
+                                    const limit = card.credit_limit || 0;
+                                    const balance = Math.abs(card.balance);
+                                    const available = Math.max(0, limit - balance);
 
-                                // Simple logic: if between closing and due, it's CLOSED. 
-                                // Else it's OPEN (spending for next cycle or current till close)
-                                let isClosed = false;
-                                if (dDay > cDay) {
-                                    isClosed = today > cDay && today <= dDay;
-                                } else {
-                                    // Crosses month boundary (e.g close 25, due 05)
-                                    isClosed = today > cDay || today <= dDay;
-                                }
+                                    let isClosed = false;
+                                    if (dDay > cDay) {
+                                        isClosed = today > cDay && today <= dDay;
+                                    } else {
+                                        isClosed = today > cDay || today <= dDay;
+                                    }
 
-                                return (
-                                    <TouchableOpacity
-                                        key={card.id}
-                                        style={styles.invoiceRow}
-                                        onPress={() => router.push('/(tabs)/cards' as any)}
-                                    >
-                                        <View style={[styles.invoiceIcon, { backgroundColor: (card.color || colors.primary) + '15' }]}>
-                                            <Ionicons name="card" size={20} color={card.color || colors.primary} />
+                                    return (
+                                        <View key={card.id} style={{ width: width - 40 }}>
+                                            <TouchableOpacity
+                                                activeOpacity={0.9}
+                                                style={[styles.ccItem, { borderLeftColor: card.color || colors.primary }]}
+                                                onPress={() => router.push('/(tabs)/cards' as any)}
+                                            >
+                                                <View style={styles.ccHeader}>
+                                                    <View style={[styles.ccIcon, { backgroundColor: (card.color || colors.primary) + '15' }]}>
+                                                        <Ionicons name="card" size={22} color={card.color || colors.primary} />
+                                                    </View>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={styles.ccName}>{card.name}</Text>
+                                                        <Text style={styles.ccBrand}>{card.card_brand || 'Cartão'} •••• {card.last_digits || '0000'}</Text>
+                                                    </View>
+                                                    <View style={[styles.ccStatus, { backgroundColor: isClosed ? colors.expense + '15' : colors.income + '15' }]}>
+                                                        <Text style={[styles.ccStatusTxt, { color: isClosed ? colors.expense : colors.income }]}>
+                                                            {isClosed ? 'Fechada' : 'Aberta'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.ccMain}>
+                                                    <View>
+                                                        <Text style={styles.ccLabel}>Fatura Atual</Text>
+                                                        <Text style={styles.ccValue}>{fmt(balance)}</Text>
+                                                    </View>
+                                                    <View style={{ alignItems: 'flex-end' }}>
+                                                        <Text style={styles.ccLabel}>Vencimento</Text>
+                                                        <Text style={styles.ccValueSmall}>Dia {String(dDay).padStart(2, '0')}</Text>
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.ccFooter}>
+                                                    <View style={{ flex: 1 }}>
+                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <Text style={styles.limitLabel}>Limite Disponível</Text>
+                                                            <Text style={styles.limitValue}>{fmt(available)}</Text>
+                                                        </View>
+                                                        <View style={styles.limitBarBg}>
+                                                            <View style={[styles.limitBarFg, {
+                                                                width: `${limit > 0 ? (available / limit) * 100 : 0}%` as any,
+                                                                backgroundColor: card.color || colors.primary
+                                                            }]} />
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.invoiceName}>{card.name}</Text>
-                                            <Text style={styles.invoiceDue}>
-                                                Vence dia {String(dDay).padStart(2, '0')}
-                                            </Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={styles.invoiceAmount}>{fmt(Math.abs(card.balance))}</Text>
-                                            <View style={[styles.statusBadge, { backgroundColor: isClosed ? colors.expense + '15' : colors.income + '15' }]}>
-                                                <Text style={[styles.statusText, { color: isClosed ? colors.expense : colors.income }]}>
-                                                    Fatura {isClosed ? 'Fechada' : 'Aberta'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                    );
+                                })}
+                            </ScrollView>
+                            {creditCards.length > 1 && (
+                                <View style={[styles.dotsRow, { marginTop: 12, marginBottom: 0 }]}>
+                                    {creditCards.map((_, i) => (
+                                        <View key={i} style={[styles.dot, ccCardIndex === i && styles.dotActive]} />
+                                    ))}
+                                </View>
+                            )}
                         </View>
                     );
                 })()}
@@ -322,7 +366,7 @@ export default function DashboardScreen() {
                                     <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
                                     <TouchableOpacity
                                         style={styles.payNowBtn}
-                                        onPress={async (e) => {
+                                        onPress={async (e: any) => {
                                             e.stopPropagation();
                                             try {
                                                 await api.payTransaction(tx.id);
@@ -569,15 +613,24 @@ const s = (colors: any) => StyleSheet.create({
     cardsCardTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
     cardsCardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 18, fontWeight: '500' },
 
-    invoiceList: { gap: 10 },
-    invoiceRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 16, borderWidth: 1, borderColor: colors.border },
-    invoiceIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    invoiceName: { fontSize: 16, fontWeight: '800', color: colors.text },
-    invoiceDue: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
-    invoiceAmount: { fontSize: 16, fontWeight: '900', color: colors.text },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: 4 },
-    statusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-    section: { paddingHorizontal: 20, marginBottom: 20 },
+    ccItem: { backgroundColor: colors.surface, borderRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 6 },
+    ccHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+    ccIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    ccName: { fontSize: 17, fontWeight: '800', color: colors.text },
+    ccBrand: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginTop: 2, textTransform: 'capitalize' },
+    ccStatus: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+    ccStatusTxt: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+    ccMain: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 },
+    ccLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+    ccValue: { fontSize: 24, fontWeight: '900', color: colors.text },
+    ccValueSmall: { fontSize: 18, fontWeight: '800', color: colors.text },
+    ccFooter: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 },
+    limitLabel: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+    limitValue: { fontSize: 11, fontWeight: '800', color: colors.text },
+    limitBarBg: { height: 6, backgroundColor: colors.background, borderRadius: 3, overflow: 'hidden' },
+    limitBarFg: { height: '100%', borderRadius: 3 },
+
+    section: { paddingHorizontal: 20, marginBottom: 28 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
     seeAll: { fontSize: 13, color: colors.primary, fontWeight: '800' },
