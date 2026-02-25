@@ -98,10 +98,11 @@ export default function NewTransactionScreen() {
                     type,
                     amount: val,
                     description,
-                    frequency: 'monthly',
+                    frequency,
                     start_date: date.toISOString(),
                     installments: isUnlimited ? null : parseInt(installments) || 1,
                     is_active: true,
+                    company_id: null // To be implemented later if needed
                 });
             } else {
                 await api.createTransaction({
@@ -205,102 +206,100 @@ export default function NewTransactionScreen() {
                             </View>
                         )}
 
-                        {/* Recurring Switch */}
-                        {type === 'expense' && (
-                            <View style={styles.settingsGroup}>
-                                <View style={styles.settingRow}>
-                                    <View style={styles.settingIconWrap}>
-                                        <Ionicons name="repeat" size={20} color={colors.primary} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.settingLabel}>Lançamento Recorrente</Text>
-                                        <Text style={styles.settingSub}>Repetir mensalmente</Text>
-                                    </View>
-                                    <Switch
-                                        value={isRecurring}
-                                        onValueChange={setIsRecurring}
-                                        trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                                        thumbColor={isRecurring ? colors.primary : colors.textSecondary}
-                                    />
+                        {/* Recurring Switch & Options */}
+                        <View style={styles.settingsGroup}>
+                            <View style={styles.settingRow}>
+                                <View style={styles.settingIconWrap}>
+                                    <Ionicons name="repeat" size={20} color={colors.primary} />
                                 </View>
-
-                                {isRecurring && (
-                                    <>
-                                        <View style={styles.settingRow}>
-                                            <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
-                                                <Ionicons name="infinite" size={20} color={colors.secondary} />
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.settingLabel}>Ilimitado</Text>
-                                                <Text style={styles.settingSub}>Sem data de término</Text>
-                                            </View>
-                                            <Switch
-                                                value={isUnlimited}
-                                                onValueChange={setIsUnlimited}
-                                                trackColor={{ false: colors.border, true: colors.secondary + '80' }}
-                                                thumbColor={isUnlimited ? colors.secondary : colors.textSecondary}
-                                            />
-                                        </View>
-
-                                        {!isUnlimited && (
-                                            <View style={styles.settingRow}>
-                                                <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
-                                                    <Ionicons name="list" size={20} color="#FF9F43" />
-                                                </View>
-                                                <View style={{ flex: 1 }}>
-                                                    <Text style={styles.settingLabel}>Quantidade de Vezes</Text>
-                                                </View>
-                                                <TextInput
-                                                    style={styles.installmentInput}
-                                                    value={installments}
-                                                    onChangeText={setInstallments}
-                                                    keyboardType="numeric"
-                                                    placeholder="Ex: 12"
-                                                    placeholderTextColor={colors.textMuted}
-                                                />
-                                            </View>
-                                        )}
-                                    </>
-                                )}
-                            </View>
-                        )}
-
-                        {/* Recurrence Options */}
-                        {isRecurring && (
-                            <View style={styles.recurringPanel}>
-                                <Text style={styles.labelInner}>Frequência</Text>
-                                <View style={styles.freqRow}>
-                                    {FREQUENCIES.map(f => (
-                                        <TouchableOpacity
-                                            key={f.key}
-                                            style={[styles.freqBtn, frequency === f.key && styles.freqBtnActive]}
-                                            onPress={() => setFrequency(f.key)}
-                                        >
-                                            <Text style={[styles.freqTxt, frequency === f.key && { color: colors.white }]}>{f.label}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-
-                        {/* Paid Toggle */}
-                        <View style={styles.fieldGroup}>
-                            <View style={styles.switchRow}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>{type === 'income' ? 'Já recebeu?' : 'Já pagou?'}</Text>
-                                    <Text style={styles.fieldSub}>{isPaid
-                                        ? (type === 'income' ? 'Valor já entrou na conta' : 'Valor já saiu da conta')
-                                        : (type === 'income' ? 'Agendar recebimento' : 'Agendar para o vencimento')}
-                                    </Text>
+                                    <Text style={styles.settingLabel}>Lançamento Recorrente</Text>
+                                    <Text style={styles.settingSub}>Repetir mensalmente</Text>
                                 </View>
                                 <Switch
-                                    value={isPaid}
-                                    onValueChange={setIsPaid}
-                                    trackColor={{ false: colors.surface, true: colors.primary + '80' }}
-                                    thumbColor={isPaid ? colors.primary : colors.textSecondary}
+                                    value={isRecurring}
+                                    onValueChange={setIsRecurring}
+                                    trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                                    thumbColor={isRecurring ? colors.primary : colors.textSecondary}
                                 />
                             </View>
+
+                            {isRecurring && (
+                                <>
+                                    <View style={styles.settingRow}>
+                                        <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
+                                            <Ionicons name="infinite" size={20} color={colors.secondary} />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.settingLabel}>Ilimitado</Text>
+                                            <Text style={styles.settingSub}>Sem data de término</Text>
+                                        </View>
+                                        <Switch
+                                            value={isUnlimited}
+                                            onValueChange={setIsUnlimited}
+                                            trackColor={{ false: colors.border, true: colors.secondary + '80' }}
+                                            thumbColor={isUnlimited ? colors.secondary : colors.textSecondary}
+                                        />
+                                    </View>
+
+                                    {!isUnlimited && (
+                                        <View style={styles.settingRow}>
+                                            <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
+                                                <Ionicons name="list" size={20} color="#FF9F43" />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.settingLabel}>Quantidade de Vezes</Text>
+                                            </View>
+                                            <TextInput
+                                                style={styles.installmentInput}
+                                                value={installments}
+                                                onChangeText={setInstallments}
+                                                keyboardType="numeric"
+                                                placeholder="Ex: 12"
+                                                placeholderTextColor={colors.textMuted}
+                                            />
+                                        </View>
+                                    )}
+                                    {isRecurring && (
+                                        <View style={[styles.settingRow, { flexDirection: 'column', alignItems: 'flex-start', borderBottomWidth: 0 }]}>
+                                            <Text style={styles.settingLabel}>Frequência</Text>
+                                            <View style={styles.freqRow}>
+                                                {FREQUENCIES.map(f => (
+                                                    <TouchableOpacity
+                                                        key={f.key}
+                                                        style={[styles.freqBtn, frequency === f.key && styles.freqBtnActive]}
+                                                        onPress={() => setFrequency(f.key)}
+                                                    >
+                                                        <Text style={[styles.freqTxt, frequency === f.key && { color: colors.white }]}>{f.label}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
+                                </>
+                            )}
                         </View>
+
+                        {/* Paid Toggle (only for non-recurring) */}
+                        {!isRecurring && (
+                            <View style={styles.fieldGroup}>
+                                <View style={styles.switchRow}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.fieldLabel}>{type === 'income' ? 'Já recebeu?' : 'Já pagou?'}</Text>
+                                        <Text style={styles.fieldSub}>{isPaid
+                                            ? (type === 'income' ? 'Valor já entrou na conta' : 'Valor já saiu da conta')
+                                            : (type === 'income' ? 'Agendar recebimento' : 'Agendar para o vencimento')}
+                                        </Text>
+                                    </View>
+                                    <Switch
+                                        value={isPaid}
+                                        onValueChange={setIsPaid}
+                                        trackColor={{ false: colors.surface, true: colors.primary + '80' }}
+                                        thumbColor={isPaid ? colors.primary : colors.textSecondary}
+                                    />
+                                </View>
+                            </View>
+                        )}
 
                         {/* Date Selection */}
                         <View style={styles.fieldGroup}>
@@ -504,9 +503,14 @@ const s = (colors: any) => StyleSheet.create({
     fieldSub: { fontSize: 12, color: colors.textMuted, marginTop: 4, fontWeight: '500' },
     switchRow: { flexDirection: 'row', alignItems: 'center' },
 
-    recurringPanel: { backgroundColor: colors.surface, borderRadius: 18, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.border },
-    labelInner: { fontSize: 11, color: colors.textMuted, fontWeight: '800', marginBottom: 12, textTransform: 'uppercase' },
-    freqRow: { flexDirection: 'row', gap: 8 },
+    settingsGroup: { backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, marginBottom: 24 },
+    settingRow: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 14 },
+    settingIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' },
+    settingLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+    settingSub: { fontSize: 11, color: colors.textSecondary, marginTop: 2, fontWeight: '500' },
+    installmentInput: { width: 60, height: 40, backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.border, textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.text },
+
+    freqRow: { flexDirection: 'row', gap: 8, marginTop: 12, width: '100%' },
     freqBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
     freqBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     freqTxt: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
