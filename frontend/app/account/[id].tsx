@@ -121,7 +121,7 @@ export default function EditAccountScreen() {
             }
 
             const data: any = {
-                name: type === 'credit_card' ? undefined : name,
+                name,
                 bank,
                 type,
                 color
@@ -216,12 +216,10 @@ export default function EditAccountScreen() {
 
                         <Text style={styles.sectionLabel}>Informações Principais</Text>
                         <View style={styles.card}>
-                            {type !== 'credit_card' && (
-                                <View style={styles.fieldGroup}>
-                                    <Text style={styles.label}>Nome da Conta *</Text>
-                                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Ex: Nubank, Inter, Principal..." placeholderTextColor={colors.textMuted} />
-                                </View>
-                            )}
+                            <View style={styles.fieldGroup}>
+                                <Text style={styles.label}>{type === 'credit_card' ? 'Nome para Identificar o Cartão *' : 'Nome da Conta *'}</Text>
+                                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={type === 'credit_card' ? "Ex: Nubank Platinum, Cartão Mercado Livre..." : "Ex: Nubank, Inter, Principal..."} placeholderTextColor={colors.textMuted} />
+                            </View>
 
                             {type !== 'credit_card' && (
                                 <View style={styles.fieldGroup}>

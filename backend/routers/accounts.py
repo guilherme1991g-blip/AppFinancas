@@ -79,38 +79,23 @@ async def delete_account(account_id: str, current_user=Depends(get_current_user)
     obj_id = ObjectId(account_id)
     user_id = current_user["_id"]
     
-    # Check for linked transactions
-    has_transactions = await transactions_collection.find_one({
+    # Cascade deletion to transactions
+    await transactions_collection.delete_many({
         "user_id": user_id,
         "$or": [{"account_id": obj_id}, {"to_account_id": obj_id}]
     })
-    if has_transactions:
-        raise HTTPException(
-            status_code=400, 
-            detail="Não é possível excluir uma conta que possui transações vinculadas. Exclua as transações primeiro."
-        )
         
-    # Check for linked transfers
-    has_transfers = await transfers_collection.find_one({
+    # Cascade deletion to transfers
+    await transfers_collection.delete_many({
         "user_id": user_id,
         "$or": [{"from_account_id": obj_id}, {"to_account_id": obj_id}]
     })
-    if has_transfers:
-        raise HTTPException(
-            status_code=400, 
-            detail="Não é possível excluir uma conta que possui transferências vinculadas. Exclua as transferências primeiro."
-        )
 
-    # Check for linked recurring transactions
-    has_recurring = await recurring_collection.find_one({
+    # Cascade deletion to recurring transactions
+    await recurring_collection.delete_many({
         "user_id": user_id,
         "account_id": obj_id
     })
-    if has_recurring:
-        raise HTTPException(
-            status_code=400, 
-            detail="Não é possível excluir uma conta que possui lançamentos recorrentes vinculados. Remova os lançamentos recorrentes primeiro."
-        )
 
     result = await accounts_collection.delete_one(
         {"_id": obj_id, "user_id": user_id}
