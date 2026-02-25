@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Alert, Switch, ActivityIndicator, Platform,
-    KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback
+    KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Modal
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,7 @@ export default function NewTransactionScreen() {
     const [isPaid, setIsPaid] = useState(true);
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     useEffect(() => {
         async function load() {
@@ -314,22 +315,82 @@ export default function NewTransactionScreen() {
                         {/* Category Selection */}
                         <View style={styles.fieldGroup}>
                             <Text style={styles.fieldLabel}>Categoria *</Text>
-                            <View style={styles.catGrid}>
-                                {filteredCats.map(cat => (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        style={[styles.catChip, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '20' }]}
-                                        onPress={() => setSelectedCategory(cat.id)}
-                                    >
-                                        <Ionicons name={(cat.icon || 'pricetag') as any} size={16} color={selectedCategory === cat.id ? cat.color : colors.textSecondary} />
-                                        <Text style={[styles.catTxt, selectedCategory === cat.id && { color: cat.color }]} numberOfLines={1}>{cat.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <TouchableOpacity style={styles.catChip} onPress={() => router.push('/(tabs)/more')}>
-                                    <Ionicons name="add" size={16} color={colors.primary} />
-                                    <Text style={[styles.catTxt, { color: colors.primary }]}>Nova</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <TouchableOpacity
+                                style={[styles.input, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+                                onPress={() => setShowCategoryModal(true)}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                    {selectedCategory ? (() => {
+                                        const cat = categories.find(c => c.id === selectedCategory);
+                                        return (
+                                            <>
+                                                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: cat?.color + '20', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <Ionicons name={(cat?.icon || 'pricetag') as any} size={18} color={cat?.color} />
+                                                </View>
+                                                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{cat?.name}</Text>
+                                            </>
+                                        );
+                                    })() : (
+                                        <>
+                                            <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                                                <Ionicons name="pricetag-outline" size={18} color={colors.textMuted} />
+                                            </View>
+                                            <Text style={{ color: colors.textMuted, fontSize: 15, fontWeight: '500' }}>Selecionar categoria</Text>
+                                        </>
+                                    )}
+                                </View>
+                                <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+                            </TouchableOpacity>
+
+                            {/* Category Modal */}
+                            <Modal
+                                visible={showCategoryModal}
+                                animationType="slide"
+                                transparent={true}
+                                onRequestClose={() => setShowCategoryModal(false)}
+                            >
+                                <View style={styles.modalOverlay}>
+                                    <View style={styles.modalContent}>
+                                        <View style={styles.modalHeader}>
+                                            <Text style={styles.modalTitle}>Selecionar Categoria</Text>
+                                            <TouchableOpacity onPress={() => setShowCategoryModal(false)} style={styles.modalClose}>
+                                                <Ionicons name="close" size={24} color={colors.text} />
+                                            </TouchableOpacity>
+                                        </View>
+                                        <ScrollView contentContainerStyle={{ padding: 20 }}>
+                                            <View style={styles.catGrid}>
+                                                {filteredCats.map(cat => (
+                                                    <TouchableOpacity
+                                                        key={cat.id}
+                                                        style={[styles.catItem, selectedCategory === cat.id && { borderColor: cat.color, backgroundColor: cat.color + '10' }]}
+                                                        onPress={() => {
+                                                            setSelectedCategory(cat.id);
+                                                            setShowCategoryModal(false);
+                                                        }}
+                                                    >
+                                                        <View style={[styles.catIcon, { backgroundColor: cat.color + '20' }]}>
+                                                            <Ionicons name={(cat.icon || 'pricetag') as any} size={20} color={cat.color} />
+                                                        </View>
+                                                        <Text style={[styles.catItemTxt, { color: colors.text }]} numberOfLines={1}>{cat.name}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                                <TouchableOpacity
+                                                    style={styles.catItem}
+                                                    onPress={() => {
+                                                        setShowCategoryModal(false);
+                                                        router.push('/(tabs)/more');
+                                                    }}
+                                                >
+                                                    <View style={[styles.catIcon, { backgroundColor: colors.primary + '15' }]}>
+                                                        <Ionicons name="add" size={20} color={colors.primary} />
+                                                    </View>
+                                                    <Text style={[styles.catItemTxt, { color: colors.primary }]}>Nova</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </ScrollView>
+                                    </View>
+                                </View>
+                            </Modal>
                         </View>
 
                         {/* Notes */}
@@ -355,7 +416,7 @@ export default function NewTransactionScreen() {
 
 const s = (colors: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    handle: { width: 40, height: 4, backgroundColor: colors.surfaceSubtle, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+    handle: { width: 40, height: 4, backgroundColor: colors.surface, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border },
     closeBtn: { padding: 8, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
     title: { fontSize: 18, fontWeight: '800', color: colors.text },
@@ -399,7 +460,14 @@ const s = (colors: any) => StyleSheet.create({
     emptyAcc: { padding: 18, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center' },
     emptyAccTxt: { color: colors.textMuted, fontWeight: '700' },
 
-    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    catChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    catTxt: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    catItem: { width: '30%', aspectRatio: 0.9, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    catIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    catItemTxt: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: colors.background, borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '70%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: colors.border },
+    modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+    modalClose: { padding: 4 },
 });
