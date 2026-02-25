@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -111,6 +112,7 @@ const cv = StyleSheet.create({
 });
 
 export default function CardsScreen() {
+    const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const [cards, setCards] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -149,9 +151,10 @@ export default function CardsScreen() {
         <View style={styles.root}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCards(); }} tintColor={colors.primary} />}
             >
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                     <View>
                         <Text style={styles.title}>Cartões</Text>
                         <Text style={styles.sub}>{cards.length} cartão(ões) cadastrado(s)</Text>

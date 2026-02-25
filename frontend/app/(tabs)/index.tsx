@@ -101,7 +101,7 @@ export default function DashboardScreen() {
     return (
         <ScrollView
             style={styles.container}
-            contentContainerStyle={{ paddingTop: Math.max(insets.top, 20) }}
+            contentContainerStyle={{ paddingTop: Math.max(insets.top, 20), paddingBottom: 100 + insets.bottom }}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
         >
