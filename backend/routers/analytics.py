@@ -87,7 +87,7 @@ async def get_summary(
                 # Calculate virtual bill for this specific month/year
                 cc_tx_query = {
                     "account_id": acc["_id"],
-                    "date": {"$gte": start, "$lt": end}
+                    "due_date": {"$gte": start, "$lt": end}
                 }
                 async for tx in transactions_collection.find(cc_tx_query):
                     bill_total += tx["amount"]

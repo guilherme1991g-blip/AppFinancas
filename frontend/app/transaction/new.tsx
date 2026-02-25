@@ -135,9 +135,9 @@ export default function NewTransactionScreen() {
                         amount: installmentValue,
                         description: `${description} (${i + 1}/${count})`,
                         notes,
-                        date: installmentDate.toISOString(),
+                        date: purchaseDate.toISOString(), // Keep original purchase date
                         is_paid: true, // Always true for cards to update debt balance
-                        due_date: installmentDate.toISOString(),
+                        due_date: installmentDate.toISOString(), // billing cycle date
                         paid_at: installmentDate.toISOString(),
                         tags: [],
                     });
@@ -145,20 +145,22 @@ export default function NewTransactionScreen() {
             } else {
                 let finalDate = date;
                 let finalIsPaid = isPaid;
+                let finalDueDate: string | null = null;
 
                 if (payMethod === 'card') {
                     const account = accounts.find(a => a.id === selectedAccount);
                     const closingDay = account?.closing_day || 10;
                     const purchaseDate = new Date(date);
 
+                    let billDate = new Date(purchaseDate);
+                    const dueDay = account?.due_day || closingDay + 7;
+
                     if (purchaseDate.getDate() > closingDay) {
                         // Move to next month's bill
-                        const nextBillDate = new Date(purchaseDate);
-                        nextBillDate.setMonth(nextBillDate.getMonth() + 1);
-                        const dueDay = account?.due_day || closingDay + 7;
-                        nextBillDate.setDate(dueDay);
-                        finalDate = nextBillDate;
+                        billDate.setMonth(billDate.getMonth() + 1);
                     }
+                    billDate.setDate(dueDay);
+                    finalDueDate = billDate.toISOString();
                     finalIsPaid = true; // Always true for cards to update debt balance
                 }
 
@@ -171,7 +173,7 @@ export default function NewTransactionScreen() {
                     notes,
                     date: finalDate.toISOString(),
                     is_paid: finalIsPaid,
-                    due_date: !finalIsPaid ? finalDate.toISOString() : null,
+                    due_date: finalDueDate || (!finalIsPaid ? finalDate.toISOString() : null),
                     paid_at: finalIsPaid ? finalDate.toISOString() : null,
                     tags: [],
                 });

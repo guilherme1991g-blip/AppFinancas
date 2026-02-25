@@ -37,8 +37,8 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
         {"$match": {"account_id": ObjectId(account_id)}},
         {"$group": {
             "_id": {
-                "month": {"$month": "$date"},
-                "year": {"$year": "$date"}
+                "month": {"$month": {"$ifNull": ["$due_date", "$date"]}},
+                "year": {"$year": {"$ifNull": ["$due_date", "$date"]}}
             },
             "total": {"$sum": "$amount"}
         }},
@@ -98,7 +98,7 @@ async def get_bill_transactions(bill_id: str, current_user=Depends(get_current_u
             
         query = {
             "account_id": ObjectId(account_id),
-            "date": {"$gte": start_date, "$lt": end_date}
+            "due_date": {"$gte": start_date, "$lt": end_date}
         }
     else:
         bill = await bills_collection.find_one({"_id": ObjectId(bill_id)})
@@ -110,7 +110,7 @@ async def get_bill_transactions(bill_id: str, current_user=Depends(get_current_u
         
         query = {
             "account_id": bill["account_id"],
-            "date": {"$gt": start_date, "$lte": end_date}
+            "due_date": {"$gt": start_date, "$lte": end_date}
         }
     
     docs = await transactions_collection.find(query).sort("date", -1).to_list(length=100)
