@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Modal, Image, Dimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -17,6 +17,20 @@ const ACC_TYPES = [
 // BRANDS removed - imported from constants/Brands
 
 const CUSTOM_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#3B82F6', '#64748B'];
+const { width } = Dimensions.get('window');
+
+function BrandLogo({ brand, color, size = 28 }: { brand: any, color: string, size?: number }) {
+    if (brand.logo) {
+        return (
+            <Image
+                source={brand.logo}
+                style={{ width: size, height: size }}
+                resizeMode="contain"
+            />
+        );
+    }
+    return <Ionicons name={brand.icon || "card"} size={size * 0.8} color={color} />;
+}
 
 export default function NewAccountScreen() {
     const { colors } = useTheme();
@@ -132,11 +146,7 @@ export default function NewAccountScreen() {
                                 >
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                                         <View style={[styles.brandIconCircle, { backgroundColor: '#FFFFFF' }]}>
-                                            {currentBrand?.logo ? (
-                                                <Image source={{ uri: currentBrand.logo }} style={styles.brandLogoSmall} resizeMode="contain" />
-                                            ) : (
-                                                <Ionicons name="card" size={20} color={currentBrand?.color || colors.textMuted} />
-                                            )}
+                                            <BrandLogo brand={currentBrand} color={currentBrand?.color || colors.textMuted} size={22} />
                                         </View>
                                         <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{currentBrand?.label}</Text>
                                     </View>
@@ -159,23 +169,19 @@ export default function NewAccountScreen() {
                                             </View>
                                             <ScrollView contentContainerStyle={{ padding: 20 }}>
                                                 <View style={styles.brandGrid}>
-                                                    {BRANDS.map(b => (
+                                                    {BRANDS.map((b) => (
                                                         <TouchableOpacity
                                                             key={b.value}
-                                                            style={[styles.brandItem, brand === b.value && { borderColor: b.color, backgroundColor: b.color + '10' }]}
+                                                            style={[styles.brandItem, brand === b.value && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }]}
                                                             onPress={() => {
                                                                 setBrand(b.value);
                                                                 setShowBrandModal(false);
                                                             }}
                                                         >
                                                             <View style={[styles.brandIcon, { backgroundColor: '#FFFFFF' }]}>
-                                                                {b.logo ? (
-                                                                    <Image source={{ uri: b.logo }} style={styles.brandLogoModal} resizeMode="contain" />
-                                                                ) : (
-                                                                    <Ionicons name="card" size={22} color={b.color} />
-                                                                )}
+                                                                <BrandLogo brand={b} color={b.color} size={30} />
                                                             </View>
-                                                            <Text style={[styles.brandItemTxt, { color: colors.text }]} numberOfLines={1}>{b.label}</Text>
+                                                            <Text style={[styles.brandItemTxt, { color: brand === b.value ? colors.primary : colors.text }]}>{b.label}</Text>
                                                         </TouchableOpacity>
                                                     ))}
                                                 </View>

@@ -3,31 +3,31 @@ export const BRANDS = [
         value: 'visa',
         label: 'Visa',
         color: '#1A1F71',
-        logo: 'https://logo.clearbit.com/visa.com'
+        logo: require('../assets/images/visa.png')
     },
     {
         value: 'mastercard',
         label: 'Mastercard',
         color: '#EB001B',
-        logo: 'https://logo.clearbit.com/mastercard.us'
+        logo: require('../assets/images/mastercard.png')
     },
     {
         value: 'elo',
         label: 'Elo',
         color: '#00A4E0',
-        logo: 'https://logo.clearbit.com/elo.com.br'
+        logo: require('../assets/images/elo.png')
     },
     {
         value: 'amex',
-        label: 'Amex',
+        label: 'American Express',
         color: '#0070D2',
-        logo: 'https://logo.clearbit.com/americanexpress.com'
+        logo: require('../assets/images/amex.png')
     },
     {
         value: 'hipercard',
         label: 'Hipercard',
         color: '#B01116',
-        logo: 'https://logo.clearbit.com/hipercard.com.br'
+        logo: require('../assets/images/hipercard.png')
     },
     {
         value: 'other',

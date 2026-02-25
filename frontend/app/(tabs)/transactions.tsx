@@ -94,16 +94,50 @@ export default function TransactionsScreen() {
 
     const styles = s(colors);
 
-    async function handleDelete(id: string) {
-        Alert.alert('Excluir', 'Deseja excluir esta transação?', [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-                text: 'Excluir', style: 'destructive', onPress: async () => {
-                    try { await api.deleteTransaction(id); fetchData(); }
-                    catch (e: any) { Alert.alert('Erro', e.message); }
-                }
-            },
-        ]);
+    async function handleDelete(item: any) {
+        if (item.recurring_id) {
+            Alert.alert(
+                'Lançamento Recorrente',
+                'Como deseja excluir este lançamento automático?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Apenas este',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(item.id, 'single'); fetchData(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    },
+                    {
+                        text: 'Este e próximos',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(item.id, 'future'); fetchData(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    },
+                    {
+                        text: 'Toda a série',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(item.id, 'series'); fetchData(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    }
+                ]
+            );
+        } else {
+            Alert.alert('Excluir', 'Deseja excluir esta transação?', [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir', style: 'destructive', onPress: async () => {
+                        try { await api.deleteTransaction(item.id); fetchData(); }
+                        catch (e: any) { Alert.alert('Erro', e.message); }
+                    }
+                },
+            ]);
+        }
     }
 
     async function handlePay(id: string) {
@@ -168,7 +202,7 @@ export default function TransactionsScreen() {
                                 <Text style={styles.miniPayBtnText}>{it.type === 'income' ? 'Receber' : 'Pagar'}</Text>
                             </TouchableOpacity>
                         )}
-                        <TouchableOpacity onPress={() => handleDelete(it.id)} style={styles.deleteBtn}>
+                        <TouchableOpacity onPress={() => handleDelete(it)} style={styles.deleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
                     </View>

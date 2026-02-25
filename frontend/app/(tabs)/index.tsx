@@ -16,6 +16,19 @@ const { width } = Dimensions.get('window');
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const MONTH_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+function BrandLogo({ brand, color, size = 28 }: { brand: any, color: string, size?: number }) {
+    if (brand.logo) {
+        return (
+            <Image
+                source={brand.logo}
+                style={{ width: size, height: size }}
+                resizeMode="contain"
+            />
+        );
+    }
+    return <Ionicons name={brand.icon || "card"} size={size * 0.8} color={color} />;
+}
+
 // Função unificada para formatar valores, tratando o sinal de menos.
 function fmt(v: number) {
     const absValue = Math.abs(v);
@@ -286,16 +299,14 @@ export default function DashboardScreen() {
                                                 onPress={() => router.push('/(tabs)/cards' as any)}
                                             >
                                                 <View style={styles.ccHeader}>
-                                                    <View style={[styles.ccIcon, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border }]}>
-                                                        {(() => {
-                                                            const brand = getBrand(card.card_brand || '');
-                                                            return brand.logo ? (
-                                                                <Image source={{ uri: brand.logo }} style={{ width: 28, height: 28 }} resizeMode="contain" />
-                                                            ) : (
-                                                                <Ionicons name="card" size={22} color={card.color || colors.primary} />
-                                                            );
-                                                        })()}
-                                                    </View>
+                                                    {(() => {
+                                                        const brand = getBrand(card.card_brand || '');
+                                                        return (
+                                                            <View style={[styles.ccIcon, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border }]}>
+                                                                <BrandLogo brand={brand} color={card.color || colors.primary} />
+                                                            </View>
+                                                        );
+                                                    })()}
                                                     <View style={{ flex: 1 }}>
                                                         <Text style={styles.ccName}>{card.name}</Text>
                                                         <Text style={styles.ccBrand}>{getBrand(card.card_brand || '').label} •••• {card.last_digits || '0000'}</Text>
