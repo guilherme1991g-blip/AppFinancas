@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, ActivityIndicator
+    RefreshControl, ActivityIndicator, Alert
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,7 +68,38 @@ export default function RecurringListScreen() {
                 ) : (
                     <View style={styles.listCard}>
                         {recurring.filter(r => r.is_active).map((r, idx, arr) => (
-                            <TouchableOpacity key={r.id} style={[styles.listItem, idx === arr.length - 1 && { borderBottomWidth: 0 }]}>
+                            <TouchableOpacity
+                                key={r.id}
+                                style={[styles.listItem, idx === arr.length - 1 && { borderBottomWidth: 0 }]}
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Excluir Recorrente',
+                                        'Como deseja excluir este lançamento automático?',
+                                        [
+                                            { text: 'Cancelar', style: 'cancel' },
+                                            {
+                                                text: 'Apenas a regra',
+                                                onPress: async () => {
+                                                    try {
+                                                        await api.deleteRecurring(r.id, 'rule_only');
+                                                        fetchData();
+                                                    } catch (e: any) { Alert.alert('Erro', e.message); }
+                                                }
+                                            },
+                                            {
+                                                text: 'Toda a série',
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    try {
+                                                        await api.deleteRecurring(r.id, 'entire_series');
+                                                        fetchData();
+                                                    } catch (e: any) { Alert.alert('Erro', e.message); }
+                                                }
+                                            }
+                                        ]
+                                    );
+                                }}
+                            >
                                 <View style={[styles.recIconWrap, { backgroundColor: r.type === 'income' ? colors.income + '15' : colors.expense + '15' }]}>
                                     <Ionicons name="repeat" size={20} color={r.type === 'income' ? colors.income : colors.expense} />
                                 </View>
@@ -76,9 +107,12 @@ export default function RecurringListScreen() {
                                     <Text style={styles.itemTitle}>{r.description}</Text>
                                     <Text style={styles.itemSub}>{FR_LABEL[r.frequency]}</Text>
                                 </View>
-                                <Text style={[styles.itemVal, { color: r.type === 'income' ? colors.income : colors.expense }]}>
-                                    {r.type === 'income' ? '+' : '-'}{fmt(Math.abs(r.amount))}
-                                </Text>
+                                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                                    <Text style={[styles.itemVal, { color: r.type === 'income' ? colors.income : colors.expense }]}>
+                                        {r.type === 'income' ? '+' : '-'}{fmt(Math.abs(r.amount))}
+                                    </Text>
+                                    <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
+                                </View>
                             </TouchableOpacity>
                         ))}
                     </View>

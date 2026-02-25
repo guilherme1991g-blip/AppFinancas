@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, ActivityIndicator, Dimensions
+    RefreshControl, ActivityIndicator, Dimensions, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -10,6 +10,7 @@ import { Svg, G, Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
+import { getBrand } from '@/constants/Brands';
 
 const { width } = Dimensions.get('window');
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -285,12 +286,19 @@ export default function DashboardScreen() {
                                                 onPress={() => router.push('/(tabs)/cards' as any)}
                                             >
                                                 <View style={styles.ccHeader}>
-                                                    <View style={[styles.ccIcon, { backgroundColor: (card.color || colors.primary) + '15' }]}>
-                                                        <Ionicons name="card" size={22} color={card.color || colors.primary} />
+                                                    <View style={[styles.ccIcon, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border }]}>
+                                                        {(() => {
+                                                            const brand = getBrand(card.card_brand || '');
+                                                            return brand.logo ? (
+                                                                <Image source={{ uri: brand.logo }} style={{ width: 28, height: 28 }} resizeMode="contain" />
+                                                            ) : (
+                                                                <Ionicons name="card" size={22} color={card.color || colors.primary} />
+                                                            );
+                                                        })()}
                                                     </View>
                                                     <View style={{ flex: 1 }}>
                                                         <Text style={styles.ccName}>{card.name}</Text>
-                                                        <Text style={styles.ccBrand}>{card.card_brand || 'Cartão'} •••• {card.last_digits || '0000'}</Text>
+                                                        <Text style={styles.ccBrand}>{getBrand(card.card_brand || '').label} •••• {card.last_digits || '0000'}</Text>
                                                     </View>
                                                     <View style={[styles.ccStatus, { backgroundColor: isClosed ? colors.expense + '15' : colors.income + '15' }]}>
                                                         <Text style={[styles.ccStatusTxt, { color: isClosed ? colors.expense : colors.income }]}>

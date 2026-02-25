@@ -84,7 +84,7 @@ export const api = {
     },
     createTransaction: (data: any) => request('/transactions', { method: 'POST', body: JSON.stringify(data) }),
     updateTransaction: (id: string, data: any) => request(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deleteTransaction: (id: string) => request(`/transactions/${id}`, { method: 'DELETE' }),
+    deleteTransaction: (id: string, mode?: string) => request(`/transactions/${id}${mode ? `?mode=${mode}` : ''}`, { method: 'DELETE' }),
 
     // Transfers
     getTransfers: () => request('/transfers'),
@@ -106,7 +106,7 @@ export const api = {
     getRecurring: () => request('/recurring'),
     createRecurring: (data: any) => request('/recurring', { method: 'POST', body: JSON.stringify(data) }),
     updateRecurring: (id: string, data: any) => request(`/recurring/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deleteRecurring: (id: string) => request(`/recurring/${id}`, { method: 'DELETE' }),
+    deleteRecurring: (id: string, mode?: string) => request(`/recurring/${id}${mode ? `?mode=${mode}` : ''}`, { method: 'DELETE' }),
 
     // Companies
     getCompanies: () => request('/companies'),

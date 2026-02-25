@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Modal, Image } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { BRANDS } from '@/constants/Brands';
 
 const ACC_TYPES = [
     { value: 'checking', label: 'Conta Corrente', icon: 'business-outline' },
@@ -13,14 +14,7 @@ const ACC_TYPES = [
     { value: 'investment', label: 'Investimento', icon: 'trending-up-outline' },
 ];
 
-const BRANDS = [
-    { value: 'visa', label: 'Visa', icon: 'card', color: '#1A1F71' },
-    { value: 'mastercard', label: 'Mastercard', icon: 'card', color: '#EB001B' },
-    { value: 'elo', label: 'Elo', icon: 'card', color: '#00A4E0' },
-    { value: 'amex', label: 'Amex', icon: 'card', color: '#0070D2' },
-    { value: 'hipercard', label: 'Hipercard', icon: 'card', color: '#B01116' },
-    { value: 'other', label: 'Outra', icon: 'card', color: '#666' },
-];
+// BRANDS removed - imported from constants/Brands
 
 const CUSTOM_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#3B82F6', '#64748B'];
 
@@ -43,6 +37,7 @@ export default function NewAccountScreen() {
     const [dueDay, setDueDay] = useState('');
     const [lastDigits, setLastDigits] = useState('');
     const [brand, setBrand] = useState('visa');
+    const [showBrandModal, setShowBrandModal] = useState(false);
 
     const styles = s(colors);
 
@@ -131,18 +126,63 @@ export default function NewAccountScreen() {
                         {type === 'credit_card' && (
                             <>
                                 <Text style={styles.sectionLabel}>Bandeira do Cartão</Text>
-                                <View style={styles.brandGrid}>
-                                    {BRANDS.map(b => (
-                                        <TouchableOpacity
-                                            key={b.value}
-                                            style={[styles.brandChip, brand === b.value && { borderColor: b.color, backgroundColor: b.color + '15' }]}
-                                            onPress={() => setBrand(b.value)}
-                                        >
-                                            <Ionicons name={b.icon as any} size={20} color={brand === b.value ? b.color : colors.textMuted} />
-                                            <Text style={[styles.brandText, brand === b.value && { color: b.color, fontWeight: '800' }]}>{b.label}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
+                                <TouchableOpacity
+                                    style={[styles.input, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }]}
+                                    onPress={() => setShowBrandModal(true)}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                        <View style={[styles.brandIconCircle, { backgroundColor: '#FFFFFF' }]}>
+                                            {currentBrand?.logo ? (
+                                                <Image source={{ uri: currentBrand.logo }} style={styles.brandLogoSmall} resizeMode="contain" />
+                                            ) : (
+                                                <Ionicons name="card" size={20} color={currentBrand?.color || colors.textMuted} />
+                                            )}
+                                        </View>
+                                        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{currentBrand?.label}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <Modal
+                                    visible={showBrandModal}
+                                    animationType="slide"
+                                    transparent={true}
+                                    onRequestClose={() => setShowBrandModal(false)}
+                                >
+                                    <View style={styles.modalOverlay}>
+                                        <View style={styles.modalContent}>
+                                            <View style={styles.modalHeader}>
+                                                <Text style={styles.modalTitle}>Selecionar Bandeira</Text>
+                                                <TouchableOpacity onPress={() => setShowBrandModal(false)} style={styles.modalClose}>
+                                                    <Ionicons name="close" size={24} color={colors.text} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <ScrollView contentContainerStyle={{ padding: 20 }}>
+                                                <View style={styles.brandGrid}>
+                                                    {BRANDS.map(b => (
+                                                        <TouchableOpacity
+                                                            key={b.value}
+                                                            style={[styles.brandItem, brand === b.value && { borderColor: b.color, backgroundColor: b.color + '10' }]}
+                                                            onPress={() => {
+                                                                setBrand(b.value);
+                                                                setShowBrandModal(false);
+                                                            }}
+                                                        >
+                                                            <View style={[styles.brandIcon, { backgroundColor: '#FFFFFF' }]}>
+                                                                {b.logo ? (
+                                                                    <Image source={{ uri: b.logo }} style={styles.brandLogoModal} resizeMode="contain" />
+                                                                ) : (
+                                                                    <Ionicons name="card" size={22} color={b.color} />
+                                                                )}
+                                                            </View>
+                                                            <Text style={[styles.brandItemTxt, { color: colors.text }]} numberOfLines={1}>{b.label}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            </ScrollView>
+                                        </View>
+                                    </View>
+                                </Modal>
                             </>
                         )}
 
@@ -269,9 +309,20 @@ const s = (colors: any) => StyleSheet.create({
     typeChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     typeText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
 
-    brandGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    brandChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    brandGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    brandItem: { width: '30%', aspectRatio: 0.9, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    brandIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+    brandItemTxt: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+    brandIconCircle: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
     brandText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+    brandLogoSmall: { width: 22, height: 22 },
+    brandLogoModal: { width: 30, height: 30 },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: colors.background, borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '50%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 24, borderBottomWidth: 1, borderBottomColor: colors.border },
+    modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+    modalClose: { padding: 4 },
 
     row: { flexDirection: 'row', gap: 12 },
 

@@ -114,13 +114,54 @@ async def update_transaction(tx_id: str, data: TransactionUpdate, current_user=D
 
 
 @router.delete("/{tx_id}")
-async def delete_transaction(tx_id: str, current_user=Depends(get_current_user)):
+async def delete_transaction(
+    tx_id: str, 
+    mode: str = Query("single", enum=["single", "future", "series"]),
+    current_user=Depends(get_current_user)
+):
     doc = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
     if not doc:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
-    # Revert balance
-    delta = doc["amount"] if doc["type"] == "income" else -doc["amount"]
-    await accounts_collection.update_one({"_id": doc["account_id"]}, {"$inc": {"balance": -delta}})
+    
+    recurring_id = doc.get("recurring_id")
+    user_id = current_user["_id"]
+
+    if mode == "series" and recurring_id:
+        # Delete everything linked to this recurring series
+        txs = await transactions_collection.find({"recurring_id": recurring_id, "user_id": user_id}).to_list(1000)
+        for tx in txs:
+            if tx.get("is_paid"):
+                delta = tx["amount"] if tx["type"] == "income" else -tx["amount"]
+                await accounts_collection.update_one({"_id": tx["account_id"]}, {"$inc": {"balance": -delta}})
+        
+        await transactions_collection.delete_many({"recurring_id": recurring_id, "user_id": user_id})
+        from database import recurring_collection
+        await recurring_collection.delete_one({"_id": recurring_id, "user_id": user_id})
+        return {"message": "Série recorrente removida"}
+
+    if mode == "future" and recurring_id:
+        # Delete this and all future Unpaid transactions in the series
+        # We use the date of the current transaction as reference
+        await transactions_collection.delete_many({
+            "recurring_id": recurring_id,
+            "user_id": user_id,
+            "is_paid": False,
+            "date": {"$gte": doc["date"]}
+        })
+        # If the current one is paid, handle it specifically
+        if doc.get("is_paid"):
+            delta = doc["amount"] if doc["type"] == "income" else -doc["amount"]
+            await accounts_collection.update_one({"_id": doc["account_id"]}, {"$inc": {"balance": -delta}})
+            await transactions_collection.delete_one({"_id": ObjectId(tx_id)})
+        
+        return {"message": "Lançamentos futuros removidos"}
+
+    # Default: single
+    # Revert balance ONLY if paid
+    if doc.get("is_paid"):
+        delta = doc["amount"] if doc["type"] == "income" else -doc["amount"]
+        await accounts_collection.update_one({"_id": doc["account_id"]}, {"$inc": {"balance": -delta}})
+    
     await transactions_collection.delete_one({"_id": ObjectId(tx_id)})
     return {"message": "Transação removida"}
 

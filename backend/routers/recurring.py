@@ -125,6 +125,26 @@ async def update_recurring(rec_id: str, data: RecurringUpdate, current_user=Depe
 
 
 @router.delete("/{rec_id}")
-async def delete_recurring(rec_id: str, current_user=Depends(get_current_user)):
-    await recurring_collection.delete_one({"_id": ObjectId(rec_id), "user_id": current_user["_id"]})
+async def delete_recurring(
+    rec_id: str, 
+    mode: str = Query("rule_only", enum=["rule_only", "entire_series"]),
+    current_user=Depends(get_current_user)
+):
+    user_id = current_user["_id"]
+    obj_id = ObjectId(rec_id)
+
+    if mode == "entire_series":
+        # First, revert balance for all PAID transactions in the series
+        from database import transactions_collection, accounts_collection
+        txs = await transactions_collection.find({"recurring_id": obj_id, "user_id": user_id}).to_list(1000)
+        for tx in txs:
+            if tx.get("is_paid"):
+                delta = tx["amount"] if tx["type"] == "income" else -tx["amount"]
+                await accounts_collection.update_one({"_id": tx["account_id"]}, {"$inc": {"balance": -delta}})
+        
+        # Delete all transactions
+        await transactions_collection.delete_many({"recurring_id": obj_id, "user_id": user_id})
+
+    # Delete the recurring rule itself
+    await recurring_collection.delete_one({"_id": obj_id, "user_id": user_id})
     return {"message": "Lançamento recorrente removido"}

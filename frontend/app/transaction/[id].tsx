@@ -40,15 +40,49 @@ export default function TransactionDetailScreen() {
     }, [id]);
 
     async function handleDelete() {
-        Alert.alert('Excluir Transação', 'A exclusão é permanente e não poderá ser desfeita.', [
-            { text: 'Manter', style: 'cancel' },
-            {
-                text: 'Excluir', style: 'destructive', onPress: async () => {
-                    try { await api.deleteTransaction(id); router.back(); }
-                    catch (e: any) { Alert.alert('Erro', e.message); }
-                }
-            },
-        ]);
+        if (tx.recurring_id) {
+            Alert.alert(
+                'Lançamento Recorrente',
+                'Este é um lançamento automático. Como deseja excluí-lo?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Apenas este',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(id, 'single'); router.back(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    },
+                    {
+                        text: 'Este e próximos',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(id, 'future'); router.back(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    },
+                    {
+                        text: 'Toda a série',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try { await api.deleteTransaction(id, 'series'); router.back(); }
+                            catch (e: any) { Alert.alert('Erro', e.message); }
+                        }
+                    }
+                ]
+            );
+        } else {
+            Alert.alert('Excluir Transação', 'A exclusão é permanente e não poderá ser desfeita.', [
+                { text: 'Manter', style: 'cancel' },
+                {
+                    text: 'Excluir', style: 'destructive', onPress: async () => {
+                        try { await api.deleteTransaction(id); router.back(); }
+                        catch (e: any) { Alert.alert('Erro', e.message); }
+                    }
+                },
+            ]);
+        }
     }
 
     if (loading) return (
