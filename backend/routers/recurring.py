@@ -23,6 +23,7 @@ def rec_doc(doc) -> dict:
         "day_of_month": doc.get("day_of_month"),
         "is_active": doc.get("is_active", True),
         "company_id": str(doc["company_id"]) if doc.get("company_id") else None,
+        "installments": doc.get("installments"),
         "created_at": doc["created_at"]
     }
 
@@ -73,10 +74,14 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
         {"$inc": {"balance": delta}}
     )
 
-    # Generate future occurrences (next 11 months, as unpaid)
+    # Generate future occurrences
     if data.frequency == 'monthly':
         start_date = datetime.utcnow()
-        for i in range(1, 12):
+        # If installments is null, generate 12 months by default
+        # If installments is provided, generate (installments - 1) more transactions (the first one is already created)
+        limit = (data.installments - 1) if data.installments is not None else 11
+        
+        for i in range(1, limit + 1):
             # Safe month addition
             new_month = (start_date.month + i - 1) % 12 + 1
             new_year = start_date.year + (start_date.month + i - 1) // 12
@@ -95,7 +100,7 @@ async def create_recurring(data: RecurringCreate, current_user=Depends(get_curre
                 "company_id": ObjectId(data.company_id) if data.company_id else None,
                 "type": data.type,
                 "amount": data.amount,
-                "description": data.description,
+                "description": f"{data.description} ({i+1}/{data.installments})" if data.installments else data.description,
                 "date": future_date,
                 "is_paid": False,
                 "due_date": future_date,

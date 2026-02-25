@@ -36,7 +36,8 @@ export default function NewTransactionScreen() {
     // Recurring state
     const [isRecurring, setIsRecurring] = useState(false);
     const [frequency, setFrequency] = useState('monthly');
-    const [installments, setInstallments] = useState('');
+    const [installments, setInstallments] = useState('12');
+    const [isUnlimited, setIsUnlimited] = useState(true);
     const [isPaid, setIsPaid] = useState(true);
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -97,8 +98,9 @@ export default function NewTransactionScreen() {
                     type,
                     amount: val,
                     description,
-                    frequency,
+                    frequency: 'monthly',
                     start_date: date.toISOString(),
+                    installments: isUnlimited ? null : parseInt(installments) || 1,
                     is_active: true,
                 });
             } else {
@@ -205,19 +207,61 @@ export default function NewTransactionScreen() {
 
                         {/* Recurring Switch */}
                         {type === 'expense' && (
-                            <View style={styles.fieldGroup}>
-                                <View style={styles.switchRow}>
+                            <View style={styles.settingsGroup}>
+                                <View style={styles.settingRow}>
+                                    <View style={styles.settingIconWrap}>
+                                        <Ionicons name="repeat" size={20} color={colors.primary} />
+                                    </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.fieldLabel}>Pagamento Recorrente?</Text>
-                                        <Text style={styles.fieldSub}>Assinaturas, aluguel, etc.</Text>
+                                        <Text style={styles.settingLabel}>Lançamento Recorrente</Text>
+                                        <Text style={styles.settingSub}>Repetir mensalmente</Text>
                                     </View>
                                     <Switch
                                         value={isRecurring}
                                         onValueChange={setIsRecurring}
-                                        trackColor={{ false: colors.surface, true: colors.primary + '80' }}
+                                        trackColor={{ false: colors.border, true: colors.primary + '80' }}
                                         thumbColor={isRecurring ? colors.primary : colors.textSecondary}
                                     />
                                 </View>
+
+                                {isRecurring && (
+                                    <>
+                                        <View style={styles.settingRow}>
+                                            <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
+                                                <Ionicons name="infinite" size={20} color={colors.secondary} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.settingLabel}>Ilimitado</Text>
+                                                <Text style={styles.settingSub}>Sem data de término</Text>
+                                            </View>
+                                            <Switch
+                                                value={isUnlimited}
+                                                onValueChange={setIsUnlimited}
+                                                trackColor={{ false: colors.border, true: colors.secondary + '80' }}
+                                                thumbColor={isUnlimited ? colors.secondary : colors.textSecondary}
+                                            />
+                                        </View>
+
+                                        {!isUnlimited && (
+                                            <View style={styles.settingRow}>
+                                                <View style={[styles.settingIconWrap, { backgroundColor: '#FF9F4315' }]}>
+                                                    <Ionicons name="list" size={20} color="#FF9F43" />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.settingLabel}>Quantidade de Vezes</Text>
+                                                </View>
+                                                <TextInput
+                                                    style={styles.installmentInput}
+                                                    value={installments}
+                                                    onChangeText={setInstallments}
+                                                    keyboardType="numeric"
+                                                    placeholder="Ex: 12"
+                                                    placeholderTextColor={colors.textMuted}
+                                                />
+                                            </View>
+                                        )}
+                                    </>
+                                )}
                             </View>
                         )}
 

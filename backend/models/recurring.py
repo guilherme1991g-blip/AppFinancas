@@ -22,6 +22,7 @@ class RecurringCreate(BaseModel):
     end_date: Optional[datetime] = None
     day_of_month: Optional[int] = None
     company_id: Optional[str] = None
+    installments: Optional[int] = None  # null means unlimited
 
 
 class RecurringUpdate(BaseModel):
@@ -45,4 +46,5 @@ class RecurringResponse(BaseModel):
     day_of_month: Optional[int]
     is_active: bool
     company_id: Optional[str]
+    installments: Optional[int]
     created_at: datetime
