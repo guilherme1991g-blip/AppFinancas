@@ -152,7 +152,7 @@ export default function TransactionsScreen() {
             statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
         }
 
-        const itemBg = statusColor + '08'; // Very light background
+        const itemBg = statusColor + '15'; // Increased background visibility
 
         if (it.isBill) {
             return (
