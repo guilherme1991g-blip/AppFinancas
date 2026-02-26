@@ -81,7 +81,6 @@ export default function LoginScreen() {
                             />
                         </View>
                     </View>
-                    <Text style={styles.tagline}>A gestão que seu dinheiro merece</Text>
                 </Animated.View>
 
                 {/* Card Container */}
