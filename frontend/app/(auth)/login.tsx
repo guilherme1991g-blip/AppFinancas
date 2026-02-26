@@ -187,8 +187,7 @@ const s = (colors: any, mode: string) => StyleSheet.create({
     scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 },
 
     logoSection: { alignItems: 'center', marginBottom: 40 },
-    logoBranded: { width: 220, height: 180 },
-    tagline: { fontSize: 13, color: colors.textSecondary, marginTop: 12, fontWeight: '500' },
+    logoImgFull: { width: 280, height: 140 },
 
     card: {
         backgroundColor: colors.surface,
