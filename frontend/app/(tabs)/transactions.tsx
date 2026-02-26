@@ -152,7 +152,7 @@ export default function TransactionsScreen() {
             statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
         }
 
-        const itemBg = statusColor + '15'; // Increased background visibility
+        const itemBg = statusColor + (mode === 'dark' ? '20' : '12');
 
         if (it.isBill) {
             return (
@@ -193,7 +193,7 @@ export default function TransactionsScreen() {
         const date = new Date(it.date);
         return (
             <TouchableOpacity
-                style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '15' }]}
+                style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '20', borderLeftWidth: 4, borderLeftColor: statusColor }]}
                 onPress={() => router.push(`/transaction/${it.id}` as any)}
             >
                 <View style={[styles.txIcon, { backgroundColor: (cat?.color || colors.textMuted) + '20' }]}>
