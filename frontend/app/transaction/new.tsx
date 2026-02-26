@@ -119,7 +119,29 @@ export default function NewTransactionScreen() {
     }, [hasShareIntent, shareIntent]);
 
     async function handleFileImport() {
-        // ... (previously implemented)
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/pdf',
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+            setLoading(true);
+            const file = result.assets[0];
+            const data = await api.extractPix(file);
+
+            if (data) {
+                if (data.amount) setAmount(data.amount.toString().replace('.', ','));
+                if (data.description) setDescription(data.description);
+                if (data.date) setDate(new Date(data.date));
+                Alert.alert('Sucesso', 'Dados extraídos do comprovante!');
+            }
+        } catch (e: any) {
+            Alert.alert('Erro na Importação', e.message || 'Não foi possível processar o PDF');
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleCameraImport() {
@@ -289,20 +311,9 @@ export default function NewTransactionScreen() {
                     <Ionicons name="close" size={22} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>{isRecurring ? 'Novo Recorrente' : (type === 'income' ? 'Nova Receita' : 'Nova Despesa')}</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity style={styles.headerBtn} onPress={handleFileImport} disabled={loading}>
-                        <Ionicons name="document-text-outline" size={16} color={colors.text} />
-                        <Text style={{ marginLeft: 4, color: colors.text, fontWeight: '600', fontSize: 13 }}>PDF</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.headerBtn} onPress={handleCameraImport} disabled={loading}>
-                        <Ionicons name="camera-outline" size={18} color={colors.text} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
-                        {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
+                    {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+                </TouchableOpacity>
             </View>
 
             <KeyboardAvoidingView
@@ -341,6 +352,27 @@ export default function NewTransactionScreen() {
                                 keyboardType="decimal-pad"
                                 autoFocus
                             />
+                        </View>
+
+                        {/* Import Options (Vision & PDF) */}
+                        <View style={styles.importRow}>
+                            <TouchableOpacity
+                                style={[styles.importBtn, { borderColor: colors.primary + '30' }]}
+                                onPress={handleCameraImport}
+                                disabled={loading}
+                            >
+                                <Ionicons name="camera" size={20} color={colors.primary} />
+                                <Text style={[styles.importBtnTxt, { color: colors.primary }]}>Câmera</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.importBtn, { borderColor: colors.primary + '30' }]}
+                                onPress={handleFileImport}
+                                disabled={loading}
+                            >
+                                <Ionicons name="document-text" size={20} color={colors.primary} />
+                                <Text style={[styles.importBtnTxt, { color: colors.primary }]}>PDF / PIX</Text>
+                            </TouchableOpacity>
                         </View>
 
                         {/* Payment Method Selector (Card vs Account) */}
@@ -683,6 +715,10 @@ const s = (colors: any) => StyleSheet.create({
     saveBtn: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
     headerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
     saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 14 },
+
+    importRow: { flexDirection: 'row', gap: 12, marginBottom: 24, paddingHorizontal: 4 },
+    importBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1 },
+    importBtnTxt: { fontSize: 14, fontWeight: '700' },
 
     content: { padding: 20 },
 
