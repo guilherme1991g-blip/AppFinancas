@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    KeyboardAvoidingView, Platform, Animated, Dimensions, ActivityIndicator
+    KeyboardAvoidingView, Platform, Animated, Dimensions, ActivityIndicator, Image
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -74,10 +74,13 @@ export default function LoginScreen() {
                 <Animated.View style={[styles.logoSection, { transform: [{ translateY: logoFloat }] }]}>
                     <View style={styles.logoRing}>
                         <View style={styles.logoInner}>
-                            <Ionicons name="trending-up" size={40} color={colors.primary} />
+                            <Image
+                                source={require('../../assets/images/app-logo.png')}
+                                style={styles.logoImg}
+                                resizeMode="contain"
+                            />
                         </View>
                     </View>
-                    <Text style={styles.appName}>Meu Dindin</Text>
                     <Text style={styles.tagline}>A gestão que seu dinheiro merece</Text>
                 </Animated.View>
 
@@ -199,9 +202,10 @@ const s = (colors: any, mode: string) => StyleSheet.create({
         width: 76, height: 76, borderRadius: 38,
         backgroundColor: colors.primary + '15',
         alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden'
     },
-    appName: { fontSize: 32, fontWeight: '900', color: colors.text, letterSpacing: -1 },
-    tagline: { fontSize: 13, color: colors.textSecondary, marginTop: 8, fontWeight: '500' },
+    logoImg: { width: 60, height: 60 },
+    tagline: { fontSize: 13, color: colors.textSecondary, marginTop: 12, fontWeight: '500' },
 
     card: {
         backgroundColor: colors.surface,
