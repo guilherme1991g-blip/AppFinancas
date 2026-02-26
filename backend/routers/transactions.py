@@ -87,6 +87,8 @@ async def list_transactions(
     is_paid: Optional[bool] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     limit: int = Query(50, le=200),
     skip: int = 0,
     current_user=Depends(get_current_user)
@@ -102,7 +104,12 @@ async def list_transactions(
         query["company_id"] = ObjectId(company_id)
     if is_paid is not None:
         query["is_paid"] = is_paid
-    if month and year:
+    if start_date or end_date:
+        date_query = {}
+        if start_date: date_query["$gte"] = start_date
+        if end_date: date_query["$lt"] = end_date
+        query["date"] = date_query
+    elif month and year:
         from datetime import datetime
         start = datetime(year, month, 1)
         nm = month + 1 if month < 12 else 1

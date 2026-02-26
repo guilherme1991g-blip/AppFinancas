@@ -9,6 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import PaymentModal from '@/components/PaymentModal';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function formatCurrency(v: number) {
     const absValue = Math.abs(v);
@@ -39,21 +42,47 @@ export default function TransactionsScreen() {
     // Filter state
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [filters, setFilters] = useState({
-        type: 'Todos', // Todos, Receitas, Despesas
+        type: 'Todos',
         accountId: 'Todas',
-        categoryId: 'Todas'
+        categoryId: 'Todas',
+        status: 'Todos',
+        isCustomDate: false,
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        endDate: new Date()
     });
+    const [expandedSections, setExpandedSections] = useState<string[]>(['type']);
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
+
+    const toggleSection = (id: string) => {
+        setExpandedSections(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
 
     async function fetchData() {
         try {
             const type = filters.type === 'Receitas' ? 'income' : filters.type === 'Despesas' ? 'expense' : undefined;
+            const isPaid = filters.status === 'Pagos' ? true : filters.status === 'Pendentes' ? false : undefined;
+
+            const params: any = {
+                limit: 200,
+                ...(type ? { type } : {}),
+                ...(isPaid !== undefined ? { is_paid: isPaid } : {}),
+                ...(filters.accountId !== 'Todas' ? { account_id: filters.accountId } : {}),
+                ...(filters.categoryId !== 'Todas' ? { category_id: filters.categoryId } : {})
+            };
+
+            if (filters.isCustomDate) {
+                params.start_date = filters.startDate.toISOString();
+                const end = new Date(filters.endDate);
+                end.setHours(23, 59, 59, 999);
+                params.end_date = end.toISOString();
+            } else {
+                params.month = month;
+                params.year = year;
+            }
+
             const [txs, cats, accs] = await Promise.all([
-                api.getTransactions({
-                    month, year, limit: 200,
-                    ...(type ? { type } : {}),
-                    ...(filters.accountId !== 'Todas' ? { account_id: filters.accountId } : {}),
-                    ...(filters.categoryId !== 'Todas' ? { category_id: filters.categoryId } : {})
-                }) as Promise<any[]>,
+                api.getTransactions(params) as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
                 api.getAccounts() as Promise<any[]>,
             ]);
@@ -215,7 +244,12 @@ export default function TransactionsScreen() {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                 <View>
                     <Text style={styles.title}>Transações</Text>
-                    <Text style={styles.subtitle}>{MONTHS[month - 1]} {year}</Text>
+                    <Text style={styles.subtitle}>
+                        {filters.isCustomDate
+                            ? `${format(filters.startDate, 'dd/MM')} — ${format(filters.endDate, 'dd/MM')}`
+                            : `${MONTHS[month - 1]} ${year}`
+                        }
+                    </Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                     <TouchableOpacity style={styles.headerBtn} onPress={() => setShowFilterModal(true)}>
@@ -229,11 +263,11 @@ export default function TransactionsScreen() {
 
             {/* Quick Month Picker */}
             <View style={styles.monthRow}>
-                <TouchableOpacity onPress={() => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
-                <TouchableOpacity style={styles.monthLabel} onPress={() => { setMonth(now.getMonth() + 1); setYear(now.getFullYear()); }}>
+                <TouchableOpacity onPress={() => { setFilters(f => ({ ...f, isCustomDate: false })); if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
+                <TouchableOpacity style={styles.monthLabel} onPress={() => { setFilters(f => ({ ...f, isCustomDate: false })); setMonth(now.getMonth() + 1); setYear(now.getFullYear()); }}>
                     <Text style={styles.monthText}>{MONTHS[month - 1]} {year}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setFilters(f => ({ ...f, isCustomDate: false })); if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
             </View>
 
             {loading ? (
@@ -267,56 +301,142 @@ export default function TransactionsScreen() {
                         </View>
 
                         <ScrollView style={styles.filterContent}>
-                            <Text style={styles.filterLabel}>Tipo de Lançamento</Text>
-                            <View style={styles.filterGroup}>
-                                {['Todos', 'Receitas', 'Despesas'].map(t => (
-                                    <TouchableOpacity
-                                        key={t}
-                                        style={[styles.chip, filters.type === t && styles.chipActive]}
-                                        onPress={() => setFilters(prev => ({ ...prev, type: t }))}
-                                    >
-                                        <Text style={[styles.chipText, filters.type === t && styles.chipTextActive]}>{t}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                            {/* Tipo Section */}
+                            <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('type')}>
+                                <Text style={styles.filterLabel}>Tipo de Lançamento</Text>
+                                <Ionicons name={expandedSections.includes('type') ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                            {expandedSections.includes('type') && (
+                                <View style={styles.filterGroup}>
+                                    {['Todos', 'Receitas', 'Despesas'].map(t => (
+                                        <TouchableOpacity
+                                            key={t}
+                                            style={[styles.chip, filters.type === t && styles.chipActive]}
+                                            onPress={() => setFilters(prev => ({ ...prev, type: t }))}
+                                        >
+                                            <Text style={[styles.chipText, filters.type === t && styles.chipTextActive]}>{t}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
 
-                            <Text style={styles.filterLabel}>Conta / Cartão</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterGroup}>
-                                <TouchableOpacity
-                                    style={[styles.chip, filters.accountId === 'Todas' && styles.chipActive]}
-                                    onPress={() => setFilters(prev => ({ ...prev, accountId: 'Todas' }))}
-                                >
-                                    <Text style={[styles.chipText, filters.accountId === 'Todas' && styles.chipTextActive]}>Todas</Text>
-                                </TouchableOpacity>
-                                {accounts.map(acc => (
-                                    <TouchableOpacity
-                                        key={acc.id}
-                                        style={[styles.chip, filters.accountId === acc.id && styles.chipActive]}
-                                        onPress={() => setFilters(prev => ({ ...prev, accountId: acc.id }))}
-                                    >
-                                        <Text style={[styles.chipText, filters.accountId === acc.id && styles.chipTextActive]}>{acc.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+                            {/* Status Section */}
+                            <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('status')}>
+                                <Text style={styles.filterLabel}>Status de Pagamento</Text>
+                                <Ionicons name={expandedSections.includes('status') ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                            {expandedSections.includes('status') && (
+                                <View style={styles.filterGroup}>
+                                    {['Todos', 'Pagos', 'Pendentes'].map(s => (
+                                        <TouchableOpacity
+                                            key={s}
+                                            style={[styles.chip, filters.status === s && styles.chipActive]}
+                                            onPress={() => setFilters(prev => ({ ...prev, status: s }))}
+                                        >
+                                            <Text style={[styles.chipText, filters.status === s && styles.chipTextActive]}>{s}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
 
-                            <Text style={styles.filterLabel}>Categoria</Text>
-                            <View style={styles.filterGrid}>
-                                <TouchableOpacity
-                                    style={[styles.chip, filters.categoryId === 'Todas' && styles.chipActive]}
-                                    onPress={() => setFilters(prev => ({ ...prev, categoryId: 'Todas' }))}
-                                >
-                                    <Text style={[styles.chipText, filters.categoryId === 'Todas' && styles.chipTextActive]}>Todas</Text>
-                                </TouchableOpacity>
-                                {categories.map(cat => (
+                            {/* Periodo Section */}
+                            <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('period')}>
+                                <Text style={styles.filterLabel}>Período</Text>
+                                <Ionicons name={expandedSections.includes('period') ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                            {expandedSections.includes('period') && (
+                                <View style={{ gap: 12 }}>
+                                    <View style={styles.filterGroup}>
+                                        {['Mês Atual', 'Personalizado'].map(p => (
+                                            <TouchableOpacity
+                                                key={p}
+                                                style={[styles.chip, (p === 'Personalizado' ? filters.isCustomDate : !filters.isCustomDate) && styles.chipActive]}
+                                                onPress={() => setFilters(prev => ({ ...prev, isCustomDate: p === 'Personalizado' }))}
+                                            >
+                                                <Text style={[styles.chipText, (p === 'Personalizado' ? filters.isCustomDate : !filters.isCustomDate) && styles.chipTextActive]}>{p}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                    {filters.isCustomDate && (
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <TouchableOpacity style={styles.dateSelector} onPress={() => setShowStartPicker(true)}>
+                                                <Text style={styles.dateSelectorLabel}>Início</Text>
+                                                <Text style={styles.dateSelectorVal}>{format(filters.startDate, 'dd/MM/yyyy', { locale: ptBR })}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.dateSelector} onPress={() => setShowEndPicker(true)}>
+                                                <Text style={styles.dateSelectorLabel}>Fim</Text>
+                                                <Text style={styles.dateSelectorVal}>{format(filters.endDate, 'dd/MM/yyyy', { locale: ptBR })}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                    {showStartPicker && (
+                                        <DateTimePicker
+                                            value={filters.startDate}
+                                            mode="date"
+                                            display="default"
+                                            onChange={(e, d) => { setShowStartPicker(false); if (d) setFilters(p => ({ ...p, startDate: d })); }}
+                                        />
+                                    )}
+                                    {showEndPicker && (
+                                        <DateTimePicker
+                                            value={filters.endDate}
+                                            mode="date"
+                                            display="default"
+                                            onChange={(e, d) => { setShowEndPicker(false); if (d) setFilters(p => ({ ...p, endDate: d })); }}
+                                        />
+                                    )}
+                                </View>
+                            )}
+
+                            {/* Conta Section */}
+                            <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('account')}>
+                                <Text style={styles.filterLabel}>Conta / Cartão</Text>
+                                <Ionicons name={expandedSections.includes('account') ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                            {expandedSections.includes('account') && (
+                                <View style={styles.filterGrid}>
                                     <TouchableOpacity
-                                        key={cat.id}
-                                        style={[styles.chip, filters.categoryId === cat.id && styles.chipActive]}
-                                        onPress={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
+                                        style={[styles.chip, filters.accountId === 'Todas' && styles.chipActive]}
+                                        onPress={() => setFilters(prev => ({ ...prev, accountId: 'Todas' }))}
                                     >
-                                        <Text style={[styles.chipText, filters.categoryId === cat.id && styles.chipTextActive]}>{cat.name}</Text>
+                                        <Text style={[styles.chipText, filters.accountId === 'Todas' && styles.chipTextActive]}>Todas</Text>
                                     </TouchableOpacity>
-                                ))}
-                            </View>
+                                    {accounts.map(acc => (
+                                        <TouchableOpacity
+                                            key={acc.id}
+                                            style={[styles.chip, filters.accountId === acc.id && styles.chipActive]}
+                                            onPress={() => setFilters(prev => ({ ...prev, accountId: acc.id }))}
+                                        >
+                                            <Text style={[styles.chipText, filters.accountId === acc.id && { color: colors.white }]}>{acc.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+
+                            {/* Categoria Section */}
+                            <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('category')}>
+                                <Text style={styles.filterLabel}>Categoria</Text>
+                                <Ionicons name={expandedSections.includes('category') ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                            {expandedSections.includes('category') && (
+                                <View style={styles.filterGrid}>
+                                    <TouchableOpacity
+                                        style={[styles.chip, filters.categoryId === 'Todas' && styles.chipActive]}
+                                        onPress={() => setFilters(prev => ({ ...prev, categoryId: 'Todas' }))}
+                                    >
+                                        <Text style={[styles.chipText, filters.categoryId === 'Todas' && styles.chipTextActive]}>Todas</Text>
+                                    </TouchableOpacity>
+                                    {categories.map(cat => (
+                                        <TouchableOpacity
+                                            key={cat.id}
+                                            style={[styles.chip, filters.categoryId === cat.id && styles.chipActive]}
+                                            onPress={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
+                                        >
+                                            <Text style={[styles.chipText, filters.categoryId === cat.id && styles.chipTextActive]}>{cat.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
                         </ScrollView>
 
                         <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilterModal(false)}>
@@ -381,7 +501,13 @@ const s = (colors: any, mode: string) => StyleSheet.create({
     chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     chipText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
     chipTextActive: { color: colors.white, fontWeight: '800' },
-    applyBtn: { backgroundColor: colors.primary, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 8 },
+    dateSelector: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
+    dateSelectorLabel: { fontSize: 10, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+    dateSelectorVal: { fontSize: 13, fontWeight: '700', color: colors.text },
+
+    applyBtn: { backgroundColor: colors.primary, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
     applyBtnText: { color: colors.white, fontSize: 16, fontWeight: '900' },
 
     empty: { alignItems: 'center', paddingTop: 80, gap: 16 },
