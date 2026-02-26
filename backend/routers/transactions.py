@@ -273,3 +273,31 @@ async def pay_transaction(tx_id: str, data: Optional[TransactionPaymentRequest] 
     )
     
     return {"message": "Transação marcada como paga"}
+
+
+@router.post("/{tx_id}/unpay")
+async def unpay_transaction(tx_id: str, current_user=Depends(get_current_user)):
+    tx = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    if not tx.get("is_paid"):
+        raise HTTPException(status_code=400, detail="Transação já está aberta")
+        
+    # Security check: Can't unpay if bill is already closed/paid
+    if not await check_bill_status(tx, current_user["_id"]):
+        raise HTTPException(status_code=400, detail="Não é possível reabrir lançamentos de uma fatura já fechada ou paga")
+
+    # Update transaction
+    await transactions_collection.update_one(
+        {"_id": ObjectId(tx_id)},
+        {"$set": {"is_paid": False}, "$unset": {"paid_at": ""}}
+    )
+    
+    # Revert account balance (invert the previous delta)
+    delta = tx["amount"] if tx["type"] == "income" else -tx["amount"]
+    await accounts_collection.update_one(
+        {"_id": tx["account_id"]},
+        {"$inc": {"balance": -delta}}
+    )
+    
+    return {"message": "Pagamento desfeito com sucesso"}

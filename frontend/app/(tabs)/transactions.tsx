@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    RefreshControl, ActivityIndicator, Alert
+    RefreshControl, ActivityIndicator, Alert, Switch, Modal, ScrollView
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,39 +17,60 @@ function formatCurrency(v: number) {
 }
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const FILTERS = ['Todos', 'Receitas', 'Despesas'];
 
 export default function TransactionsScreen() {
     const { mode, colors } = useTheme();
     const insets = useSafeAreaInsets();
     const now = new Date();
+
+    // State
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
-    const [filter, setFilter] = useState('Todos');
     const [transactions, setTransactions] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Selection state for payment
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+    // Filter state
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filters, setFilters] = useState({
+        type: 'Todos', // Todos, Receitas, Despesas
+        accountId: 'Todas',
+        categoryId: 'Todas'
+    });
+
     async function fetchData() {
         try {
-            const type = filter === 'Receitas' ? 'income' : filter === 'Despesas' ? 'expense' : undefined;
+            const type = filters.type === 'Receitas' ? 'income' : filters.type === 'Despesas' ? 'expense' : undefined;
             const [txs, cats, accs] = await Promise.all([
-                api.getTransactions({ month, year, limit: 100, ...(type ? { type } : {}) }) as Promise<any[]>,
+                api.getTransactions({
+                    month, year, limit: 200,
+                    ...(type ? { type } : {}),
+                    ...(filters.accountId !== 'Todas' ? { account_id: filters.accountId } : {}),
+                    ...(filters.categoryId !== 'Todas' ? { category_id: filters.categoryId } : {})
+                }) as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
                 api.getAccounts() as Promise<any[]>,
             ]);
 
+            setCategories(cats);
+            setAccounts(accs);
+
             const cards = accs.filter(a => a.type === 'credit_card');
             const cardBills: any[] = [];
 
-            // Only show bills that actually exist (filtered by backend)
-            if (filter === 'Todos' || filter === 'Despesas') {
+            // Only show bills if "Receitas" filter is NOT active (bills are expenses/debts)
+            if (filters.type !== 'Receitas') {
                 for (const card of cards) {
+                    // Skip if filtering by specific account and it's not this card
+                    if (filters.accountId !== 'Todas' && filters.accountId !== card.id) continue;
+
                     const bills = await api.getBills(card.id) as any[];
-                    // Backend already filters out empty months or invalid totals
                     const bill = bills.find(b => b.month === month && b.year === year);
                     if (bill) {
                         cardBills.push({
@@ -65,168 +86,118 @@ export default function TransactionsScreen() {
             const cardAccIds = new Set(cards.map(c => c.id));
             const filteredTxs = txs.filter(t => !cardAccIds.has(t.account_id));
 
-            setTransactions([...cardBills, ...filteredTxs]);
-            setCategories(cats);
+            // Sort everything by date descending
+            const combined = [...cardBills, ...filteredTxs].sort((a, b) => {
+                const dateA = a.isBill ? new Date(a.closing_date).getTime() : new Date(a.date).getTime();
+                const dateB = b.isBill ? new Date(b.closing_date).getTime() : new Date(b.date).getTime();
+                return dateB - dateA;
+            });
+
+            setTransactions(combined);
         } catch (e) { console.error(e); }
         finally { setLoading(false); setRefreshing(false); }
     }
 
-    useFocusEffect(useCallback(() => { setLoading(true); fetchData(); }, [month, year, filter]));
+    useFocusEffect(useCallback(() => { setLoading(true); fetchData(); }, [month, year, filters]));
 
-    function prevMonth() {
-        if (month === 1) { setMonth(12); setYear(y => y - 1); }
-        else setMonth(m => m - 1);
-    }
-    function nextMonth() {
-        if (month === 12) { setMonth(1); setYear(y => y + 1); }
-        else setMonth(m => m + 1);
-    }
-
-    function getCat(id: string) { return categories.find(c => c.id === id); }
-
-    const styles = s(colors);
-
-    async function handleDelete(item: any) {
-        if (item.recurring_id) {
-            Alert.alert(
-                'Lançamento Recorrente',
-                'Como deseja excluir este lançamento automático?',
-                [
-                    { text: 'Cancelar', style: 'cancel' },
-                    {
-                        text: 'Apenas este',
-                        style: 'destructive',
-                        onPress: async () => {
-                            try { await api.deleteTransaction(item.id, 'single'); fetchData(); }
-                            catch (e: any) { Alert.alert('Erro', e.message); }
-                        }
-                    },
-                    {
-                        text: 'Este e todos pendentes',
-                        style: 'destructive',
-                        onPress: async () => {
-                            try { await api.deleteTransaction(item.id, 'future'); fetchData(); }
-                            catch (e: any) { Alert.alert('Erro', e.message); }
-                        }
-                    },
-                    {
-                        text: 'Todos (incluindo pagos)',
-                        style: 'destructive',
-                        onPress: async () => {
-                            try { await api.deleteTransaction(item.id, 'series'); fetchData(); }
-                            catch (e: any) { Alert.alert('Erro', e.message); }
-                        }
-                    }
-                ]
-            );
+    const togglePayment = async (item: any, value: boolean) => {
+        if (value) {
+            // Opening payment
+            setSelectedItem(item);
+            setShowPaymentModal(true);
         } else {
-            Alert.alert('Excluir', 'Deseja excluir esta transação?', [
-                { text: 'Cancelar', style: 'cancel' },
+            // Closing/Unpaying
+            if (item.isBill) {
+                Alert.alert("Ação não permitida", "Pagamentos de fatura de cartão não podem ser desfeitos manualmente por aqui.");
+                return;
+            }
+
+            Alert.alert("Desfazer Pagamento", "Deseja marcar este lançamento como pendente novamente?", [
+                { text: "Não", style: "cancel" },
                 {
-                    text: 'Excluir', style: 'destructive', onPress: async () => {
-                        try { await api.deleteTransaction(item.id); fetchData(); }
-                        catch (e: any) { Alert.alert('Erro', e.message); }
+                    text: "Sim",
+                    onPress: async () => {
+                        try {
+                            await api.unpayTransaction(item.id);
+                            fetchData();
+                        } catch (e: any) {
+                            Alert.alert("Erro", e.message);
+                        }
                     }
-                },
+                }
             ]);
         }
-    }
+    };
 
-    function handlePay(item: any) {
-        setSelectedItem(item);
-        setShowPaymentModal(true);
+    async function handleDelete(item: any) {
+        const title = item.isBill ? 'Excluir Fatura' : 'Excluir';
+        const msg = item.isBill ? 'Deseja excluir os dados físicos desta fatura? Isso não removerá as transações vinculadas.' : 'Deseja excluir esta transação?';
+
+        Alert.alert(title, msg, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Excluir', style: 'destructive', onPress: async () => {
+                    try {
+                        if (item.isBill) {
+                            // Only delete physical bill if needed, but usually we just want to delete txs
+                            Alert.alert("Aviso", "IDs de faturas físicas não podem ser deletados desta forma. Delete as transações internas.");
+                        } else {
+                            await api.deleteTransaction(item.id);
+                        }
+                        fetchData();
+                    }
+                    catch (e: any) { Alert.alert('Erro', e.message); }
+                }
+            },
+        ]);
     }
 
     const renderItem = ({ item: it }: { item: any }) => {
-        let statusColor = colors.primary;
-        let isPaid = false;
-        let isOverdue = false;
+        const statusColor = it.isBill ?
+            (it.status === 'paid' ? colors.income : (it.status === 'overdue' ? colors.expense : (it.status === 'partially_paid' ? colors.warning : colors.primary))) :
+            (it.is_paid ? colors.income : (new Date(it.date) < new Date() ? colors.expense : colors.primary));
 
-        if (it.isBill) {
-            isPaid = it.status === 'paid';
-            isOverdue = it.status === 'overdue';
-            const isPartial = it.status === 'partially_paid';
-            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : (isPartial ? colors.warning : colors.primary));
-        } else {
-            isPaid = it.is_paid;
-            isOverdue = !isPaid && new Date(it.date) < new Date();
-            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
-        }
+        const cat = categories.find(c => c.id === it.category_id);
+        const date = new Date(it.isBill ? it.closing_date : it.date);
+        const isPaid = it.isBill ? it.status === 'paid' : it.is_paid;
 
-        const itemBg = statusColor + (mode === 'dark' ? '20' : '12');
-
-        if (it.isBill) {
-            return (
-                <TouchableOpacity
-                    style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '20', borderLeftWidth: 4, borderLeftColor: statusColor }]}
-                    onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: it.id, name: `${it.month}/${it.year}` } } as any)}
-                >
-                    <View style={[styles.txIcon, { backgroundColor: statusColor + '15' }]}>
-                        <Ionicons name="receipt" size={22} color={statusColor} />
-                    </View>
-                    <View style={styles.txInfo}>
-                        <Text style={styles.txDesc} numberOfLines={1}>Fatura {it.cardName}</Text>
-                        <Text style={styles.txMeta}>FECHAMENTO EM {it.month}/{it.year}</Text>
-                    </View>
-                    <View style={styles.txRight}>
-                        <Text style={[styles.txAmount, { color: it.amount < 0 ? colors.income : colors.text }]}>
-                            {formatCurrency(it.amount)}
-                        </Text>
-                        <View style={[styles.statusBadgeSmall, {
-                            backgroundColor: statusColor + '15'
-                        }]}>
-                            <Text style={[styles.statusTextSmall, {
-                                color: statusColor
-                            }]}>
-                                {it.status === 'paid' ? 'Paga' :
-                                    it.status === 'overdue' ? 'Vencida' :
-                                        it.status === 'partially_paid' ? 'Parcial' :
-                                            it.status === 'closed' ? 'Fechada' : 'Aberta'}
-                            </Text>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            );
-        }
-
-        const cat = getCat(it.category_id);
-        const date = new Date(it.date);
         return (
             <TouchableOpacity
-                style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '20', borderLeftWidth: 4, borderLeftColor: statusColor }]}
-                onPress={() => router.push(`/transaction/${it.id}` as any)}
+                style={[styles.txItem, { borderLeftColor: statusColor }]}
+                onPress={() => it.isBill ?
+                    router.push({ pathname: '/cards/bill-details', params: { billId: it.id, name: `${it.month}/${it.year}` } } as any) :
+                    router.push(`/transaction/${it.id}` as any)
+                }
             >
-                <View style={[styles.txIcon, { backgroundColor: (cat?.color || colors.textMuted) + '20' }]}>
-                    <Ionicons name={(cat?.icon || 'ellipsis-horizontal') as any} size={20} color={cat?.color || colors.textMuted} />
+                <View style={[styles.txIcon, { backgroundColor: (it.isBill ? statusColor : (cat?.color || colors.textMuted)) + '15' }]}>
+                    <Ionicons
+                        name={it.isBill ? "receipt" : (cat?.icon || 'ellipsis-horizontal') as any}
+                        size={18}
+                        color={it.isBill ? statusColor : (cat?.color || colors.textMuted)}
+                    />
                 </View>
+
                 <View style={styles.txInfo}>
-                    <Text style={styles.txDesc} numberOfLines={1}>{it.description}</Text>
-                    <Text style={styles.txMeta}>{cat?.name || '—'} · {date.getDate()}/{MONTHS[date.getMonth()]}</Text>
+                    <Text style={styles.txDesc} numberOfLines={1}>{it.isBill ? `Fatura ${it.cardName}` : it.description}</Text>
+                    <Text style={styles.txMeta}>
+                        {it.isBill ? `FECHAMENTO ${date.getDate()}/${MONTHS[date.getMonth()]}` : `${cat?.name || '—'} · ${date.getDate()}/${MONTHS[date.getMonth()]}`}
+                    </Text>
                 </View>
+
                 <View style={styles.txRight}>
-                    <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : colors.expense }]}>
+                    <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : (it.amount < 0 && it.isBill ? colors.income : colors.text) }]}>
                         {it.type === 'income' ? '+' : ''}{formatCurrency(it.amount)}
                     </Text>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {(() => {
-                            const statusText = isPaid ? 'Pago' : (isOverdue ? 'Vencido' : 'Pendente');
-
-                            return (
-                                <View style={[styles.statusBadgeSmall, { backgroundColor: statusColor + '15', marginTop: 0 }]}>
-                                    <Text style={[styles.statusTextSmall, { color: statusColor }]}>{statusText}</Text>
-                                </View>
-                            );
-                        })()}
-
-                        {!it.is_paid && (
-                            <TouchableOpacity
-                                style={[styles.miniPayBtn, { backgroundColor: it.type === 'income' ? colors.income : colors.expense }]}
-                                onPress={() => handlePay(it)}
-                            >
-                                <Text style={styles.miniPayBtnText}>{it.type === 'income' ? 'Receber' : 'Pagar'}</Text>
-                            </TouchableOpacity>
-                        )}
+                    <View style={styles.txActions}>
+                        <Switch
+                            value={isPaid}
+                            onValueChange={(val) => togglePayment(it, val)}
+                            trackColor={{ false: colors.border, true: colors.income + '80' }}
+                            thumbColor={isPaid ? colors.income : colors.textMuted}
+                            ios_backgroundColor={colors.border}
+                            style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }], marginRight: -8 }}
+                        />
                         <TouchableOpacity onPress={() => handleDelete(it)} style={styles.deleteBtn}>
                             <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -236,30 +207,33 @@ export default function TransactionsScreen() {
         );
     };
 
+    const styles = s(colors, mode);
+
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-                <Text style={styles.title}>Transações</Text>
-                <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/transaction/new' as any)}>
-                    <Ionicons name="add" size={24} color={colors.white} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Month selector */}
-            <View style={styles.monthRow}>
-                <TouchableOpacity onPress={prevMonth} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
-                <Text style={styles.monthText}>{MONTHS[month - 1]} {year}</Text>
-                <TouchableOpacity onPress={nextMonth} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
-            </View>
-
-            {/* Filter tabs */}
-            <View style={styles.filterRow}>
-                {FILTERS.map(f => (
-                    <TouchableOpacity key={f} style={[styles.filterBtn, filter === f && styles.filterActive]} onPress={() => setFilter(f)}>
-                        <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+                <View>
+                    <Text style={styles.title}>Transações</Text>
+                    <Text style={styles.subtitle}>{MONTHS[month - 1]} {year}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <TouchableOpacity style={styles.headerBtn} onPress={() => setShowFilterModal(true)}>
+                        <Ionicons name="filter-outline" size={20} color={colors.text} />
                     </TouchableOpacity>
-                ))}
+                    <TouchableOpacity style={[styles.headerBtn, { backgroundColor: colors.primary }]} onPress={() => router.push('/transaction/new' as any)}>
+                        <Ionicons name="add" size={22} color={colors.white} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Quick Month Picker */}
+            <View style={styles.monthRow}>
+                <TouchableOpacity onPress={() => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }} style={styles.arrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
+                <TouchableOpacity style={styles.monthLabel} onPress={() => { setMonth(now.getMonth() + 1); setYear(now.getFullYear()); }}>
+                    <Text style={styles.monthText}>{MONTHS[month - 1]} {year}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }} style={styles.arrow}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
             </View>
 
             {loading ? (
@@ -273,58 +247,142 @@ export default function TransactionsScreen() {
                     ListEmptyComponent={
                         <View style={styles.empty}>
                             <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-                            <Text style={styles.emptyText}>Nenhuma transação</Text>
+                            <Text style={styles.emptyText}>Nenhuma transação encontrada</Text>
                         </View>
                     }
-                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
                 />
             )}
+
+            {/* Filter Modal */}
+            <Modal visible={showFilterModal} transparent animationType="slide" onRequestClose={() => setShowFilterModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.filterModal}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Filtros</Text>
+                            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.filterContent}>
+                            <Text style={styles.filterLabel}>Tipo de Lançamento</Text>
+                            <View style={styles.filterGroup}>
+                                {['Todos', 'Receitas', 'Despesas'].map(t => (
+                                    <TouchableOpacity
+                                        key={t}
+                                        style={[styles.chip, filters.type === t && styles.chipActive]}
+                                        onPress={() => setFilters(prev => ({ ...prev, type: t }))}
+                                    >
+                                        <Text style={[styles.chipText, filters.type === t && styles.chipTextActive]}>{t}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.filterLabel}>Conta / Cartão</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterGroup}>
+                                <TouchableOpacity
+                                    style={[styles.chip, filters.accountId === 'Todas' && styles.chipActive]}
+                                    onPress={() => setFilters(prev => ({ ...prev, accountId: 'Todas' }))}
+                                >
+                                    <Text style={[styles.chipText, filters.accountId === 'Todas' && styles.chipTextActive]}>Todas</Text>
+                                </TouchableOpacity>
+                                {accounts.map(acc => (
+                                    <TouchableOpacity
+                                        key={acc.id}
+                                        style={[styles.chip, filters.accountId === acc.id && styles.chipActive]}
+                                        onPress={() => setFilters(prev => ({ ...prev, accountId: acc.id }))}
+                                    >
+                                        <Text style={[styles.chipText, filters.accountId === acc.id && styles.chipTextActive]}>{acc.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            <Text style={styles.filterLabel}>Categoria</Text>
+                            <View style={styles.filterGrid}>
+                                <TouchableOpacity
+                                    style={[styles.chip, filters.categoryId === 'Todas' && styles.chipActive]}
+                                    onPress={() => setFilters(prev => ({ ...prev, categoryId: 'Todas' }))}
+                                >
+                                    <Text style={[styles.chipText, filters.categoryId === 'Todas' && styles.chipTextActive]}>Todas</Text>
+                                </TouchableOpacity>
+                                {categories.map(cat => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[styles.chip, filters.categoryId === cat.id && styles.chipActive]}
+                                        onPress={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
+                                    >
+                                        <Text style={[styles.chipText, filters.categoryId === cat.id && styles.chipTextActive]}>{cat.name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+
+                        <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilterModal(false)}>
+                            <Text style={styles.applyBtnText}>Ver Resultados</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <PaymentModal
                 visible={showPaymentModal}
                 onClose={() => setShowPaymentModal(false)}
                 onSuccess={() => fetchData()}
-                initialAmount={selectedItem?.amount || 0}
+                initialAmount={Math.abs(selectedItem?.amount || 0)}
                 title={selectedItem?.type === 'income' ? 'Receber' : 'Pagar'}
-                type="transaction"
+                type={selectedItem?.isBill ? 'bill' : 'transaction'}
                 id={selectedItem?.id || ''}
             />
         </View>
     );
 }
 
-const s = (colors: any) => StyleSheet.create({
+const s = (colors: any, mode: string) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingTop: 56, paddingBottom: 16 },
-    title: { fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -1 },
-    addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 12 },
+    title: { fontSize: 24, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
+    subtitle: { fontSize: 13, color: colors.textSecondary, fontWeight: '700', marginTop: -2 },
+    headerBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
 
-    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 16 },
-    arrow: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-    monthText: { fontSize: 16, fontWeight: '800', color: colors.text, width: 110, textAlign: 'center' },
+    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 12 },
+    arrow: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderRadius: 10 },
+    monthLabel: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 10, backgroundColor: colors.surface },
+    monthText: { fontSize: 14, fontWeight: '800', color: colors.text },
 
-    filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 16 },
-    filterBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-    filterActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-    filterText: { fontSize: 13, color: colors.textSecondary, fontWeight: '800' },
-    filterTextActive: { color: colors.white, fontWeight: '900' },
-
-    txItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, padding: 16, marginBottom: 12, gap: 16, borderWidth: 1, borderColor: colors.border },
-    txIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    txItem: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: colors.surface, borderRadius: 16,
+        paddingVertical: 10, paddingHorizontal: 12,
+        marginBottom: 8, gap: 12,
+        borderWidth: 1, borderColor: colors.border,
+        borderLeftWidth: 4
+    },
+    txIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     txInfo: { flex: 1 },
-    txDesc: { fontSize: 16, fontWeight: '800', color: colors.text },
-    txMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2, fontWeight: '700', textTransform: 'uppercase' },
-    txRight: { alignItems: 'flex-end', gap: 10 },
-    txAmount: { fontSize: 16, fontWeight: '900' },
+    txDesc: { fontSize: 14, fontWeight: '800', color: colors.text },
+    txMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1, fontWeight: '700', textTransform: 'uppercase' },
+    txRight: { alignItems: 'flex-end', justifyContent: 'center' },
+    txAmount: { fontSize: 15, fontWeight: '900' },
+    txActions: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    deleteBtn: { padding: 4, borderRadius: 8 },
 
-    miniPayBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
-    miniPayBtnText: { color: colors.white, fontSize: 11, fontWeight: '900', textTransform: 'uppercase' },
-    deleteBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceLight, borderRadius: 10 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    filterModal: { backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, maxHeight: '80%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '900', color: colors.text },
+    filterContent: { marginBottom: 20 },
+    filterLabel: { fontSize: 14, fontWeight: '800', color: colors.textMuted, marginBottom: 12, marginTop: 16, textTransform: 'uppercase' },
+    filterGroup: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    filterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+    chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    chipText: { fontSize: 13, color: colors.textSecondary, fontWeight: '700' },
+    chipTextActive: { color: colors.white, fontWeight: '800' },
+    applyBtn: { backgroundColor: colors.primary, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    applyBtnText: { color: colors.white, fontSize: 16, fontWeight: '900' },
 
-    statusBadgeSmall: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 4 },
-    statusTextSmall: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
-
-    empty: { alignItems: 'center', paddingTop: 80, gap: 18 },
-    emptyText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
+    empty: { alignItems: 'center', paddingTop: 80, gap: 16 },
+    emptyText: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
 });

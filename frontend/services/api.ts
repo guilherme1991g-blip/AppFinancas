@@ -146,6 +146,7 @@ export const api = {
     payBill: (billId: string, data: { payment_account_id: string; amount?: number; date?: string }) =>
         request(`/bills/${billId}/pay`, { method: 'POST', body: JSON.stringify(data) }),
     payTransaction: (id: string, data?: { date?: string; amount?: number }) => request(`/transactions/${id}/pay`, { method: 'POST', body: JSON.stringify(data || {}) }),
+    unpayTransaction: (id: string) => request(`/transactions/${id}/unpay`, { method: 'POST' }),
 
     // Preferences
     getPreferences: () => request('/preferences'),
