@@ -1,12 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile
 from typing import List, Optional
 from database import transactions_collection, accounts_collection, bills_collection
 from models.transaction import TransactionCreate, TransactionUpdate, TransactionPaymentRequest
 from routers.auth import get_current_user
 from datetime import datetime
 from bson import ObjectId
+import os
+import shutil
 
 from utils.date_utils import safe_date, calculate_due_date
+from utils.pix_extractor import extract_text_from_pdf, parse_pix_text
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -308,3 +311,27 @@ async def unpay_transaction(tx_id: str, current_user=Depends(get_current_user)):
     )
     
     return {"message": "Pagamento desfeito com sucesso"}
+
+@router.post("/extract-pix")
+async def extract_pix(file: UploadFile = File(...), current_user=Depends(get_current_user)):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são suportados")
+    
+    # Save temporary file
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    try:
+        text = extract_text_from_pdf(temp_path)
+        if not text:
+            raise HTTPException(status_code=400, detail="Não foi possível extrair texto do PDF")
+        
+        data = parse_pix_text(text)
+        if not data:
+            raise HTTPException(status_code=500, detail="Erro ao processar o comprovante com IA")
+        
+        return data
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)

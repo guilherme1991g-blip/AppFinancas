@@ -11,6 +11,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import * as DocumentPicker from 'expo-document-picker';
+import { useShareIntent } from 'expo-share-intent';
 
 // Forces monthly frequency for simplicity
 const FREQUENCY = 'monthly';
@@ -19,6 +21,8 @@ export default function NewTransactionScreen() {
     const insets = useSafeAreaInsets();
     const { mode, colors } = useTheme();
     const { type: initialType } = useLocalSearchParams<{ type?: string }>();
+    const { hasShareIntent, shareIntent, resetShareIntent, error: shareError } = useShareIntent();
+
     const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
     const [payMethod, setPayMethod] = useState<'account' | 'card'>('account');
     const [amount, setAmount] = useState('');
@@ -82,6 +86,64 @@ export default function NewTransactionScreen() {
 
     const filteredCats = categories.filter(c => c.type === type);
     const filteredAccs = accounts.filter(a => payMethod === 'card' ? a.type === 'credit_card' : a.type !== 'credit_card');
+
+    useEffect(() => {
+        if (hasShareIntent && shareIntent.type === 'file' && shareIntent.value) {
+            // shareIntent.value contains the URI
+            const sharedFile = {
+                uri: shareIntent.value,
+                name: 'comprovante.pdf',
+                mimeType: 'application/pdf'
+            };
+
+            async function autoExtract() {
+                setLoading(true);
+                try {
+                    const data = await api.extractPix(sharedFile);
+                    if (data) {
+                        if (data.amount) setAmount(data.amount.toString().replace('.', ','));
+                        if (data.description) setDescription(data.description);
+                        if (data.date) setDate(new Date(data.date));
+                        if (data.type) setType(data.type as any);
+                        Alert.alert('Sucesso', 'Comprovante processado via compartilhamento!');
+                    }
+                } catch (e: any) {
+                    console.error(e);
+                } finally {
+                    setLoading(false);
+                    resetShareIntent();
+                }
+            }
+            autoExtract();
+        }
+    }, [hasShareIntent, shareIntent]);
+
+    async function handleFileImport() {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/pdf',
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+            setLoading(true);
+            const file = result.assets[0];
+            const data = await api.extractPix(file);
+
+            if (data) {
+                if (data.amount) setAmount(data.amount.toString().replace('.', ','));
+                if (data.description) setDescription(data.description);
+                if (data.date) setDate(new Date(data.date));
+                if (data.type) setType(data.type as any);
+                Alert.alert('Sucesso', 'Dados extraídos do comprovante!');
+            }
+        } catch (e: any) {
+            Alert.alert('Erro na Importação', e.message || 'Não foi possível processar o PDF');
+        } finally {
+            setLoading(false);
+        }
+    }
 
     async function handleSave() {
         if (!amount || !description || !selectedAccount || !selectedCategory) {
@@ -202,9 +264,15 @@ export default function NewTransactionScreen() {
                     <Ionicons name="close" size={22} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.title}>{isRecurring ? 'Novo Recorrente' : (type === 'income' ? 'Nova Receita' : 'Nova Despesa')}</Text>
-                <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
-                    {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity onPress={handleFileImport} disabled={loading} style={[styles.headerBtn, { width: 'auto', paddingHorizontal: 12 }]}>
+                        <Ionicons name="document-attach-outline" size={18} color={colors.primary} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, marginLeft: 4 }}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
+                        {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <KeyboardAvoidingView
@@ -583,6 +651,7 @@ const s = (colors: any) => StyleSheet.create({
     closeBtn: { padding: 8, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
     title: { fontSize: 18, fontWeight: '800', color: colors.text },
     saveBtn: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    headerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
     saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 14 },
 
     content: { padding: 20 },

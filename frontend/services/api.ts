@@ -147,6 +147,29 @@ export const api = {
         request(`/bills/${billId}/pay`, { method: 'POST', body: JSON.stringify(data) }),
     payTransaction: (id: string, data?: { date?: string; amount?: number }) => request(`/transactions/${id}/pay`, { method: 'POST', body: JSON.stringify(data || {}) }),
     unpayTransaction: (id: string) => request(`/transactions/${id}/unpay`, { method: 'POST' }),
+    extractPix: async (file: any) => {
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('file', {
+            uri: file.uri,
+            name: file.name,
+            type: file.mimeType || 'application/pdf',
+        } as any);
+
+        const response = await fetch(`${BASE_URL}/transactions/extract-pix`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Erro ao processar PDF' }));
+            throw new Error(err.detail || 'Erro na extração');
+        }
+        return response.json();
+    },
 
     // Preferences
     getPreferences: () => request('/preferences'),

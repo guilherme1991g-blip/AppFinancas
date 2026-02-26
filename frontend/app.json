@@ -36,7 +36,29 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-share-intent",
+        {
+          "ios": {
+            "activationRules": [
+              "https?://.*",
+              "file://.*"
+            ],
+            "appGroupIdentifier": "group.com.frontend.share"
+          },
+          "android": {
+            "intentFilters": [
+              {
+                "action": "SEND",
+                "data": {
+                  "mimeType": "application/pdf"
+                }
+              }
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
