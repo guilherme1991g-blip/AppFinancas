@@ -13,7 +13,7 @@ def bill_doc(doc) -> dict:
         "account_id": str(doc["account_id"]),
         "month": doc["month"],
         "year": doc["year"],
-        "amount": doc["amount"],
+        "amount": abs(doc.get("amount", 0)),
         "status": doc["status"],
         "due_date": doc["due_date"],
         "closing_date": doc["closing_date"],
@@ -32,15 +32,23 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
     bills = [bill_doc(d) for d in existing_docs]
     existing_keys = {(b["month"], b["year"]) for b in bills}
 
-    # 2. Find months with transactions to generate virtual bills
     pipeline = [
-        {"$match": {"account_id": ObjectId(account_id)}},
+        {"$match": {
+            "account_id": ObjectId(account_id),
+            "user_id": current_user["_id"],
+            "type": "expense"
+        }},
         {"$group": {
             "_id": {
                 "month": {"$month": {"$ifNull": ["$due_date", "$date"]}},
                 "year": {"$year": {"$ifNull": ["$due_date", "$date"]}}
             },
-            "total": {"$sum": "$amount"}
+            "total": {"$sum": {"$abs": "$amount"}}
+        }},
+        {"$match": {
+            "total": {"$gt": 0.01},
+            "_id.month": {"$ne": None},
+            "_id.year": {"$ne": None}
         }},
         {"$sort": {"_id.year": -1, "_id.month": -1}}
     ]
@@ -61,7 +69,7 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
                 "account_id": account_id,
                 "month": m,
                 "year": y,
-                "amount": r["total"],
+                "amount": abs(r.get("total", 0)),
                 "status": "open",
                 "due_date": due_date.isoformat(),
                 "closing_date": closing_date.isoformat(),
@@ -98,19 +106,31 @@ async def get_bill_transactions(bill_id: str, current_user=Depends(get_current_u
             
         query = {
             "account_id": ObjectId(account_id),
-            "due_date": {"$gte": start_date, "$lt": end_date}
+            "user_id": current_user["_id"],
+            "type": "expense",
+            "$or": [
+                {"due_date": {"$gte": start_date, "$lt": end_date}},
+                {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}
+            ]
         }
     else:
         bill = await bills_collection.find_one({"_id": ObjectId(bill_id)})
         if not bill:
             raise HTTPException(status_code=404, detail="Fatura não encontrada")
         
-        start_date = bill["closing_date"] - timedelta(days=30)
-        end_date = bill["closing_date"]
+        # Consistent date range for physical bills using start/end markers
+        from datetime import timedelta
+        start_date = bill["closing_date"] - timedelta(days=32)
+        end_date = bill["closing_date"] + timedelta(days=1)
         
         query = {
             "account_id": bill["account_id"],
-            "due_date": {"$gt": start_date, "$lte": end_date}
+            "user_id": current_user["_id"],
+            "type": "expense",
+            "$or": [
+                {"due_date": {"$gte": start_date, "$lt": end_date}},
+                {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}
+            ]
         }
     
     docs = await transactions_collection.find(query).sort("date", -1).to_list(length=100)

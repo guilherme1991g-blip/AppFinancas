@@ -78,29 +78,36 @@ async def get_summary(
             
             bill_total = 0
             if bill:
-                bill_total = bill["amount"]
-                if bill["status"] == "paid":
-                    bill_expense_paid += bill["amount"]
+                bill_total = abs(bill.get("amount", 0))
+                if bill.get("status") == "paid":
+                    bill_expense_paid += bill_total
                 else:
-                    bill_expense_pending += bill["amount"]
+                    bill_expense_pending += bill_total
             else:
                 # Calculate virtual bill for this specific month/year
                 cc_tx_query = {
                     "account_id": acc["_id"],
-                    "due_date": {"$gte": start, "$lt": end}
+                    "user_id": current_user["_id"],
+                    "type": "expense",
+                    "$or": [
+                        {"due_date": {"$gte": start, "$lt": end}},
+                        {"due_date": None, "date": {"$gte": start, "$lt": end}}
+                    ]
                 }
                 async for tx in transactions_collection.find(cc_tx_query):
-                    bill_total += tx["amount"]
+                    bill_total += abs(tx["amount"])
                 
                 bill_expense_pending += bill_total
 
-            cc_details.append({
-                "account_id": str(acc["_id"]),
-                "bill_total": bill_total,
-                "status": bill["status"] if bill else "open"
-            })
+            if bill_total > 0.01 or bill:
+                cc_details.append({
+                    "account_id": str(acc["_id"]),
+                    "bill_total": bill_total,
+                    "status": bill["status"] if bill else "open"
+                })
 
-    total_balance = sum(a["balance"] for a in accounts)
+    # Fix: Saldo Total should NOT subtract CC debt. Only assets.
+    total_balance = sum(a["balance"] for a in accounts if a["type"] != "credit_card" or a["balance"] > 0)
     
     # Balance for the month
     month_balance = (income_paid + income_pending) - (expense_paid + bill_expense_paid + tx_expense_pending + bill_expense_pending)
@@ -114,9 +121,8 @@ async def get_summary(
         "pending_expense": tx_expense_pending + bill_expense_pending,
         "balance": month_balance,
         "total_balance": total_balance,
-        # Forecast is current Net Worth + expected surplus/deficit of pending items.
-        # Since card transactions already updated 'total_balance', we only add pending non-card items.
-        "forecast": total_balance + income_pending - tx_expense_pending,
+        # Forecast subtracts pending CC bills and pending local items.
+        "forecast": total_balance + income_pending - tx_expense_pending - bill_expense_pending,
         "income_count": income_count,
         "expense_count": expense_count,
         "credit_cards": cc_details
