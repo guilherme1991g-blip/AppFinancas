@@ -18,9 +18,10 @@ interface PaymentModalProps {
     title: string;
     type: 'bill' | 'transaction';
     id: string; // billId or transactionId
+    accountId?: string; // Original account for bill/transaction
 }
 
-export default function PaymentModal({ visible, onClose, onSuccess, initialAmount, title, type, id }: PaymentModalProps) {
+export default function PaymentModal({ visible, onClose, onSuccess, initialAmount, title, type, id, accountId }: PaymentModalProps) {
     const { colors } = useTheme();
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date());
@@ -44,9 +45,20 @@ export default function PaymentModal({ visible, onClose, onSuccess, initialAmoun
         setLoadingAccounts(true);
         try {
             const data = await api.getAccounts() as any[];
-            const filtered = data.filter(a => a.type !== 'credit_card');
-            setAccounts(filtered);
-            if (filtered.length > 0) setSelectedAccountId(filtered[0].id);
+            const nonCreditCards = data.filter(a => a.type !== 'credit_card');
+            setAccounts(nonCreditCards);
+
+            if (type === 'bill' && accountId) {
+                const cardAcc = data.find(a => a.id === accountId);
+                if (cardAcc?.payment_account_id) {
+                    const fallbackId = nonCreditCards.length > 0 ? nonCreditCards[0].id : '';
+                    setSelectedAccountId(cardAcc.payment_account_id || fallbackId);
+                    setLoadingAccounts(false);
+                    return;
+                }
+            }
+
+            if (nonCreditCards.length > 0) setSelectedAccountId(nonCreditCards[0].id);
         } catch (e) {
             console.error(e);
         } finally {

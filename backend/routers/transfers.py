@@ -34,6 +34,8 @@ async def create_transfer(data: TransferCreate, current_user=Depends(get_current
     to_acc = await accounts_collection.find_one({"_id": ObjectId(data.to_account_id), "user_id": current_user["_id"]})
     if not from_acc or not to_acc:
         raise HTTPException(status_code=404, detail="Conta não encontrada")
+    if from_acc["type"] == "credit_card" or to_acc["type"] == "credit_card":
+        raise HTTPException(status_code=400, detail="Transferências não são permitidas para cartões de crédito")
     if from_acc["balance"] < data.amount:
         raise HTTPException(status_code=400, detail="Saldo insuficiente")
     doc = {

@@ -49,6 +49,7 @@ export default function EditAccountScreen() {
     const [lastDigits, setLastDigits] = useState('');
     const [brand, setBrand] = useState('visa');
     const [showBrandModal, setShowBrandModal] = useState(false);
+    const [paymentAccountId, setPaymentAccountId] = useState('');
 
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(false);
@@ -78,6 +79,7 @@ export default function EditAccountScreen() {
                         setDueDay(String(acc.due_day || ''));
                         setLastDigits(acc.last_digits || '');
                         setBrand(acc.card_brand || 'visa');
+                        setPaymentAccountId(acc.payment_account_id || '');
                     }
                 }
                 setInitialized(true);
@@ -148,6 +150,7 @@ export default function EditAccountScreen() {
                 data.due_day = parseInt(dueDay) || 5;
                 data.last_digits = lastDigits;
                 data.card_brand = brand;
+                data.payment_account_id = paymentAccountId;
                 data.icon = 'card';
             }
 
@@ -324,6 +327,27 @@ export default function EditAccountScreen() {
                                         <Text style={styles.label}>Final do Cartão (4 dígitos)</Text>
                                         <TextInput style={styles.input} value={lastDigits} onChangeText={setLastDigits} keyboardType="number-pad" placeholder="1234" placeholderTextColor={colors.textMuted} maxLength={4} />
                                     </View>
+
+                                    <View style={styles.fieldGroup}>
+                                        <Text style={styles.label}>Conta para Pagamento de Fatura</Text>
+                                        <View style={styles.chipRow}>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                                {accounts.map(acc => (
+                                                    <TouchableOpacity
+                                                        key={acc.id}
+                                                        style={[styles.chip, paymentAccountId === acc.id && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                                                        onPress={() => setPaymentAccountId(acc.id)}
+                                                    >
+                                                        <View style={[styles.accountDot, { backgroundColor: acc.color }]} />
+                                                        <Text style={[styles.chipTxt, paymentAccountId === acc.id && { color: colors.white }]}>{acc.name}</Text>
+                                                        {paymentAccountId === acc.id && (
+                                                            <Ionicons name="checkmark-circle" size={14} color={colors.white} style={{ marginLeft: 4 }} />
+                                                        )}
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                        </View>
+                                    </View>
                                 </>
                             )}
                         </View>
@@ -403,4 +427,5 @@ const s = (colors: any) => StyleSheet.create({
     chipTxt: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
     emptyAcc: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center', minWidth: 150 },
     emptyAccTxt: { color: colors.textMuted, fontWeight: '700', fontSize: 12 },
+    accountDot: { width: 8, height: 8, borderRadius: 4 },
 });

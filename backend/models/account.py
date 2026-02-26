@@ -35,6 +35,7 @@ class AccountCreate(BaseModel):
     last_digits: Optional[str] = None   # last 4 digits
     card_brand: Optional[CardBrand] = None
     card_holder: Optional[str] = None
+    payment_account_id: Optional[str] = None
 
 
 class AccountUpdate(BaseModel):
@@ -49,6 +50,7 @@ class AccountUpdate(BaseModel):
     last_digits: Optional[str] = None
     card_brand: Optional[str] = None
     card_holder: Optional[str] = None
+    payment_account_id: Optional[str] = None
 
 
 class AccountResponse(BaseModel):
@@ -68,3 +70,4 @@ class AccountResponse(BaseModel):
     last_digits: Optional[str] = None
     card_brand: Optional[str] = None
     card_holder: Optional[str] = None
+    payment_account_id: Optional[str] = None

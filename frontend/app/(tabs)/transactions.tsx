@@ -331,9 +331,10 @@ export default function TransactionsScreen() {
                 onClose={() => setShowPaymentModal(false)}
                 onSuccess={() => fetchData()}
                 initialAmount={Math.abs(selectedItem?.amount || 0)}
-                title={selectedItem?.type === 'income' ? 'Receber' : 'Pagar'}
+                title={selectedItem.title}
                 type={selectedItem?.isBill ? 'bill' : 'transaction'}
-                id={selectedItem?.id || ''}
+                id={selectedItem.id}
+                accountId={selectedItem.account_id}
             />
         </View>
     );

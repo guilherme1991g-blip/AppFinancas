@@ -24,7 +24,7 @@ export default function NewTransferScreen() {
     useEffect(() => {
         setLoading(true);
         api.getAccounts()
-            .then((accs: any) => setAccounts(accs))
+            .then((accs: any) => setAccounts(accs.filter((a: any) => a.type !== 'credit_card')))
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
@@ -176,7 +176,7 @@ const s = (colors: any) => StyleSheet.create({
     selectionColumn: { flex: 1, gap: 12 },
     sectionLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
     accList: { gap: 8 },
-    accCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, borderWith: 1, borderColor: colors.border, backgroundColor: colors.surface, borderWidth: 1 },
+    accCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     accIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     accName: { fontSize: 13, color: colors.text, fontWeight: '600' },
     accBal: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },

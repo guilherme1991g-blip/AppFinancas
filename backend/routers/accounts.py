@@ -26,6 +26,7 @@ def account_doc(doc) -> dict:
         "last_digits": doc.get("last_digits"),
         "card_brand": doc.get("card_brand"),
         "card_holder": doc.get("card_holder"),
+        "payment_account_id": str(doc["payment_account_id"]) if doc.get("payment_account_id") else None,
     }
 
 
