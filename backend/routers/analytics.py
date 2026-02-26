@@ -69,41 +69,49 @@ async def get_summary(
     
     for acc in accounts:
         if acc["type"] == "credit_card":
-            # Check for explicitly created bill
+            # Check for explicitly created bill document
             bill = await bills_collection.find_one({
                 "account_id": acc["_id"],
                 "month": m,
                 "year": y
             })
-            
-            bill_total = 0
-            if bill:
-                bill_total = abs(bill.get("amount", 0))
-                if bill.get("status") == "paid":
-                    bill_expense_paid += bill_total
-                else:
-                    bill_expense_pending += bill_total
-            else:
-                # Calculate virtual bill for this specific month/year
-                cc_tx_query = {
-                    "account_id": acc["_id"],
-                    "user_id": current_user["_id"],
-                    "type": "expense",
-                    "$or": [
-                        {"due_date": {"$gte": start, "$lt": end}},
-                        {"due_date": None, "date": {"$gte": start, "$lt": end}}
-                    ]
-                }
-                async for tx in transactions_collection.find(cc_tx_query):
-                    bill_total += abs(tx["amount"])
-                
-                bill_expense_pending += bill_total
 
-            if bill_total > 0.01 or bill:
+            # Always check for transactions to determine total and if bill should appear
+            cc_tx_query = {
+                "account_id": acc["_id"],
+                "user_id": current_user["_id"],
+                "type": "expense",
+                "$or": [
+                    {"due_date": {"$gte": start, "$lt": end}},
+                    {"due_date": None, "date": {"$gte": start, "$lt": end}}
+                ]
+            }
+            tx_total = 0
+            async for tx in transactions_collection.find(cc_tx_query):
+                tx_total += abs(tx["amount"])
+            
+            if bill:
+                # If physical bill exists, we trust its amount for balance, 
+                # but only if it's not a ghost (has transactions) OR if it was explicitly paid.
+                bill_amount = abs(bill.get("amount", 0))
+                if tx_total > 0.01 or bill.get("status") == "paid":
+                    if bill.get("status") == "paid":
+                        bill_expense_paid += bill_amount
+                    else:
+                        bill_expense_pending += bill_amount
+                    
+                    cc_details.append({
+                        "account_id": str(acc["_id"]),
+                        "bill_total": bill_amount,
+                        "status": bill["status"]
+                    })
+            elif tx_total > 0.01:
+                # Virtual bill
+                bill_expense_pending += tx_total
                 cc_details.append({
                     "account_id": str(acc["_id"]),
-                    "bill_total": bill_total,
-                    "status": bill["status"] if bill else "open"
+                    "bill_total": tx_total,
+                    "status": "open"
                 })
 
     # Fix: Saldo Total should NOT subtract CC debt. Only assets.
