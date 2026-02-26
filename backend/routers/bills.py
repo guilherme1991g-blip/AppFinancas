@@ -317,6 +317,10 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
     year = bill.get("year", payment_date.year)
     closing_date = safe_date(year, month, closing_day)
     
+    # Check if bill is still open - BLOCK PAYMENT
+    if datetime.utcnow() < closing_date:
+        raise HTTPException(status_code=400, detail="Fatura ainda está aberta. Aguarde o fechamento para pagar.")
+    
     # 5. Handle Partial Payment & Rollover
     # Rollover ONLY happens if the bill is ALREADY CLOSED (now >= closing_date)
     # Before closing, any payment is just an "Advance" which reduces the total via the Income transaction.

@@ -125,11 +125,16 @@ export default function BillDetailsScreen() {
                 <Text style={styles.summaryLabel}>Total da Fatura</Text>
                 <Text style={[styles.summaryValue, { color: total < 0 ? colors.income : colors.text }]}>{formatCurrency(total)}</Text>
                 <TouchableOpacity
-                    style={[styles.payBtn, (paying || billStatus === 'paid') && { opacity: 0.7, backgroundColor: colors.textMuted }]}
+                    style={[styles.payBtn, (paying || billStatus === 'paid' || billStatus === 'open') && { opacity: 0.7, backgroundColor: colors.textMuted }]}
                     onPress={handlePay}
-                    disabled={paying || billStatus === 'paid'}
+                    disabled={paying || billStatus === 'paid' || billStatus === 'open'}
                 >
-                    {paying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.payBtnTxt}>{billStatus === 'paid' ? 'Fatura Paga' : 'Pagar Fatura'}</Text>}
+                    {paying ? <ActivityIndicator color={colors.white} /> : (
+                        <Text style={styles.payBtnTxt}>
+                            {billStatus === 'paid' ? 'Fatura Paga' :
+                                billStatus === 'open' ? 'Aguardando Fechamento' : 'Pagar Fatura'}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
 

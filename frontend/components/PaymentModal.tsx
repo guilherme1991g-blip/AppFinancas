@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity,
     TextInput, ActivityIndicator, Platform, ScrollView,
-    KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard
+    KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -78,6 +79,7 @@ export default function PaymentModal({ visible, onClose, onSuccess, initialAmoun
             onClose();
         } catch (e: any) {
             console.error(e);
+            Alert.alert("Erro no Pagamento", e.message || "Não foi possível processar o pagamento.");
         } finally {
             setLoading(false);
         }
