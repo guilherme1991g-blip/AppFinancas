@@ -145,7 +145,8 @@ export default function TransactionsScreen() {
         if (it.isBill) {
             isPaid = it.status === 'paid';
             isOverdue = it.status === 'overdue';
-            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
+            const isPartial = it.status === 'partially_paid';
+            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : (isPartial ? colors.warning : colors.primary));
         } else {
             isPaid = it.is_paid;
             isOverdue = !isPaid && new Date(it.date) < new Date();
@@ -160,8 +161,8 @@ export default function TransactionsScreen() {
                     style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '20', borderLeftWidth: 4, borderLeftColor: statusColor }]}
                     onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: it.id, name: `${it.month}/${it.year}` } } as any)}
                 >
-                    <View style={[styles.txIcon, { backgroundColor: (it.color || colors.primary) + '15' }]}>
-                        <Ionicons name="receipt" size={22} color={it.color || colors.primary} />
+                    <View style={[styles.txIcon, { backgroundColor: statusColor + '15' }]}>
+                        <Ionicons name="receipt" size={22} color={statusColor} />
                     </View>
                     <View style={styles.txInfo}>
                         <Text style={styles.txDesc} numberOfLines={1}>Fatura {it.cardName}</Text>
@@ -172,16 +173,15 @@ export default function TransactionsScreen() {
                             {formatCurrency(it.amount)}
                         </Text>
                         <View style={[styles.statusBadgeSmall, {
-                            backgroundColor: it.status === 'paid' ? colors.income + '15' :
-                                it.status === 'overdue' ? colors.expense + '15' : colors.primary + '15'
+                            backgroundColor: statusColor + '15'
                         }]}>
                             <Text style={[styles.statusTextSmall, {
-                                color: it.status === 'paid' ? colors.income :
-                                    it.status === 'overdue' ? colors.expense : colors.primary
+                                color: statusColor
                             }]}>
                                 {it.status === 'paid' ? 'Paga' :
                                     it.status === 'overdue' ? 'Vencida' :
-                                        it.status === 'closed' ? 'Fechada' : 'Aberta'}
+                                        it.status === 'partially_paid' ? 'Parcial' :
+                                            it.status === 'closed' ? 'Fechada' : 'Aberta'}
                             </Text>
                         </View>
                     </View>

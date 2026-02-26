@@ -38,14 +38,13 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
                 "month": {"$month": {"$ifNull": ["$due_date", "$date"]}},
                 "year": {"$year": {"$ifNull": ["$due_date", "$date"]}}
             },
-            "total": {"$sum": {"$cond": [
-                {"$eq": ["$type", "expense"]}, 
-                {"$abs": "$amount"}, 
-                {"$multiply": [{"$abs": "$amount"}, -1]}
-            ]}}
+            "expenses": {"$sum": {"$cond": [{"$eq": ["$type", "expense"]}, {"$abs": "$amount"}, 0]}},
+            "payments": {"$sum": {"$cond": [{"$eq": ["$type", "income"]}, {"$abs": "$amount"}, 0]}}
+        }},
+        {"$addFields": {
+            "total": {"$subtract": ["$expenses", "$payments"]}
         }},
         {"$match": {
-            "total": {"$gt": 0.01},
             "_id.month": {"$ne": None},
             "_id.year": {"$ne": None}
         }},
@@ -67,7 +66,9 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
         else:
             # Generate a virtual bill
             closing_day = acc.get("closing_day", 10)
-        tx_total = abs(r.get("total", 0))
+        expenses = r.get("expenses", 0)
+        payments = r.get("payments", 0)
+        tx_total = r.get("total", 0)
         
         bill_doc_data = existing_map.get((m, y))
 
@@ -81,16 +82,23 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
         
         # Status logic
         now_dt = datetime.utcnow()
+        
+        if now_dt < closing_date:
+            status = "open" # Before closing, it's always open even if paid in advance
+        else:
+            # After closing
+            if tx_total <= 0.01:
+                status = "paid"
+            elif payments > 0:
+                status = "partially_paid" # Paid something but not all
+            elif now_dt > due_date:
+                status = "overdue"
+            else:
+                status = "closed" # Closed but not yet paid
+
+        # If it's explicitly marked as paid in DB, honor it
         if bill_doc_data and bill_doc_data.get("status") == "paid":
              status = "paid"
-        elif tx_total <= 0: # If total is 0 or negative (e.g., only income transactions), consider it paid
-             status = "paid"
-        elif now_dt < closing_date:
-             status = "open"
-        elif now_dt < due_date:
-             status = "closed"
-        else:
-             status = "overdue"
 
         bills.append({
             "id": str(bill_doc_data["_id"]) if bill_doc_data else f"v_{account_id}_{m}_{y}",
@@ -307,10 +315,18 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         {"$inc": {"balance": abs(amount_to_pay)}}
     )
 
+    # Calculate closing date for timing logic
+    closing_day = acc.get("closing_day", 10)
+    month = bill.get("month", payment_date.month)
+    year = bill.get("year", payment_date.year)
+    closing_date = datetime(year, month, closing_day)
+    
     # 5. Handle Partial Payment & Rollover
-    # If the user paid less than the full amount, the difference moves to the next month
-    if amount_to_pay < (bill.get("amount", 0) - 0.01):
-        diff = bill.get("amount", 0) - amount_to_pay
+    # Rollover ONLY happens if the bill is ALREADY CLOSED (now >= closing_date)
+    # Before closing, any payment is just an "Advance" which reduces the total via the Income transaction.
+    full_amount = bill.get("amount", 0)
+    if payment_date >= closing_date and amount_to_pay < (full_amount - 0.01):
+        diff = full_amount - amount_to_pay
         
         # Determine next month for rollover
         m, y = bill["month"], bill["year"]
@@ -318,17 +334,12 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         next_y = y if m < 12 else y + 1
         next_date = datetime(next_y, next_m, 1)
 
-        # A. Create an "Income" in THIS month for the diff (clears this bill)
-        # This makes the Current Month Expenses - Income = amount_to_pay
-        # But this is NOT a real income, it's a rollover.
-        # We also need to avoid double-counting in the account balance.
-        # So we create a pair that is balance-neutral.
-        
+        # Create balance-neutral rollover pair
         rollover_in = {
             "user_id": current_user["_id"],
             "account_id": bill["account_id"],
             "category_id": cat_id,
-            "type": "income", # To reduce the bill amount
+            "type": "income",
             "amount": abs(diff),
             "description": f"Rolagem p/ {next_m}/{next_y}",
             "date": payment_date,
@@ -338,7 +349,6 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         }
         await transactions_collection.insert_one(rollover_in)
 
-        # B. Create an "Expense" in NEXT month for the diff
         rollover_out = {
             "user_id": current_user["_id"],
             "account_id": bill["account_id"],
@@ -346,24 +356,28 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
             "type": "expense",
             "amount": abs(diff),
             "description": f"Saldo Anterior - {m}/{y}",
-            "date": next_date, # Forces it into next month
-            "is_paid": True, # It's debt that exists, so it's "paid" in terms of account balance flow (already spent)
+            "date": next_date,
+            "is_paid": True,
             "paid_at": next_date,
             "created_at": datetime.utcnow()
         }
         await transactions_collection.insert_one(rollover_out)
-        
-        # Balance Neutral: Account balance doesn't change because Income + Expense cancel out.
-        # (Income +diff, Expense -diff) -> net 0.
-        # But for bill aggregation:
-        # Current bill: -diff
-        # Next bill: +diff
 
-    # 6. Update bill status
-    if not bill_id.startswith("v_"):
+    # 6. Update physical bill status
+    # Before closing, it remains "open". After closing, it's considered "paid" if fully settled or rolled over.
+    new_status = "paid" if (payment_date >= closing_date or amount_to_pay >= full_amount - 0.01) else "open"
+    
+    if bill_id.startswith("v_"):
+        # For virtual bills, we already created the doc with status "paid" above. 
+        # But let's fix it if it was an advance.
+        await bills_collection.update_one(
+            {"_id": bill["_id"]},
+            {"$set": {"status": new_status}}
+        )
+    else:
         await bills_collection.update_one(
             {"_id": ObjectId(bill_id)}, 
-            {"$set": {"status": "paid", "paid_at": payment_date, "amount": amount_to_pay}}
+            {"$set": {"status": new_status, "paid_at": payment_date, "amount": amount_to_pay}}
         )
     
     return {"message": "Fatura paga com sucesso", "bill_id": str(bill["_id"])}
