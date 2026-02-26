@@ -6,7 +6,14 @@ from routers.auth import get_current_user
 from datetime import datetime
 from bson import ObjectId
 
+import calendar
+
 router = APIRouter(prefix="/transactions", tags=["transactions"])
+
+def safe_date(year, month, day):
+    # Adjust day if it exceeds the last day of the month
+    _, last_day = calendar.monthrange(year, month)
+    return datetime(year, month, min(day, last_day))
 
 async def check_bill_status(tx_doc, user_id):
     """Returns True if the transaction is on an open bill or not a credit card tx."""
@@ -25,8 +32,14 @@ async def check_bill_status(tx_doc, user_id):
     due_day = acc.get("due_day", closing_day + 7)
     
     m, y = dt.month, dt.year
-    closing_date = datetime(y, m, closing_day)
-    due_date = datetime(y, m, due_day) if due_day > closing_day else (datetime(y, m+1, due_day) if m < 12 else datetime(y+1, 1, due_day))
+    closing_date = safe_date(y, m, closing_day)
+    
+    if due_day > closing_day:
+        due_date = safe_date(y, m, due_day)
+    else:
+        nm = m + 1 if m < 12 else 1
+        ny = y if m < 12 else y + 1
+        due_date = safe_date(ny, nm, due_day)
     
     now = datetime.utcnow()
     
@@ -97,7 +110,9 @@ async def list_transactions(
     if month and year:
         from datetime import datetime
         start = datetime(year, month, 1)
-        end = datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
+        nm = month + 1 if month < 12 else 1
+        ny = year if month < 12 else year + 1
+        end = datetime(ny, nm, 1)
         query["date"] = {"$gte": start, "$lt": end}
     elif year:
         start = datetime(year, 1, 1)

@@ -6,7 +6,14 @@ from database import bills_collection, transactions_collection, accounts_collect
 from routers.auth import get_current_user
 from models.transaction import BillPaymentRequest
 
+import calendar
+
 router = APIRouter(prefix="/bills", tags=["bills"])
+
+def safe_date(year, month, day):
+    # Adjust day if it exceeds the last day of the month
+    _, last_day = calendar.monthrange(year, month)
+    return datetime(year, month, min(day, last_day))
 
 def bill_doc(doc) -> dict:
     return {
@@ -74,11 +81,16 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
 
         # Calculate dates for status logic
         closing_day = acc.get("closing_day", 10)
-        closing_date = datetime(y, m, closing_day)
+        closing_date = safe_date(y, m, closing_day)
         due_day = acc.get("due_day", closing_day + 7)
         
         # Find due date (can be next month if closing is late)
-        due_date = datetime(y, m, due_day) if due_day > closing_day else (datetime(y, m+1, due_day) if m < 12 else datetime(y+1, 1, due_day))
+        if due_day > closing_day:
+            due_date = safe_date(y, m, due_day)
+        else:
+            nm = m + 1 if m < 12 else 1
+            ny = y if m < 12 else y + 1
+            due_date = safe_date(ny, nm, due_day)
         
         # Status logic
         now_dt = datetime.utcnow()
@@ -196,51 +208,35 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         if not acc:
             raise HTTPException(status_code=404, detail="Cartão não encontrado")
             
-        # Get total for this virtual bill
-        pipeline = [
-            {"$match": {
-                "account_id": ObjectId(account_id),
-                "user_id": current_user["_id"],
-                "type": "expense",
-                "$or": [
-                    {"due_date": {"$month": month, "$year": year}}, # This is not direct mongo syntax, need proper date matching
-                    {"due_date": None, "date": {"$month": month, "$year": year}}
-                ]
-            }},
-            {"$group": {"_id": None, "total": {"$sum": {"$abs": "$amount"}}}}
-        ]
-        # Actually I already have the logic in list_bills, but here I just need to create the doc.
-        # Let's simplify: the amount comes from 'data.amount' or we fetch it.
-        # For virtual bills, 'data.amount' should be provided by frontend based on what it displayed.
-        amount_to_pay = data.amount if data.amount is not None else 0 # Should probably fetch if None
+        # 1. Fetch total bill expenses for this month to record as the official bill amount
+        start_date = datetime(year, month, 1)
+        end_date = safe_date(year + 1, 1, 1) if month == 12 else safe_date(year, month + 1, 1)
         
-        if data.amount is None:
-             # Fetch if amount not provided (fallback)
-             start_date = datetime(year, month, 1)
-             end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
-             query = {
-                "account_id": ObjectId(account_id),
-                "user_id": current_user["_id"],
-                "type": "expense",
-                "$or": [
-                    {"due_date": {"$gte": start_date, "$lt": end_date}},
-                    {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}
-                ]
-             }
-             total = 0
-             async for tx in transactions_collection.find(query):
-                 total += abs(tx["amount"])
-             amount_to_pay = total
+        expenses_query = {
+            "account_id": ObjectId(account_id),
+            "user_id": current_user["_id"],
+            "type": "expense",
+            "$or": [
+                {"due_date": {"$gte": start_date, "$lt": end_date}},
+                {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}
+            ]
+        }
+        total_bill_expenses = 0
+        async for tx in transactions_collection.find(expenses_query):
+            total_bill_expenses += abs(tx["amount"])
+
+        # What the user is actually paying (optional amount from modal)
+        amount_to_pay = data.amount if data.amount is not None else total_bill_expenses
 
         # Create physical bill
         new_bill = {
             "account_id": ObjectId(account_id),
             "month": month,
             "year": year,
-            "amount": amount_to_pay,
-            "status": "paid", # Mark as paid since it's a payment action
-            "due_date": payment_date, # fallback
-            "closing_date": payment_date, # fallback
+            "amount": total_bill_expenses, # Total debt
+            "status": "paid", # fallback, will be refined below
+            "due_date": safe_date(year, month, acc.get("due_day", 17)), 
+            "closing_date": safe_date(year, month, acc.get("closing_day", 10)),
             "created_at": datetime.utcnow()
         }
         res = await bills_collection.insert_one(new_bill)
@@ -319,7 +315,7 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
     closing_day = acc.get("closing_day", 10)
     month = bill.get("month", payment_date.month)
     year = bill.get("year", payment_date.year)
-    closing_date = datetime(year, month, closing_day)
+    closing_date = safe_date(year, month, closing_day)
     
     # 5. Handle Partial Payment & Rollover
     # Rollover ONLY happens if the bill is ALREADY CLOSED (now >= closing_date)
@@ -364,8 +360,12 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         await transactions_collection.insert_one(rollover_out)
 
     # 6. Update physical bill status
-    # Before closing, it remains "open". After closing, it's considered "paid" if fully settled or rolled over.
-    new_status = "paid" if (payment_date >= closing_date or amount_to_pay >= full_amount - 0.01) else "open"
+    # Before closing, it MUST remain "open" as per user request ("so vai pra pago depois do fechamento")
+    # After closing, it's "paid" if it was fully settled or if rollover handled the difference
+    if payment_date < closing_date:
+        new_status = "open"
+    else:
+        new_status = "paid" # Fully settled or rolled over
     
     if bill_id.startswith("v_"):
         # For virtual bills, we already created the doc with status "paid" above. 
