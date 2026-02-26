@@ -72,15 +72,11 @@ export default function LoginScreen() {
             >
                 {/* Logo Section */}
                 <Animated.View style={[styles.logoSection, { transform: [{ translateY: logoFloat }] }]}>
-                    <View style={styles.logoRing}>
-                        <View style={styles.logoInner}>
-                            <Image
-                                source={require('../../assets/images/app-logo.png')}
-                                style={styles.logoImg}
-                                resizeMode="contain"
-                            />
-                        </View>
-                    </View>
+                    <Image
+                        source={require('../../assets/images/app-logo.png')}
+                        style={styles.logoImgFull}
+                        resizeMode="contain"
+                    />
                 </Animated.View>
 
                 {/* Card Container */}
