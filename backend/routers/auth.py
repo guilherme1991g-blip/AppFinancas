@@ -56,11 +56,21 @@ async def register(data: UserCreate):
 
 @router.post("/login")
 async def login(data: UserLogin):
-    user = await users_collection.find_one({"email": data.email})
-    if not user or not bcrypt.checkpw(data.password.encode(), user["password"].encode()):
-        raise HTTPException(status_code=401, detail="Email ou senha incorretos")
-    token = create_token(str(user["_id"]))
-    return {"token": token, "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}}
+    print(f"DEBUG: Tentativa de login para email: {data.email}")
+    try:
+        user = await users_collection.find_one({"email": data.email})
+        print(f"DEBUG: Busca no banco concluída. Usuário encontrado: {user is not None}")
+        
+        if not user or not bcrypt.checkpw(data.password.encode(), user["password"].encode()):
+            print("DEBUG: Falha na autenticação (email ou senha)")
+            raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+        
+        token = create_token(str(user["_id"]))
+        print("DEBUG: Token gerado com sucesso")
+        return {"token": token, "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}}
+    except Exception as e:
+        print(f"DEBUG: Erro inesperado no login: {str(e)}")
+        raise e
 
 
 @router.get("/me")
