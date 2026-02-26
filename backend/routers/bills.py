@@ -46,10 +46,23 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
                 "year": {"$year": {"$ifNull": ["$due_date", "$date"]}}
             },
             "expenses": {"$sum": {"$cond": [{"$eq": ["$type", "expense"]}, {"$abs": "$amount"}, 0]}},
-            "payments": {"$sum": {"$cond": [{"$eq": ["$type", "income"]}, {"$abs": "$amount"}, 0]}}
+            "payments": {"$sum": {"$cond": [
+                {"$and": [
+                    {"$eq": ["$type", "income"]},
+                    {"$not": {"$regexMatch": {"input": {"$ifNull": ["$description", ""]}, "regex": "Rolagem", "options": "i"}}}
+                ]},
+                {"$abs": "$amount"}, 0
+            ]}},
+            "rollover_income": {"$sum": {"$cond": [
+                {"$and": [
+                    {"$eq": ["$type", "income"]},
+                    {"$regexMatch": {"input": {"$ifNull": ["$description", ""]}, "regex": "Rolagem", "options": "i"}}
+                ]},
+                {"$abs": "$amount"}, 0
+            ]}}
         }},
         {"$addFields": {
-            "total": {"$subtract": ["$expenses", "$payments"]}
+            "total": {"$subtract": ["$expenses", {"$add": ["$payments", "$rollover_income"]}]}
         }},
         {"$match": {
             "_id.month": {"$ne": None},
@@ -75,6 +88,7 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
             closing_day = acc.get("closing_day", 10)
         expenses = r.get("expenses", 0)
         payments = r.get("payments", 0)
+        rollover_income = r.get("rollover_income", 0)
         tx_total = r.get("total", 0)
         
         bill_doc_data = existing_map.get((m, y))
@@ -100,7 +114,11 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
         else:
             # After closing
             if tx_total <= 0.01:
-                status = "paid"
+                # If fully settled, check if it was by rollover vs fully paid
+                if rollover_income > 0.01:
+                    status = "partially_paid"
+                else:
+                    status = "paid"
             elif payments > 0:
                 status = "partially_paid" # Paid something but not all
             elif now_dt > due_date:
