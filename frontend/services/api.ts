@@ -170,6 +170,29 @@ export const api = {
         }
         return response.json();
     },
+    extractReceiptImage: async (image: any) => {
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('file', {
+            uri: image.uri,
+            name: 'receipt.jpg',
+            type: 'image/jpeg',
+        } as any);
+
+        const response = await fetch(`${BASE_URL}/transactions/extract-receipt`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: 'Erro ao processar imagem' }));
+            throw new Error(err.detail || 'Erro na extração');
+        }
+        return response.json();
+    },
 
     // Preferences
     getPreferences: () => request('/preferences'),

@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useShareIntent } from 'expo-share-intent';
 
 // Forces monthly frequency for simplicity
@@ -118,26 +119,52 @@ export default function NewTransactionScreen() {
     }, [hasShareIntent, shareIntent]);
 
     async function handleFileImport() {
+        // ... (previously implemented)
+    }
+
+    async function handleCameraImport() {
         try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/pdf',
-                copyToCacheDirectory: true,
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permissão Necessária', 'Precisamos de acesso à câmera para ler o comprovante.');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.8,
             });
 
             if (result.canceled || !result.assets || result.assets.length === 0) return;
 
             setLoading(true);
-            const file = result.assets[0];
-            const data = await api.extractPix(file);
+            const photo = result.assets[0];
+            const data = await api.extractReceiptImage(photo);
 
             if (data) {
                 if (data.amount) setAmount(data.amount.toString().replace('.', ','));
                 if (data.description) setDescription(data.description);
                 if (data.date) setDate(new Date(data.date));
-                Alert.alert('Sucesso', 'Dados extraídos do comprovante!');
+                if (data.installments && data.installments > 1) {
+                    setIsInstallment(true);
+                    setInstallments(data.installments.toString());
+                }
+
+                // Match card digits with accounts
+                if (data.card_last_digits && accounts) {
+                    const matchedAccount = accounts.find(acc =>
+                        acc.card_details?.last_digits === data.card_last_digits
+                    );
+                    if (matchedAccount) {
+                        setSelectedAccount(matchedAccount.id || matchedAccount._id);
+                    }
+                }
+
+                Alert.alert('Sucesso', 'Dados extraídos do comprovante de cartão!');
             }
         } catch (e: any) {
-            Alert.alert('Erro na Importação', e.message || 'Não foi possível processar o PDF');
+            Alert.alert('Erro na Importação', e.message || 'Não foi possível processar a imagem');
         } finally {
             setLoading(false);
         }
@@ -263,11 +290,16 @@ export default function NewTransactionScreen() {
                 </TouchableOpacity>
                 <Text style={styles.title}>{isRecurring ? 'Novo Recorrente' : (type === 'income' ? 'Nova Receita' : 'Nova Despesa')}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity onPress={handleFileImport} disabled={loading} style={[styles.headerBtn, { width: 'auto', paddingHorizontal: 12 }]}>
-                        <Ionicons name="document-attach-outline" size={18} color={colors.primary} />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, marginLeft: 4 }}>PDF</Text>
+                    <TouchableOpacity style={styles.headerBtn} onPress={handleFileImport} disabled={loading}>
+                        <Ionicons name="document-text-outline" size={16} color={colors.text} />
+                        <Text style={{ marginLeft: 4, color: colors.text, fontWeight: '600', fontSize: 13 }}>PDF</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
+
+                    <TouchableOpacity style={styles.headerBtn} onPress={handleCameraImport} disabled={loading}>
+                        <Ionicons name="camera-outline" size={18} color={colors.text} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
                         {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveBtnText}>Salvar</Text>}
                     </TouchableOpacity>
                 </View>

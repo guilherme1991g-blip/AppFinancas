@@ -10,6 +10,7 @@ import shutil
 
 from utils.date_utils import safe_date, calculate_due_date
 from utils.pix_extractor import extract_text_from_pdf, parse_pix_text
+from utils.receipt_scanner import parse_receipt_image
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -330,6 +331,26 @@ async def extract_pix(file: UploadFile = File(...), current_user=Depends(get_cur
         data = parse_pix_text(text)
         if not data:
             raise HTTPException(status_code=500, detail="Erro ao processar o comprovante com IA")
+        
+        return data
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+@router.post("/extract-receipt")
+async def extract_receipt(file: UploadFile = File(...), current_user=Depends(get_current_user)):
+    if not any(file.filename.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png"]):
+        raise HTTPException(status_code=400, detail="Apenas imagens (JPG, PNG) são suportadas")
+    
+    # Save temporary file
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    try:
+        data = parse_receipt_image(temp_path)
+        if not data:
+            raise HTTPException(status_code=500, detail="Erro ao processar a imagem com IA")
         
         return data
     finally:
