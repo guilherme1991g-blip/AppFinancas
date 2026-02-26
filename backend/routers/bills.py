@@ -215,44 +215,30 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
     payment_account_id = data.payment_account_id
     payment_date = data.date or datetime.utcnow()
     
-    # 1. Handle Virtual Bill
+    # 1. Handle Bill Lookup and Account Fetching
     if bill_id.startswith("v_"):
         parts = bill_id.split("_")
-        account_id = parts[1]
-        month = int(parts[2])
-        year = int(parts[3])
-        
+        account_id, month, year = parts[1], int(parts[2]), int(parts[3])
         acc = await accounts_collection.find_one({"_id": ObjectId(account_id), "user_id": current_user["_id"]})
-        if not acc:
-            raise HTTPException(status_code=404, detail="Cartão não encontrado")
-            
-        # 1. Fetch total bill expenses for this month to record as the official bill amount
+        if not acc: raise HTTPException(status_code=404, detail="Cartão não encontrado")
+        
+        # Calculate totals for virtual bill creation later
         start_date = datetime(year, month, 1)
         end_date = safe_date(year + 1, 1, 1) if month == 12 else safe_date(year, month + 1, 1)
-        
         expenses_query = {
-            "account_id": ObjectId(account_id),
-            "user_id": current_user["_id"],
-            "type": "expense",
-            "$or": [
-                {"due_date": {"$gte": start_date, "$lt": end_date}},
-                {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}
-            ]
+            "account_id": ObjectId(account_id), "user_id": current_user["_id"], "type": "expense",
+            "$or": [{"due_date": {"$gte": start_date, "$lt": end_date}}, {"due_date": None, "date": {"$gte": start_date, "$lt": end_date}}]
         }
         total_bill_expenses = 0
         async for tx in transactions_collection.find(expenses_query):
             total_bill_expenses += abs(tx["amount"])
 
-        # What the user is actually paying (optional amount from modal)
         amount_to_pay = data.amount if data.amount is not None else total_bill_expenses
-
-        # Create physical bill
+        
+        # Create physical bill and set 'bill' object
         new_bill = {
-            "account_id": ObjectId(account_id),
-            "month": month,
-            "year": year,
-            "amount": total_bill_expenses, # Total debt
-            "status": "paid", # fallback, will be refined below
+            "account_id": ObjectId(account_id), "month": month, "year": year,
+            "amount": total_bill_expenses, "status": "open",
             "due_date": safe_date(year, month, acc.get("due_day", 17)), 
             "closing_date": safe_date(year, month, acc.get("closing_day", 10)),
             "created_at": datetime.utcnow()
@@ -261,11 +247,18 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         bill = {**new_bill, "_id": res.inserted_id}
     else:
         bill = await bills_collection.find_one({"_id": ObjectId(bill_id)})
-        if not bill:
-            raise HTTPException(status_code=404, detail="Fatura não encontrada")
-        if bill["status"] == "paid":
-            raise HTTPException(status_code=400, detail="Fatura já está paga")
+        if not bill: raise HTTPException(status_code=404, detail="Fatura não encontrada")
+        if bill["status"] == "paid": raise HTTPException(status_code=400, detail="Fatura já está paga")
+        
+        acc = await accounts_collection.find_one({"_id": bill["account_id"], "user_id": current_user["_id"]})
+        if not acc: raise HTTPException(status_code=404, detail="Cartão não encontrado")
         amount_to_pay = data.amount if data.amount is not None else bill.get("amount", 0)
+
+    # EARLY BLOCK CHECK (Run once after acc and bill are ready)
+    closing_day = acc.get("closing_day", 10)
+    closing_date = safe_date(bill["year"], bill["month"], closing_day)
+    if datetime.utcnow() < closing_date:
+        raise HTTPException(status_code=400, detail="Fatura ainda está aberta. Aguarde o fechamento para pagar.")
 
     # 2. Create the payment transaction in the SOURCE account (outflow)
     payment_acc = await accounts_collection.find_one({"_id": ObjectId(payment_account_id), "user_id": current_user["_id"]})
@@ -329,15 +322,7 @@ async def pay_bill(bill_id: str, data: BillPaymentRequest, current_user=Depends(
         {"$inc": {"balance": abs(amount_to_pay)}}
     )
 
-    # Calculate closing date for timing logic
-    closing_day = acc.get("closing_day", 10)
-    month = bill.get("month", payment_date.month)
-    year = bill.get("year", payment_date.year)
-    closing_date = safe_date(year, month, closing_day)
-    
-    # Check if bill is still open - BLOCK PAYMENT
-    if datetime.utcnow() < closing_date:
-        raise HTTPException(status_code=400, detail="Fatura ainda está aberta. Aguarde o fechamento para pagar.")
+    # (closing_date is already calculated at the beginning)
     
     # 5. Handle Partial Payment & Rollover
     # Rollover ONLY happens if the bill is ALREADY CLOSED (now >= closing_date)
