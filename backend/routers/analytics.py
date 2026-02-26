@@ -80,7 +80,6 @@ async def get_summary(
             cc_tx_query = {
                 "account_id": acc["_id"],
                 "user_id": current_user["_id"],
-                "type": "expense",
                 "$or": [
                     {"due_date": {"$gte": start, "$lt": end}},
                     {"due_date": None, "date": {"$gte": start, "$lt": end}}
@@ -88,7 +87,11 @@ async def get_summary(
             }
             tx_total = 0
             async for tx in transactions_collection.find(cc_tx_query):
-                tx_total += abs(tx["amount"])
+                amount = abs(tx["amount"])
+                if tx["type"] == "income":
+                    tx_total -= amount
+                else:
+                    tx_total += amount
             
             if bill:
                 # If physical bill exists, we trust its amount for balance, 

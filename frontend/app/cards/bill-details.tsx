@@ -7,6 +7,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import PaymentModal from '@/components/PaymentModal';
 
 function formatCurrency(v: number) {
     const absValue = Math.abs(v);
@@ -21,63 +22,41 @@ export default function BillDetailsScreen() {
     const [billStatus, setBillStatus] = useState<string>('open');
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     const styles = s(colors);
 
-    useEffect(() => {
-        async function load() {
-            try {
-                const data = await api.getBillTransactions(billId!) as any[];
-                setTransactions(data);
+    const load = async () => {
+        setLoading(true);
+        try {
+            const data = await api.getBillTransactions(billId!) as any[];
+            setTransactions(data);
 
-                // Determine status
-                if (billId! && billId!.startsWith('v_')) {
-                    setBillStatus('open');
-                } else if (data.length > 0) {
-                    // Fetch all bills for this account to find status of this specific bill
-                    const bills = await api.getBills(data[0].account_id) as any[];
-                    const b = bills.find(x => x.id === billId);
-                    if (b) setBillStatus(b.status);
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
+            // Determine status
+            if (billId! && billId!.startsWith('v_')) {
+                setBillStatus('open');
+            } else if (data.length > 0) {
+                // Fetch all bills for this account to find status of this specific bill
+                const bills = await api.getBills(data[0].account_id) as any[];
+                const b = bills.find(x => x.id === billId);
+                if (b) setBillStatus(b.status);
             }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
         load();
     }, [billId]);
 
     const total = transactions.reduce((acc, t) => acc + t.amount, 0);
 
-    const handlePay = async () => {
+    const handlePay = () => {
         if (billStatus === 'paid') return;
-        Alert.alert(
-            "Pagar Fatura",
-            `Deseja pagar o valor total de ${formatCurrency(total)}?`,
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Confirmar",
-                    onPress: async () => {
-                        setPaying(true);
-                        try {
-                            const accounts = await api.getAccounts() as any[];
-                            const payAcc = accounts.find(a => a.type !== 'credit_card');
-                            if (!payAcc) throw new Error("Nenhuma conta encontrada para pagamento");
-
-                            await api.payBill(billId!, payAcc.id);
-                            Alert.alert("Sucesso", "Fatura paga com sucesso!");
-                            router.push('/(tabs)/cards');
-                        } catch (e: any) {
-                            Alert.alert("Erro", e.message);
-                        } finally {
-                            setPaying(false);
-                        }
-                    }
-                }
-            ]
-        );
+        setShowPaymentModal(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -175,6 +154,19 @@ export default function BillDetailsScreen() {
                     showsVerticalScrollIndicator={false}
                 />
             )}
+
+            <PaymentModal
+                visible={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onSuccess={() => {
+                    load();
+                    router.push('/(tabs)/cards');
+                }}
+                initialAmount={total}
+                title={`Pagar Fatura ${name}`}
+                type="bill"
+                id={billId!}
+            />
         </View>
     );
 }

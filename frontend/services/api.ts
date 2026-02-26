@@ -143,9 +143,9 @@ export const api = {
     // Bills (Faturas)
     getBills: (accountId: string) => request(`/bills/${accountId}`),
     getBillTransactions: (billId: string) => request(`/bills/${billId}/transactions`),
-    payBill: (billId: string, paymentAccountId: string) =>
-        request(`/bills/${billId}/pay?payment_account_id=${paymentAccountId}`, { method: 'POST' }),
-    payTransaction: (id: string) => request(`/transactions/${id}/pay`, { method: 'POST' }),
+    payBill: (billId: string, data: { payment_account_id: string; amount?: number; date?: string }) =>
+        request(`/bills/${billId}/pay`, { method: 'POST', body: JSON.stringify(data) }),
+    payTransaction: (id: string, data?: { date?: string }) => request(`/transactions/${id}/pay`, { method: 'POST', body: JSON.stringify(data || {}) }),
 
     // Preferences
     getPreferences: () => request('/preferences'),

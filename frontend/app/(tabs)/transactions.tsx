@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import PaymentModal from '@/components/PaymentModal';
 
 function formatCurrency(v: number) {
     const absValue = Math.abs(v);
@@ -29,6 +30,8 @@ export default function TransactionsScreen() {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     async function fetchData() {
         try {
@@ -129,13 +132,9 @@ export default function TransactionsScreen() {
         }
     }
 
-    async function handlePay(id: string) {
-        try {
-            await api.payTransaction(id);
-            fetchData();
-        } catch (e: any) {
-            Alert.alert('Erro', e.message);
-        }
+    function handlePay(item: any) {
+        setSelectedItem(item);
+        setShowPaymentModal(true);
     }
 
     const renderItem = ({ item: it }: { item: any }) => {
@@ -156,9 +155,17 @@ export default function TransactionsScreen() {
                         <Text style={[styles.txAmount, { color: it.amount < 0 ? colors.income : colors.text }]}>
                             {formatCurrency(it.amount)}
                         </Text>
-                        <View style={[styles.statusBadgeSmall, { backgroundColor: it.status === 'paid' ? colors.income + '15' : colors.expense + '15' }]}>
-                            <Text style={[styles.statusTextSmall, { color: it.status === 'paid' ? colors.income : colors.expense }]}>
-                                {it.status === 'paid' ? 'Paga' : 'Aberta'}
+                        <View style={[styles.statusBadgeSmall, {
+                            backgroundColor: it.status === 'paid' ? colors.income + '15' :
+                                it.status === 'overdue' ? colors.expense + '15' : colors.primary + '15'
+                        }]}>
+                            <Text style={[styles.statusTextSmall, {
+                                color: it.status === 'paid' ? colors.income :
+                                    it.status === 'overdue' ? colors.expense : colors.primary
+                            }]}>
+                                {it.status === 'paid' ? 'Paga' :
+                                    it.status === 'overdue' ? 'Vencida' :
+                                        it.status === 'closed' ? 'Fechada' : 'Aberta'}
                             </Text>
                         </View>
                     </View>
@@ -183,10 +190,22 @@ export default function TransactionsScreen() {
                     </Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {(() => {
+                            const isOverdue = !it.is_paid && new Date(it.date) < new Date();
+                            const statusColor = it.is_paid ? colors.income : (isOverdue ? colors.expense : colors.primary);
+                            const statusText = it.is_paid ? 'Pago' : (isOverdue ? 'Vencido' : 'Pendente');
+
+                            return (
+                                <View style={[styles.statusBadgeSmall, { backgroundColor: statusColor + '15', marginTop: 0 }]}>
+                                    <Text style={[styles.statusTextSmall, { color: statusColor }]}>{statusText}</Text>
+                                </View>
+                            );
+                        })()}
+
                         {!it.is_paid && (
                             <TouchableOpacity
                                 style={[styles.miniPayBtn, { backgroundColor: it.type === 'income' ? colors.income : colors.expense }]}
-                                onPress={() => handlePay(it.id)}
+                                onPress={() => handlePay(it)}
                             >
                                 <Text style={styles.miniPayBtnText}>{it.type === 'income' ? 'Receber' : 'Pagar'}</Text>
                             </TouchableOpacity>
@@ -244,6 +263,16 @@ export default function TransactionsScreen() {
                     showsVerticalScrollIndicator={false}
                 />
             )}
+
+            <PaymentModal
+                visible={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onSuccess={() => fetchData()}
+                initialAmount={selectedItem?.amount || 0}
+                title={selectedItem?.type === 'income' ? 'Receber' : 'Pagar'}
+                type="transaction"
+                id={selectedItem?.id || ''}
+            />
         </View>
     );
 }

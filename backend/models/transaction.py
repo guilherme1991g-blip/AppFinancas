@@ -50,3 +50,13 @@ class TransactionResponse(BaseModel):
     due_date: Optional[datetime]
     paid_at: Optional[datetime]
     created_at: datetime
+
+
+class TransactionPaymentRequest(BaseModel):
+    date: Optional[datetime] = None
+
+
+class BillPaymentRequest(BaseModel):
+    payment_account_id: str
+    amount: Optional[float] = None
+    date: Optional[datetime] = None

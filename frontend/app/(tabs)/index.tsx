@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
 import { getBrand } from '@/constants/Brands';
+import PaymentModal from '@/components/PaymentModal';
 
 const { width } = Dimensions.get('window');
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -57,6 +58,8 @@ export default function DashboardScreen() {
     const [balanceVisible, setBalanceVisible] = useState(true);
     const [cardIndex, setCardIndex] = useState(0);
     const [ccCardIndex, setCcCardIndex] = useState(0);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     async function fetchData() {
         try {
@@ -387,14 +390,10 @@ export default function DashboardScreen() {
                                     <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
                                     <TouchableOpacity
                                         style={styles.payNowBtn}
-                                        onPress={async (e: any) => {
+                                        onPress={(e) => {
                                             e.stopPropagation();
-                                            try {
-                                                await api.payTransaction(tx.id);
-                                                fetchData();
-                                            } catch (err: any) {
-                                                alert(err.message);
-                                            }
+                                            setSelectedItem(tx);
+                                            setShowPaymentModal(true);
                                         }}
                                     >
                                         <Text style={styles.payNowTxt}>Pagar</Text>
@@ -562,6 +561,16 @@ export default function DashboardScreen() {
 
 
             <View style={{ height: 100 }} />
+
+            <PaymentModal
+                visible={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onSuccess={() => fetchData()}
+                initialAmount={selectedItem?.amount || 0}
+                title="Pagar Despesa"
+                type="transaction"
+                id={selectedItem?.id || ''}
+            />
         </ScrollView>
     );
 }

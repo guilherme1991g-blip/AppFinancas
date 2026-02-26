@@ -1,5 +1,5 @@
 from database import transactions_collection, accounts_collection, bills_collection
-from models.transaction import TransactionCreate, TransactionUpdate
+from models.transaction import TransactionCreate, TransactionUpdate, TransactionPaymentRequest
 from routers.auth import get_current_user
 from datetime import datetime
 
@@ -17,14 +17,32 @@ async def check_bill_status(tx_doc, user_id):
     # Using the same logic as bills listing: due_date > date
     dt = tx_doc.get("due_date") or tx_doc["date"]
     
+    # Calculate closing/due dates to check "closed" status
+    closing_day = acc.get("closing_day", 10)
+    due_day = acc.get("due_day", closing_day + 7)
+    
+    m, y = dt.month, dt.year
+    closing_date = datetime(y, m, closing_day)
+    due_date = datetime(y, m, due_day) if due_day > closing_day else (datetime(y, m+1, due_day) if m < 12 else datetime(y+1, 1, due_day))
+    
+    now = datetime.utcnow()
+    
+    # Check physical bill doc
     bill = await bills_collection.find_one({
         "account_id": tx_doc["account_id"],
-        "month": dt.month,
-        "year": dt.year
+        "month": m,
+        "year": y
     })
     
     if bill and bill.get("status") == "paid":
         return False
+        
+    # Check time-based "closed" status
+    # If now is past closing_date, we can't add to this month's bill
+    # Note: If it's the current month and we are past closing_date, this month's bill is closed.
+    if now > closing_date:
+        return False
+        
     return True
 
 
@@ -89,6 +107,14 @@ async def list_transactions(
 
 @router.post("")
 async def create_transaction(data: TransactionCreate, current_user=Depends(get_current_user)):
+    user_id = current_user["_id"]
+    
+    # Check bill status
+    if not await check_bill_status(data.dict(), user_id):
+        raise HTTPException(status_code=400, detail="Não é possível adicionar lançamentos a uma fatura fechada ou paga")
+
+    # If it's a credit card transaction, calculate due_date if not provided
+    acc = await accounts_collection.find_one({"_id": ObjectId(data.account_id), "user_id": user_id})
     doc = {
         **data.dict(),
         "amount": abs(data.amount),
@@ -194,21 +220,31 @@ async def delete_transaction(
 
 
 @router.post("/{tx_id}/pay")
-async def pay_transaction(tx_id: str, current_user=Depends(get_current_user)):
+async def pay_transaction(tx_id: str, data: Optional[TransactionPaymentRequest] = None, current_user=Depends(get_current_user)):
     tx = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
     if not tx:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     if tx.get("is_paid"):
         raise HTTPException(status_code=400, detail="Transação já está paga")
     
+    payment_date = (data.date if data else None) or datetime.utcnow()
+    paid_amount = (data.amount if data else None)
+    
+    update_ops = {"$set": {"is_paid": True, "paid_at": payment_date}}
+    
+    final_amount = tx["amount"]
+    if paid_amount is not None:
+        final_amount = abs(paid_amount)
+        update_ops["$set"]["amount"] = final_amount
+
     # Update transaction
     await transactions_collection.update_one(
         {"_id": ObjectId(tx_id)},
-        {"$set": {"is_paid": True, "paid_at": datetime.utcnow()}}
+        update_ops
     )
     
-    # Update account balance
-    delta = tx["amount"] if tx["type"] == "income" else -tx["amount"]
+    # Update account balance with the amount actually paid
+    delta = final_amount if tx["type"] == "income" else -final_amount
     await accounts_collection.update_one(
         {"_id": tx["account_id"]},
         {"$inc": {"balance": delta}}
