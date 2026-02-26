@@ -138,10 +138,26 @@ export default function TransactionsScreen() {
     }
 
     const renderItem = ({ item: it }: { item: any }) => {
+        let statusColor = colors.primary;
+        let isPaid = false;
+        let isOverdue = false;
+
+        if (it.isBill) {
+            isPaid = it.status === 'paid';
+            isOverdue = it.status === 'overdue';
+            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
+        } else {
+            isPaid = it.is_paid;
+            isOverdue = !isPaid && new Date(it.date) < new Date();
+            statusColor = isPaid ? colors.income : (isOverdue ? colors.expense : colors.primary);
+        }
+
+        const itemBg = statusColor + '08'; // Very light background
+
         if (it.isBill) {
             return (
                 <TouchableOpacity
-                    style={[styles.txItem, { borderColor: (it.color || colors.primary) + '40', borderLeftWidth: 4, borderLeftColor: it.color || colors.primary }]}
+                    style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '20', borderLeftWidth: 4, borderLeftColor: statusColor }]}
                     onPress={() => router.push({ pathname: '/cards/bill-details', params: { billId: it.id, name: `${it.month}/${it.year}` } } as any)}
                 >
                     <View style={[styles.txIcon, { backgroundColor: (it.color || colors.primary) + '15' }]}>
@@ -176,7 +192,10 @@ export default function TransactionsScreen() {
         const cat = getCat(it.category_id);
         const date = new Date(it.date);
         return (
-            <TouchableOpacity style={styles.txItem} onPress={() => router.push(`/transaction/${it.id}` as any)}>
+            <TouchableOpacity
+                style={[styles.txItem, { backgroundColor: itemBg, borderColor: statusColor + '15' }]}
+                onPress={() => router.push(`/transaction/${it.id}` as any)}
+            >
                 <View style={[styles.txIcon, { backgroundColor: (cat?.color || colors.textMuted) + '20' }]}>
                     <Ionicons name={(cat?.icon || 'ellipsis-horizontal') as any} size={20} color={cat?.color || colors.textMuted} />
                 </View>
@@ -191,9 +210,7 @@ export default function TransactionsScreen() {
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         {(() => {
-                            const isOverdue = !it.is_paid && new Date(it.date) < new Date();
-                            const statusColor = it.is_paid ? colors.income : (isOverdue ? colors.expense : colors.primary);
-                            const statusText = it.is_paid ? 'Pago' : (isOverdue ? 'Vencido' : 'Pendente');
+                            const statusText = isPaid ? 'Pago' : (isOverdue ? 'Vencido' : 'Pendente');
 
                             return (
                                 <View style={[styles.statusBadgeSmall, { backgroundColor: statusColor + '15', marginTop: 0 }]}>

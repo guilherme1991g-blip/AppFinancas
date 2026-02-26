@@ -54,6 +54,7 @@ class TransactionResponse(BaseModel):
 
 class TransactionPaymentRequest(BaseModel):
     date: Optional[datetime] = None
+    amount: Optional[float] = None
 
 
 class BillPaymentRequest(BaseModel):

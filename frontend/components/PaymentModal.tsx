@@ -71,7 +71,7 @@ export default function PaymentModal({ visible, onClose, onSuccess, initialAmoun
                     date: dateStr
                 });
             } else {
-                await api.payTransaction(id, { date: dateStr });
+                await api.payTransaction(id, { date: dateStr, amount: finalAmount });
             }
 
             onSuccess();
@@ -190,7 +190,7 @@ export default function PaymentModal({ visible, onClose, onSuccess, initialAmoun
                                     )}
                                 </TouchableOpacity>
 
-                                <View style={{ height: 20 }} />
+                                <View style={{ height: 60 }} />
                             </ScrollView>
                         </View>
                     </KeyboardAvoidingView>
