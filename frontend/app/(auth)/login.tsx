@@ -191,19 +191,7 @@ const s = (colors: any, mode: string) => StyleSheet.create({
     scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 },
 
     logoSection: { alignItems: 'center', marginBottom: 40 },
-    logoRing: {
-        width: 100, height: 100, borderRadius: 50,
-        borderWidth: 2, borderColor: colors.primary + '30',
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: 20,
-    },
-    logoInner: {
-        width: 76, height: 76, borderRadius: 38,
-        backgroundColor: colors.primary + '15',
-        alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden'
-    },
-    logoImg: { width: 60, height: 60 },
+    logoBranded: { width: 220, height: 180 },
     tagline: { fontSize: 13, color: colors.textSecondary, marginTop: 12, fontWeight: '500' },
 
     card: {
