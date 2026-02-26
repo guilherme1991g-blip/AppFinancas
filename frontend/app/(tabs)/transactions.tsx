@@ -42,31 +42,20 @@ export default function TransactionsScreen() {
             const cards = accs.filter(a => a.type === 'credit_card');
             const cardBills: any[] = [];
 
-            // Add a virtual "bill" transaction for each card if not filtering by type
+            // Only show bills that actually exist (filtered by backend)
             if (filter === 'Todos' || filter === 'Despesas') {
                 for (const card of cards) {
                     const bills = await api.getBills(card.id) as any[];
-                    let bill = bills.find(b => b.month === month && b.year === year);
-
-                    // If no bill entry exists for this month, create a virtual one
-                    if (!bill) {
-                        bill = {
-                            id: `v_${card.id}_${month}_${year}`,
-                            account_id: card.id,
-                            amount: card.balance || 0, // Current card balance as bill amount
-                            month,
-                            year,
-                            status: 'open',
+                    // Backend already filters out empty months or invalid totals
+                    const bill = bills.find(b => b.month === month && b.year === year);
+                    if (bill) {
+                        cardBills.push({
+                            ...bill,
                             isBill: true,
                             cardName: card.name,
                             color: card.color
-                        };
-                    } else {
-                        bill.isBill = true;
-                        bill.cardName = card.name;
-                        bill.color = card.color;
+                        });
                     }
-                    cardBills.push(bill);
                 }
             }
 
