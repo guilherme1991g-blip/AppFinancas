@@ -62,12 +62,43 @@ async def create_account(data: AccountCreate, current_user=Depends(get_current_u
 @router.put("/{account_id}")
 async def update_account(account_id: str, data: AccountUpdate, current_user=Depends(get_current_user)):
     update_data = {k: v for k, v in data.dict().items() if v is not None}
-    result = await accounts_collection.update_one(
+    
+    # 1. Fetch old account state to detect changes
+    old_acc = await accounts_collection.find_one({"_id": ObjectId(account_id), "user_id": current_user["_id"]})
+    if not old_acc:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+
+    # 2. Check if billing days changed
+    closing_changed = "closing_day" in update_data and update_data["closing_day"] != old_acc.get("closing_day")
+    due_changed = "due_day" in update_data and update_data["due_day"] != old_acc.get("due_day")
+
+    # 3. Apply update
+    await accounts_collection.update_one(
         {"_id": ObjectId(account_id), "user_id": current_user["_id"]},
         {"$set": update_data}
     )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    
+    # 4. Sync transactions if days changed
+    if closing_changed or due_changed:
+        from database import transactions_collection
+        from utils.date_utils import calculate_due_date
+        
+        new_closing = update_data.get("closing_day", old_acc.get("closing_day", 10))
+        new_due = update_data.get("due_day", old_acc.get("due_day", 17))
+        
+        # We only sync UNPAID transactions. Paid ones are already fixed in a bill.
+        cursor = transactions_collection.find({
+            "account_id": ObjectId(account_id),
+            "is_paid": False
+        })
+        
+        async for tx in cursor:
+            new_due_date = calculate_due_date(tx["date"], new_closing, new_due)
+            await transactions_collection.update_one(
+                {"_id": tx["_id"]},
+                {"$set": {"due_date": new_due_date}}
+            )
+
     doc = await accounts_collection.find_one({"_id": ObjectId(account_id)})
     return account_doc(doc)
 

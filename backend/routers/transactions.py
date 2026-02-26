@@ -6,14 +6,9 @@ from routers.auth import get_current_user
 from datetime import datetime
 from bson import ObjectId
 
-import calendar
+from utils.date_utils import safe_date, calculate_due_date
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
-
-def safe_date(year, month, day):
-    # Adjust day if it exceeds the last day of the month
-    _, last_day = calendar.monthrange(year, month)
-    return datetime(year, month, min(day, last_day))
 
 async def check_bill_status(tx_doc, user_id):
     """Returns True if the transaction is on an open bill or not a credit card tx."""
@@ -133,6 +128,14 @@ async def create_transaction(data: TransactionCreate, current_user=Depends(get_c
 
     # If it's a credit card transaction, calculate due_date if not provided
     acc = await accounts_collection.find_one({"_id": ObjectId(data.account_id), "user_id": user_id})
+    
+    # Recalculate due_date for credit cards if not provided
+    due_date = data.due_date
+    if acc and acc.get("type") == "credit_card" and not due_date:
+        closing_day = acc.get("closing_day", 10)
+        due_day = acc.get("due_day", closing_day + 7)
+        due_date = calculate_due_date(data.date, closing_day, due_day)
+
     doc = {
         **data.dict(),
         "amount": abs(data.amount),
@@ -140,6 +143,7 @@ async def create_transaction(data: TransactionCreate, current_user=Depends(get_c
         "category_id": ObjectId(data.category_id),
         "company_id": ObjectId(data.company_id) if data.company_id else None,
         "user_id": current_user["_id"],
+        "due_date": due_date,
         "created_at": datetime.utcnow()
     }
     result = await transactions_collection.insert_one(doc)

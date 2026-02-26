@@ -6,14 +6,9 @@ from database import bills_collection, transactions_collection, accounts_collect
 from routers.auth import get_current_user
 from models.transaction import BillPaymentRequest
 
-import calendar
+from utils.date_utils import safe_date
 
 router = APIRouter(prefix="/bills", tags=["bills"])
-
-def safe_date(year, month, day):
-    # Adjust day if it exceeds the last day of the month
-    _, last_day = calendar.monthrange(year, month)
-    return datetime(year, month, min(day, last_day))
 
 def bill_doc(doc) -> dict:
     return {
@@ -99,12 +94,8 @@ async def list_bills(account_id: str, current_user=Depends(get_current_user)):
         due_day = acc.get("due_day", closing_day + 7)
         
         # Find due date (can be next month if closing is late)
-        if due_day > closing_day:
-            due_date = safe_date(y, m, due_day)
-        else:
-            nm = m + 1 if m < 12 else 1
-            ny = y if m < 12 else y + 1
-            due_date = safe_date(ny, nm, due_day)
+        from utils.date_utils import calculate_due_date
+        due_date = calculate_due_date(datetime(y, m, closing_day), closing_day, due_day)
         
         # Status logic
         now_dt = datetime.utcnow()
