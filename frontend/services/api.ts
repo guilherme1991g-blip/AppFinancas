@@ -1,6 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://meudindin.integrareplus.com/api';
+const getBaseUrl = () => {
+    const envUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (envUrl && !envUrl.includes('localhost')) {
+        return envUrl;
+    }
+    // Default to the production domain with /api prefix as configured in Nginx
+    return 'https://meudindin.integrareplus.com/api';
+};
+
+const BASE_URL = getBaseUrl();
 
 async function getToken(): Promise<string | null> {
     return await AsyncStorage.getItem('auth_token');
