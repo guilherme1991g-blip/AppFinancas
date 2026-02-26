@@ -1,12 +1,31 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from bson import ObjectId
-from datetime import datetime
-from typing import Optional
-from database import transactions_collection, accounts_collection
+from database import transactions_collection, accounts_collection, bills_collection
 from models.transaction import TransactionCreate, TransactionUpdate
 from routers.auth import get_current_user
+from datetime import datetime
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
+
+async def check_bill_status(tx_doc, user_id):
+    """Returns True if the transaction is on an open bill or not a credit card tx."""
+    if not tx_doc: return True
+    
+    acc = await accounts_collection.find_one({"_id": tx_doc["account_id"], "user_id": user_id})
+    if not acc or acc.get("type") != "credit_card":
+        return True # Not a credit card, no bill restriction
+        
+    # Determine the transaction's month/year for billing
+    # Using the same logic as bills listing: due_date > date
+    dt = tx_doc.get("due_date") or tx_doc["date"]
+    
+    bill = await bills_collection.find_one({
+        "account_id": tx_doc["account_id"],
+        "month": dt.month,
+        "year": dt.year
+    })
+    
+    if bill and bill.get("status") == "paid":
+        return False
+    return True
 
 
 def tx_doc(doc) -> dict:
@@ -96,6 +115,10 @@ async def update_transaction(tx_id: str, data: TransactionUpdate, current_user=D
     old = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
     if not old:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    if not await check_bill_status(old, current_user["_id"]):
+        raise HTTPException(status_code=400, detail="Não é possível editar lançamentos de uma fatura já paga")
+
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     if "amount" in update_data:
         update_data["amount"] = abs(update_data["amount"])
@@ -123,6 +146,9 @@ async def delete_transaction(
     doc = await transactions_collection.find_one({"_id": ObjectId(tx_id), "user_id": current_user["_id"]})
     if not doc:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    if not await check_bill_status(doc, current_user["_id"]):
+        raise HTTPException(status_code=400, detail="Não é possível excluir lançamentos de uma fatura já paga")
     
     recurring_id = doc.get("recurring_id")
     user_id = current_user["_id"]

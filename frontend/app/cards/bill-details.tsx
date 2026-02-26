@@ -18,6 +18,7 @@ export default function BillDetailsScreen() {
     const { colors } = useTheme();
     const { billId, name } = useLocalSearchParams<{ billId: string, name: string }>();
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [billStatus, setBillStatus] = useState<string>('open');
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
 
@@ -28,6 +29,16 @@ export default function BillDetailsScreen() {
             try {
                 const data = await api.getBillTransactions(billId!) as any[];
                 setTransactions(data);
+
+                // Determine status
+                if (billId! && billId!.startsWith('v_')) {
+                    setBillStatus('open');
+                } else if (data.length > 0) {
+                    // Fetch all bills for this account to find status of this specific bill
+                    const bills = await api.getBills(data[0].account_id) as any[];
+                    const b = bills.find(x => x.id === billId);
+                    if (b) setBillStatus(b.status);
+                }
             } catch (e) {
                 console.error(e);
             } finally {
@@ -40,6 +51,7 @@ export default function BillDetailsScreen() {
     const total = transactions.reduce((acc, t) => acc + t.amount, 0);
 
     const handlePay = async () => {
+        if (billStatus === 'paid') return;
         Alert.alert(
             "Pagar Fatura",
             `Deseja pagar o valor total de ${formatCurrency(total)}?`,
@@ -56,7 +68,7 @@ export default function BillDetailsScreen() {
 
                             await api.payBill(billId!, payAcc.id);
                             Alert.alert("Sucesso", "Fatura paga com sucesso!");
-                            router.back();
+                            router.push('/(tabs)/cards');
                         } catch (e: any) {
                             Alert.alert("Erro", e.message);
                         } finally {
@@ -68,6 +80,24 @@ export default function BillDetailsScreen() {
         );
     };
 
+    const handleDelete = async (id: string) => {
+        Alert.alert("Excluir", "Deseja excluir esta transação?", [
+            { text: "Cancelar", style: "cancel" },
+            {
+                text: "Excluir",
+                style: "destructive",
+                onPress: async () => {
+                    try {
+                        await api.deleteTransaction(id);
+                        setTransactions(prev => prev.filter(t => t.id !== id));
+                    } catch (e: any) {
+                        Alert.alert("Erro", e.message);
+                    }
+                }
+            }
+        ]);
+    };
+
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.txRow}>
             <View style={styles.txIcon}>
@@ -77,7 +107,19 @@ export default function BillDetailsScreen() {
                 <Text style={styles.txDesc}>{item.description}</Text>
                 <Text style={styles.txDate}>{new Date(item.date).toLocaleDateString('pt-BR')}</Text>
             </View>
-            <Text style={styles.txAmount}>{formatCurrency(Math.abs(item.amount))}</Text>
+            <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                <Text style={styles.txAmount}>{formatCurrency(Math.abs(item.amount))}</Text>
+                {billStatus === 'open' && (
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity onPress={() => router.push(`/transaction/${item.id}` as any)}>
+                            <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                            <Ionicons name="trash-outline" size={16} color={colors.expense} />
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
         </View>
     );
 
@@ -104,11 +146,11 @@ export default function BillDetailsScreen() {
                 <Text style={styles.summaryLabel}>Total da Fatura</Text>
                 <Text style={[styles.summaryValue, { color: total < 0 ? colors.income : colors.text }]}>{formatCurrency(total)}</Text>
                 <TouchableOpacity
-                    style={[styles.payBtn, paying && { opacity: 0.7 }]}
+                    style={[styles.payBtn, (paying || billStatus === 'paid') && { opacity: 0.7, backgroundColor: colors.textMuted }]}
                     onPress={handlePay}
-                    disabled={paying}
+                    disabled={paying || billStatus === 'paid'}
                 >
-                    {paying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.payBtnTxt}>Pagar Fatura</Text>}
+                    {paying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.payBtnTxt}>{billStatus === 'paid' ? 'Fatura Paga' : 'Pagar Fatura'}</Text>}
                 </TouchableOpacity>
             </View>
 
