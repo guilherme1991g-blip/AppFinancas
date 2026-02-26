@@ -25,13 +25,15 @@ export default function TabsLayout() {
 
             if (Math.abs(translationX) > swipeThreshold && Math.abs(velocityX) > velocityThreshold) {
                 if (translationX > 0 && currentIndex > 0) {
-                    // Swipe Right -> Go Left
+                    // Swipe Right -> Go Left (Previous Tab)
                     const nextTab = TABS[currentIndex - 1];
-                    router.push(`/(tabs)/${nextTab}` as any);
+                    const route = nextTab === 'index' ? '/(tabs)' : `/(tabs)/${nextTab}`;
+                    router.push(route as any);
                 } else if (translationX < 0 && currentIndex < TABS.length - 1) {
-                    // Swipe Left -> Go Right
+                    // Swipe Left -> Go Right (Next Tab)
                     const nextTab = TABS[currentIndex + 1];
-                    router.push(`/(tabs)/${nextTab}` as any);
+                    const route = nextTab === 'index' ? '/(tabs)' : `/(tabs)/${nextTab}`;
+                    router.push(route as any);
                 }
             }
         }
