@@ -104,7 +104,6 @@ export default function NewTransactionScreen() {
                         if (data.amount) setAmount(data.amount.toString().replace('.', ','));
                         if (data.description) setDescription(data.description);
                         if (data.date) setDate(new Date(data.date));
-                        if (data.type) setType(data.type as any);
                         Alert.alert('Sucesso', 'Comprovante processado via compartilhamento!');
                     }
                 } catch (e: any) {
@@ -135,7 +134,6 @@ export default function NewTransactionScreen() {
                 if (data.amount) setAmount(data.amount.toString().replace('.', ','));
                 if (data.description) setDescription(data.description);
                 if (data.date) setDate(new Date(data.date));
-                if (data.type) setType(data.type as any);
                 Alert.alert('Sucesso', 'Dados extraídos do comprovante!');
             }
         } catch (e: any) {
