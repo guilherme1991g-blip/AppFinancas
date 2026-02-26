@@ -7,6 +7,8 @@ services:
       MONGO_INITDB_DATABASE: appfinancas
     volumes:
       - mongo_data:/data/db
+    ports:
+      - "27017:27017"
     networks:
       - financas_net
 
