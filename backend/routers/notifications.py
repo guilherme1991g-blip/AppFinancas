@@ -46,7 +46,7 @@ async def mark_all_as_read(current_user=Depends(get_current_user)):
     )
     return {"message": "Todas marcadas como lidas"}
 
-@router.post("/test")
+@router.get("/test")
 async def send_test_notification(current_user=Depends(get_current_user)):
     user_id = str(current_user["_id"])
     notif = {
