@@ -6,15 +6,8 @@ import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BRANDS } from '@/constants/Brands';
 
-const ACC_TYPES = [
-    { value: 'checking', label: 'Conta Corrente', icon: 'business-outline' },
-    { value: 'savings', label: 'Poupança', icon: 'leaf-outline' },
-    { value: 'credit_card', label: 'Cartão de Crédito', icon: 'card-outline' },
-    { value: 'wallet', label: 'Carteira', icon: 'wallet-outline' },
-    { value: 'investment', label: 'Investimento', icon: 'trending-up-outline' },
-];
-
-// BRANDS removed - imported from constants/Brands
+import { ACC_TYPES } from '@/constants/AccountTypes';
+import { BANKS } from '@/constants/Banks';
 
 const CUSTOM_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#3B82F6', '#64748B'];
 const { width } = Dimensions.get('window');
@@ -38,12 +31,16 @@ export default function NewAccountScreen() {
 
     const [name, setName] = useState('');
     const [bank, setBank] = useState('');
+    const [selectedBank, setSelectedBank] = useState<any>(null);
+    const [customBank, setCustomBank] = useState('');
     const [balance, setBalance] = useState('0');
     const [type, setType] = useState('checking');
     const [color, setColor] = useState(CUSTOM_COLORS[0]);
+    const [showBankModal, setShowBankModal] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [accounts, setAccounts] = useState<any[]>([]);
+    const [showTypeModal, setShowTypeModal] = useState(false);
 
     // Credit card specific state
     const [limit, setLimit] = useState('');
@@ -76,9 +73,10 @@ export default function NewAccountScreen() {
 
         setLoading(true);
         try {
+            const finalBank = selectedBank?.value === 'other' ? customBank : selectedBank?.label || '';
             const data: any = {
                 name,
-                bank,
+                bank: finalBank,
                 type,
                 balance: parseFloat(balance.replace(',', '.')) || 0,
                 color
@@ -120,22 +118,62 @@ export default function NewAccountScreen() {
                     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                         {/* Preview card removed for simplicity */}
 
-                        {/* Show type selection only for accounts (or if not pre-selected as card) */}
+                        {/* Account Type Selection - LIST FORMAT */}
                         {type !== 'credit_card' && (
                             <>
                                 <Text style={styles.sectionLabel}>Tipo de Conta</Text>
-                                <View style={styles.typeGrid}>
-                                    {ACC_TYPES.map(t => (
-                                        <TouchableOpacity
-                                            key={t.value}
-                                            style={[styles.typeChip, type === t.value && { borderColor: color, backgroundColor: color + '15' }]}
-                                            onPress={() => setType(t.value)}
-                                        >
-                                            <Ionicons name={t.icon as any} size={18} color={type === t.value ? color : colors.textSecondary} />
-                                            <Text style={[styles.typeText, type === t.value && { color, fontWeight: '800' }]}>{t.label}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
+                                <TouchableOpacity
+                                    style={[styles.input, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }]}
+                                    onPress={() => setShowTypeModal(true)}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                        <View style={[styles.bankIconCircle, { backgroundColor: colors.primary + '15' }]}>
+                                            <Ionicons name={ACC_TYPES.find(t => t.value === type)?.icon as any || 'wallet-outline'} size={20} color={colors.primary} />
+                                        </View>
+                                        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+                                            {ACC_TYPES.find(t => t.value === type)?.label || 'Selecionar Tipo'}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+                                </TouchableOpacity>
+
+                                <Modal
+                                    visible={showTypeModal}
+                                    animationType="slide"
+                                    transparent={true}
+                                    onRequestClose={() => setShowTypeModal(false)}
+                                >
+                                    <View style={styles.modalOverlay}>
+                                        <View style={styles.modalContentSmall}>
+                                            <View style={styles.modalHeader}>
+                                                <Text style={styles.modalTitle}>Tipo de Conta</Text>
+                                                <TouchableOpacity onPress={() => setShowTypeModal(false)} style={styles.modalClose}>
+                                                    <Ionicons name="close" size={24} color={colors.text} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <ScrollView contentContainerStyle={{ padding: 10 }}>
+                                                {ACC_TYPES.map((t: any) => (
+                                                    <TouchableOpacity
+                                                        key={t.value}
+                                                        style={[styles.listItem, type === t.value && { backgroundColor: colors.primary + '10' }]}
+                                                        onPress={() => {
+                                                            setType(t.value);
+                                                            setShowTypeModal(false);
+                                                        }}
+                                                    >
+                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                                                            <View style={styles.listIconCircle}>
+                                                                <Ionicons name={t.icon as any} size={22} color={type === t.value ? colors.primary : colors.textSecondary} />
+                                                            </View>
+                                                            <Text style={[styles.listItemTxt, { color: type === t.value ? colors.primary : colors.text }]}>{t.label}</Text>
+                                                        </View>
+                                                        {type === t.value && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                        </View>
+                                    </View>
+                                </Modal>
                             </>
                         )}
 
@@ -203,8 +241,44 @@ export default function NewAccountScreen() {
 
                             {type !== 'credit_card' && (
                                 <View style={styles.fieldGroup}>
-                                    <Text style={styles.label}>Banco / Instituição</Text>
-                                    <TextInput style={styles.input} value={bank} onChangeText={setBank} placeholder="Ex: Nubank" placeholderTextColor={colors.textMuted} />
+                                    <Text style={styles.label}>Banco / Instituição *</Text>
+                                    <TouchableOpacity
+                                        style={[styles.input, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+                                        onPress={() => setShowBankModal(true)}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                            {selectedBank ? (
+                                                <View style={[styles.bankIconCircle, { backgroundColor: selectedBank.color + '15', borderWidth: 1, borderColor: selectedBank.color + '30' }]}>
+                                                    {selectedBank.logo ? (
+                                                        <Image source={selectedBank.logo} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                                                    ) : (
+                                                        <Ionicons name={selectedBank.icon || 'business-outline'} size={18} color={selectedBank.color} />
+                                                    )}
+                                                </View>
+                                            ) : (
+                                                <View style={[styles.bankIconCircle, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+                                                    <Ionicons name="business-outline" size={18} color={colors.textMuted} />
+                                                </View>
+                                            )}
+                                            <Text style={{ color: selectedBank ? colors.text : colors.textMuted, fontSize: 15, fontWeight: '600' }}>
+                                                {selectedBank ? selectedBank.label : 'Selecionar Banco'}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {type !== 'credit_card' && selectedBank?.value === 'other' && (
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.label}>Nome da Instituição *</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={customBank}
+                                        onChangeText={setCustomBank}
+                                        placeholder="Digite o nome do banco"
+                                        placeholderTextColor={colors.textMuted}
+                                    />
                                 </View>
                             )}
 
@@ -288,26 +362,60 @@ export default function NewAccountScreen() {
                             )}
                         </View>
 
-                        <>
-                            <Text style={styles.sectionLabel}>Personalização</Text>
-                            <View style={styles.card}>
-                                <Text style={styles.label}>Cor</Text>
-                                <View style={styles.colorRow}>
-                                    {CUSTOM_COLORS.map(c => (
-                                        <TouchableOpacity
-                                            key={c}
-                                            style={[styles.colorDot, { backgroundColor: c }, color === c && { borderWidth: 3, borderColor: colors.text }]}
-                                            onPress={() => setColor(c)}
-                                        />
-                                    ))}
-                                </View>
-                            </View>
-                        </>
+                        {/* Personalization removed as requested */}
 
                         <View style={{ height: 40 }} />
                     </ScrollView>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
+
+            {/* Bank Selector Modal */}
+            <Modal
+                visible={showBankModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowBankModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentLarge}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Selecionar Instituição</Text>
+                            <TouchableOpacity onPress={() => setShowBankModal(false)} style={styles.modalClose}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView contentContainerStyle={{ padding: 10 }}>
+                            {BANKS.map((b: any) => (
+                                <TouchableOpacity
+                                    key={b.value}
+                                    style={[
+                                        styles.listItem,
+                                        selectedBank?.value === b.value && { backgroundColor: b.color + '10' }
+                                    ]}
+                                    onPress={() => {
+                                        setSelectedBank(b);
+                                        setColor(b.color);
+                                        if (b.value !== 'other') setCustomBank('');
+                                        setShowBankModal(false);
+                                    }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                                        <View style={styles.listIconCircle}>
+                                            {b.logo ? (
+                                                <Image source={b.logo} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                                            ) : (
+                                                <Ionicons name={b.icon as any} size={22} color={colors.textSecondary} />
+                                            )}
+                                        </View>
+                                        <Text style={[styles.listItemTxt, { color: colors.text }]}>{b.label}</Text>
+                                    </View>
+                                    {selectedBank?.value === b.value && <Ionicons name="checkmark" size={20} color={b.color} />}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -364,4 +472,13 @@ const s = (colors: any) => StyleSheet.create({
     emptyAcc: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.textMuted, borderRadius: 16, alignItems: 'center', minWidth: 150 },
     emptyAccTxt: { color: colors.textMuted, fontWeight: '700', fontSize: 12 },
     accountDot: { width: 8, height: 8, borderRadius: 4 },
+
+    bankIconCircle: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+
+    listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 16, marginBottom: 4 },
+    listIconCircle: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+    listItemTxt: { fontSize: 15, fontWeight: '700' },
+
+    modalContentSmall: { backgroundColor: colors.background, borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '40%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
+    modalContentLarge: { backgroundColor: colors.background, borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '70%', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
 });

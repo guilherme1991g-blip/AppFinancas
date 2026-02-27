@@ -261,7 +261,7 @@ export default function DashboardScreen() {
                                                 <TouchableOpacity
                                                     activeOpacity={0.9}
                                                     style={[styles.ccItem, { borderLeftColor: card.color || colors.primary }]}
-                                                    onPress={() => router.push('/(tabs)/cards' as any)}
+                                                    onPress={() => router.push({ pathname: '/cards/bills', params: { id: card.id, name: card.name } })}
                                                 >
                                                     <View style={styles.ccHeader}>
                                                         <View style={[styles.ccIcon, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border }]}>

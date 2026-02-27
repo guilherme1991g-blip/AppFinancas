@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, Alert, ActivityIndicator
+    RefreshControl, Alert, ActivityIndicator, Image
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocale } from '@/contexts/LocaleContext';
+import { getBank } from '@/constants/Banks';
 
 
 const ACCOUNT_ICONS: Record<string, string> = {
@@ -99,8 +100,12 @@ export default function AccountsScreen() {
                             style={styles.accountCard}
                             onPress={() => router.push(`/account/${acc.id}` as any)}
                         >
-                            <View style={[styles.accountIconWrap, { backgroundColor: acc.color + '20' }]}>
-                                <Ionicons name={(ACCOUNT_ICONS[acc.type] || 'wallet') as any} size={24} color={acc.color} />
+                            <View style={[styles.accountIconWrap, { backgroundColor: acc.color + '15', borderWidth: 1, borderColor: acc.color + '20' }]}>
+                                {getBank(acc.bank).logo ? (
+                                    <Image source={getBank(acc.bank).logo} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                                ) : (
+                                    <Ionicons name={(ACCOUNT_ICONS[acc.type] || 'wallet') as any} size={22} color={acc.color} />
+                                )}
                             </View>
                             <View style={styles.accountInfo}>
                                 <Text style={styles.accountName}>{acc.name}</Text>

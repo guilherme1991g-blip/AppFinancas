@@ -35,17 +35,24 @@ async def export_data(current_user=Depends(get_current_user)):
             return new_doc
         return docs
 
+    async def get_safe(coll, query, limit=1000, as_string=False):
+        try:
+            return clean(await coll.find(query).to_list(limit))
+        except Exception as e:
+            print(f"Error exporting collection: {e}")
+            return []
+
     data = {
-        "accounts": clean(await accounts_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "categories": clean(await categories_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "transactions": clean(await transactions_collection.find({"user_id": user_id_obj}).to_list(10000)),
-        "transfers": clean(await transfers_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "budgets": clean(await budgets_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "recurring": clean(await recurring_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "companies": clean(await companies_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "bills": clean(await bills_collection.find({"user_id": user_id_obj}).to_list(1000)),
-        "sonhos": clean(await sonhos_collection.find({"user_id": user_id_str}).to_list(1000)),
-        "compromissos": clean(await compromissos_collection.find({"user_id": user_id_str}).to_list(1000)),
+        "accounts": await get_safe(accounts_collection, {"user_id": user_id_obj}),
+        "categories": await get_safe(categories_collection, {"user_id": user_id_obj}),
+        "transactions": await get_safe(transactions_collection, {"user_id": user_id_obj}, 10000),
+        "transfers": await get_safe(transfers_collection, {"user_id": user_id_obj}),
+        "budgets": await get_safe(budgets_collection, {"user_id": user_id_obj}),
+        "recurring": await get_safe(recurring_collection, {"user_id": user_id_obj}),
+        "companies": await get_safe(companies_collection, {"user_id": user_id_obj}),
+        "bills": await get_safe(bills_collection, {"user_id": user_id_obj}),
+        "sonhos": await get_safe(sonhos_collection, {"user_id": user_id_str}),
+        "compromissos": await get_safe(compromissos_collection, {"user_id": user_id_str}),
     }
     
     return data

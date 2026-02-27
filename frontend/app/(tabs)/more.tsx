@@ -48,12 +48,12 @@ export default function SettingsScreen() {
         try {
             const data = await api.exportData();
             const fileName = `otto_backup_${new Date().toISOString().split('T')[0]}.json`;
-            const filePath = (FileSystem as any).cacheDirectory + fileName;
+            const filePath = `${(FileSystem as any).cacheDirectory}${fileName}`;
 
             await FileSystem.writeAsStringAsync(filePath, JSON.stringify(data, null, 2));
             await Sharing.shareAsync(filePath);
         } catch (e: any) {
-            Alert.alert('Erro', 'Não foi possível exportar os dados.');
+            Alert.alert('Erro', `Não foi possível exportar os dados: ${e.message}`);
         }
     }
 
@@ -76,13 +76,13 @@ export default function SettingsScreen() {
             }).join('\n');
 
             const fileName = `otto_transacoes_${new Date().toISOString().split('T')[0]}.csv`;
-            const filePath = FileSystem.documentDirectory + fileName;
+            const filePath = `${(FileSystem as any).documentDirectory}${fileName}`;
 
             // Add UTF-8 BOM for Excel
             await FileSystem.writeAsStringAsync(filePath, '\ufeff' + header + rows);
             await Sharing.shareAsync(filePath);
         } catch (e: any) {
-            Alert.alert('Erro', 'Não foi possível gerar a planilha.');
+            Alert.alert('Erro', `Não foi possível gerar a planilha: ${e.message}`);
         }
     }
 
@@ -122,7 +122,7 @@ export default function SettingsScreen() {
                 ]
             );
         } catch (e: any) {
-            Alert.alert('Erro', 'Formato de arquivo inválido.');
+            Alert.alert('Erro', e.message || 'Formato de arquivo inválido.');
         }
     }
 
