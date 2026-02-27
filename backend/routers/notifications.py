@@ -45,3 +45,23 @@ async def mark_all_as_read(current_user=Depends(get_current_user)):
         {"$set": {"read": True}}
     )
     return {"message": "Todas marcadas como lidas"}
+
+@router.post("/test")
+async def send_test_notification(current_user=Depends(get_current_user)):
+    user_id = str(current_user["_id"])
+    notif = {
+        "user_id": user_id,
+        "title": "Otto: Teste de Alerta! 🦾",
+        "body": "Sua infraestrutura de notificações está funcionando perfeitamente. 🚀",
+        "type": "system",
+        "created_at": datetime.utcnow(),
+        "read": False
+    }
+    result = await notifications_collection.insert_one(notif)
+    
+    # Optional: If you want to also trigger real push, uncomment this:
+    # from utils.notifications import send_push_notification
+    # if current_user.get("push_token"):
+    #     send_push_notification(current_user["push_token"], notif["title"], notif["body"])
+    
+    return {"message": "Notificação de teste criada!", "id": str(result.inserted_id)}
