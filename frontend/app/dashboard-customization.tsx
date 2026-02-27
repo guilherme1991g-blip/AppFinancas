@@ -34,11 +34,12 @@ export default function DashboardCustomizationScreen() {
                 { id: 'balance', enabled: true, order: 0 },
                 { id: 'summary', enabled: true, order: 1 },
                 { id: 'cards', enabled: true, order: 2 },
-                { id: 'spending_categories', enabled: true, order: 3 },
-                { id: 'budget_progress', enabled: true, order: 4 },
-                { id: 'upcoming_bills', enabled: true, order: 5 },
-                { id: 'transactions', enabled: true, order: 6 },
-                { id: 'goals', enabled: false, order: 7 },
+                { id: 'overdue_bills', enabled: true, order: 3 },
+                { id: 'upcoming_bills', enabled: true, order: 4 },
+                { id: 'transactions', enabled: true, order: 5 },
+                { id: 'goals', enabled: false, order: 6 },
+                { id: 'spending_categories', enabled: false, order: 7 },
+                { id: 'budget_progress', enabled: false, order: 8 },
             ];
 
             if (prefs.dashboard_cards && prefs.dashboard_cards.length > 0) {
@@ -172,6 +173,7 @@ function getCardIcon(id: string): any {
         case 'goals': return 'flag-outline';
         case 'spending_categories': return 'pie-chart-outline';
         case 'upcoming_bills': return 'calendar-outline';
+        case 'overdue_bills': return 'alert-circle-outline';
         case 'budget_progress': return 'speedometer-outline';
         default: return 'square-outline';
     }

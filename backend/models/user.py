@@ -38,18 +38,21 @@ class DashboardCard(BaseModel):
     order: int
 
 
-def get_default_dashboard_cards():
+def _get_default_dashboard_cards():
     return [
         DashboardCard(id="balance", enabled=True, order=0),
         DashboardCard(id="summary", enabled=True, order=1),
         DashboardCard(id="cards", enabled=True, order=2),
-        DashboardCard(id="transactions", enabled=True, order=3),
-        DashboardCard(id="goals", enabled=True, order=4),
-        # New "interesting" cards, disabled by default
-        DashboardCard(id="spending_categories", enabled=False, order=5),
-        DashboardCard(id="upcoming_bills", enabled=False, order=6),
-        DashboardCard(id="budget_progress", enabled=False, order=7),
+        DashboardCard(id="overdue_bills", enabled=True, order=3),
+        DashboardCard(id="upcoming_bills", enabled=True, order=4),
+        DashboardCard(id="transactions", enabled=True, order=5),
+        DashboardCard(id="goals", enabled=True, order=6),
+        DashboardCard(id="spending_categories", enabled=False, order=7),
+        DashboardCard(id="budget_progress", enabled=False, order=8),
     ]
+
+def get_default_dashboard_cards():
+    return _get_default_dashboard_cards()
 
 
 class UserPreferences(BaseModel):

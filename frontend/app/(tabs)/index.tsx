@@ -57,6 +57,7 @@ export default function DashboardScreen() {
     const [categories, setCategories] = useState<any[]>([]);
     const [byCategory, setByCategory] = useState<any[]>([]);
     const [overdueTransactions, setOverdueTransactions] = useState<any[]>([]);
+    const [upcomingTransactions, setUpcomingTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [balanceVisible, setBalanceVisible] = useState(true);
@@ -81,30 +82,42 @@ export default function DashboardScreen() {
             setSummary(s); setTransactions(txs); setAccounts(accs);
             setCategories(cats); setBudgets(buds); setByCategory(byCat);
 
+            // Split overdue vs upcoming
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const in7Days = new Date();
+            in7Days.setDate(today.getDate() + 7);
+            in7Days.setHours(23, 59, 59, 999);
+
+            setOverdueTransactions(overdue.filter(t => new Date(t.date) < today));
+            setUpcomingTransactions(overdue.filter(t => {
+                const d = new Date(t.date);
+                return d >= today && d <= in7Days;
+            }));
+
             const defaultCards = [
                 { id: 'balance', enabled: true, order: 0 },
                 { id: 'summary', enabled: true, order: 1 },
                 { id: 'cards', enabled: true, order: 2 },
-                { id: 'spending_categories', enabled: true, order: 3 },
-                { id: 'budget_progress', enabled: true, order: 4 },
-                { id: 'upcoming_bills', enabled: true, order: 5 },
-                { id: 'transactions', enabled: true, order: 6 },
-                { id: 'goals', enabled: false, order: 7 },
+                { id: 'overdue_bills', enabled: true, order: 3 },
+                { id: 'upcoming_bills', enabled: true, order: 4 },
+                { id: 'transactions', enabled: true, order: 5 },
+                { id: 'goals', enabled: false, order: 6 },
+                { id: 'spending_categories', enabled: false, order: 7 },
+                { id: 'budget_progress', enabled: false, order: 8 },
             ];
 
             if (prefs?.dashboard_cards && prefs.dashboard_cards.length > 0) {
                 const existingIds = new Set(prefs.dashboard_cards.map((c: any) => c.id));
                 const missingCards = defaultCards.filter(c => !existingIds.has(c.id));
                 const combined = [...prefs.dashboard_cards, ...missingCards];
-                setDashboardCards(combined.sort((a, b: any) => a.order - b.order));
+
+                // Remove duplicates if any (e.g. if overdue_bills was already there but not in defaultCards set previously)
+                const uniqueCombined = Array.from(new Map(combined.map(c => [c.id, c])).values());
+                setDashboardCards(uniqueCombined.sort((a, b: any) => a.order - b.order));
             } else {
                 setDashboardCards(defaultCards);
             }
-
-            // Filter only those that are truly overdue (date < today)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            setOverdueTransactions(overdue.filter(t => new Date(t.date) < today));
         } catch (e) {
             console.error("Dashboard fetchData error:", e);
             Alert.alert(t('common.error'), 'Não foi possível carregar os dados do dashboard.');
@@ -302,14 +315,14 @@ export default function DashboardScreen() {
                     </View>
                 );
 
-            case 'upcoming_bills':
+            case 'overdue_bills':
                 if (overdueTransactions.length === 0) return null;
                 return (
-                    <View key="upcoming_bills" style={[styles.section, { marginBottom: 12 }]}>
+                    <View key="overdue_bills" style={[styles.section, { marginBottom: 12 }]}>
                         <View style={styles.sectionHeader}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                 <Ionicons name="alert-circle" size={20} color={colors.expense} />
-                                <Text style={[styles.sectionTitle, { color: colors.expense }]}>{t('dashboard.card_upcoming_bills')}</Text>
+                                <Text style={[styles.sectionTitle, { color: colors.expense }]}>{t('dashboard.card_overdue_bills')}</Text>
                             </View>
                             <Text style={[styles.overdueCount, { color: colors.expense }]}>{overdueTransactions.length}</Text>
                         </View>
@@ -328,6 +341,47 @@ export default function DashboardScreen() {
                                         <Text style={[styles.txAmount, { color: colors.expense }]}>{fmt(tx.amount)}</Text>
                                         <TouchableOpacity
                                             style={styles.payNowBtn}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedItem(tx);
+                                                setShowPaymentModal(true);
+                                            }}
+                                        >
+                                            <Text style={styles.payNowTxt}>Pagar</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                );
+
+            case 'upcoming_bills':
+                if (upcomingTransactions.length === 0) return null;
+                return (
+                    <View key="upcoming_bills" style={[styles.section, { marginBottom: 12 }]}>
+                        <View style={styles.sectionHeader}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                                <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('dashboard.card_upcoming_bills')}</Text>
+                            </View>
+                            <Text style={[styles.overdueCount, { color: colors.primary, backgroundColor: colors.primary + '15' }]}>{upcomingTransactions.length}</Text>
+                        </View>
+                        {upcomingTransactions.map(tx => {
+                            const cat = getCat(tx.category_id);
+                            return (
+                                <TouchableOpacity key={tx.id} style={[styles.overdueRow, { borderColor: colors.border }]} onPress={() => router.push(`/transaction/${tx.id}` as any)}>
+                                    <View style={[styles.txIcon, { backgroundColor: colors.primary + '15' }]}>
+                                        <Ionicons name={(cat?.icon || 'calendar-outline') as any} size={18} color={colors.primary} />
+                                    </View>
+                                    <View style={styles.txInfo}>
+                                        <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                                        <Text style={[styles.txDate, { color: colors.textSecondary }]}>Vence em {new Date(tx.date).toLocaleDateString('pt-BR')}</Text>
+                                    </View>
+                                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                                        <Text style={[styles.txAmount, { color: colors.text }]}>{fmt(tx.amount)}</Text>
+                                        <TouchableOpacity
+                                            style={[styles.payNowBtn, { backgroundColor: colors.primary }]}
                                             onPress={(e) => {
                                                 e.stopPropagation();
                                                 setSelectedItem(tx);

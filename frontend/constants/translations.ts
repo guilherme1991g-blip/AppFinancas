@@ -255,6 +255,7 @@ const ptBR: Record<string, string> = {
     'dashboard.card_goals': 'Objetivos Financeiros',
     'dashboard.card_spending_categories': 'Gastos por Categoria',
     'dashboard.card_upcoming_bills': 'Próximos Vencimentos',
+    'dashboard.card_overdue_bills': 'Despesas Vencidas',
     'dashboard.card_budget_progress': 'Progresso do Orçamento',
     'dashboard.save_success': 'Layout atualizado com sucesso!',
 };
@@ -513,6 +514,7 @@ const en: Record<string, string> = {
     'dashboard.card_goals': 'Financial Goals',
     'dashboard.card_spending_categories': 'Spending by Category',
     'dashboard.card_upcoming_bills': 'Upcoming Bills',
+    'dashboard.card_overdue_bills': 'Overdue Expenses',
     'dashboard.card_budget_progress': 'Budget Progress',
     'dashboard.save_success': 'Layout updated successfully!',
 };
@@ -771,6 +773,7 @@ const es: Record<string, string> = {
     'dashboard.card_goals': 'Objetivos Financieros',
     'dashboard.card_spending_categories': 'Gastos por Categoría',
     'dashboard.card_upcoming_bills': 'Próximos Vencimientos',
+    'dashboard.card_overdue_bills': 'Gastos Vencidos',
     'dashboard.card_budget_progress': 'Progreso del Presupuesto',
     'dashboard.save_success': '¡Diseño actualizado exitosamente!',
 };
