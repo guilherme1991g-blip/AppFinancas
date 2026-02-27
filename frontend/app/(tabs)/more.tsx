@@ -116,13 +116,35 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/category')}>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/category')}>
                             <View style={[styles.settingIconWrap, { backgroundColor: '#6366F115' }]}>
                                 <Ionicons name="pricetags-outline" size={20} color="#6366F1" />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.settingLabel}>Categorias</Text>
                                 <Text style={styles.settingSub}>Gerenciar categorias de gastos</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/(tabs)/accounts' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: colors.income + '15' }]}>
+                                <Ionicons name="wallet-outline" size={20} color={colors.income} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Contas</Text>
+                                <Text style={styles.settingSub}>Gerenciar suas contas bancárias</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/(tabs)/cards' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: colors.warning + '15' }]}>
+                                <Ionicons name="card-outline" size={20} color={colors.warning} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Cartões</Text>
+                                <Text style={styles.settingSub}>Gerenciar cartões de crédito e faturas</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
