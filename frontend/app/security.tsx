@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocale } from '@/contexts/LocaleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function SecurityScreen() {
@@ -43,10 +44,14 @@ export default function SecurityScreen() {
             finally { setLoading(false); }
         })();
     }, []);
+    // Biometric verification state
+    const [verifyingPassword, setVerifyingPassword] = useState(false);
+    const [verifyPw, setVerifyPw] = useState('');
+    const { login, user } = useAuth();
 
     async function toggleSecurity(key: 'biometric_enabled' | 'multi_device', value: boolean) {
         if (key === 'biometric_enabled' && value) {
-            // Check biometric support and authenticate before enabling
+            // Check biometric support
             const hasAuth = await LocalAuthentication.hasHardwareAsync();
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
@@ -58,14 +63,9 @@ export default function SecurityScreen() {
                 return;
             }
 
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Confirme sua identidade para ativar o login por biometria',
-                fallbackLabel: 'Usar senha',
-            });
-
-            if (!result.success) {
-                return;
-            }
+            // We need the password to store it for future logins
+            setVerifyingPassword(true);
+            return;
         }
 
         const prev = key === 'biometric_enabled' ? biometric : multiDevice;
@@ -74,17 +74,45 @@ export default function SecurityScreen() {
 
         setSaving(true);
         try {
-            const security = {
+            const securityData = {
                 biometric_enabled: key === 'biometric_enabled' ? value : biometric,
                 multi_device: key === 'multi_device' ? value : multiDevice,
             };
-            await api.updatePreferences({ security });
+            await api.updatePreferences({ security: securityData });
         } catch {
             // Revert
             if (key === 'biometric_enabled') setBiometric(prev);
             else setMultiDevice(prev);
             Alert.alert('Erro', t('security.save_error'));
         } finally { setSaving(false); }
+    }
+
+    async function confirmBiometricActivation() {
+        if (!verifyPw.trim()) {
+            Alert.alert(t('common.attention'), 'Informe sua senha atual para ativar a biometria.');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            // Verify password by attempting to login (this captures credentials in SecureStore via AuthContext)
+            await login(user?.email || '', verifyPw, true);
+
+            // If we get here, password is correct and stored. Now update preferences on backend.
+            setBiometric(true);
+            const securityData = {
+                biometric_enabled: true,
+                multi_device: multiDevice,
+            };
+            await api.updatePreferences({ security: securityData });
+            setVerifyingPassword(false);
+            setVerifyPw('');
+            Alert.alert('✅', 'Biometria ativada com sucesso!');
+        } catch (e: any) {
+            Alert.alert(t('common.error'), 'Senha incorreta. Não foi possível ativar a biometria.');
+        } finally {
+            setSaving(false);
+        }
     }
 
     async function handleChangePassword() {
@@ -218,6 +246,47 @@ export default function SecurityScreen() {
                             </View>
                         )}
                     </View>
+
+                    {/* Password verification for Biometry */}
+                    {verifyingPassword && (
+                        <View style={[styles.section, { marginTop: -16 }]}>
+                            <View style={styles.formCard}>
+                                <Text style={[styles.sectionLabel, { fontSize: 16 }]}>Verificação de Segurança</Text>
+                                <Text style={styles.sectionSub}>Digite sua senha atual para confirmar que é você e permitir o acesso biométrico.</Text>
+                                <View style={styles.inputRow}>
+                                    <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Sua senha atual"
+                                        placeholderTextColor={colors.textMuted}
+                                        secureTextEntry
+                                        value={verifyPw}
+                                        onChangeText={setVerifyPw}
+                                        autoFocus
+                                    />
+                                </View>
+                                <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                                    <TouchableOpacity
+                                        style={[styles.formBtn, { backgroundColor: colors.border }]}
+                                        onPress={() => { setVerifyingPassword(false); setVerifyPw(''); }}
+                                    >
+                                        <Text style={[styles.formBtnTxt, { color: colors.text }]}>{t('common.cancel')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.formBtn, { backgroundColor: colors.primary, flex: 2 }]}
+                                        onPress={confirmBiometricActivation}
+                                        disabled={saving}
+                                    >
+                                        {saving ? (
+                                            <ActivityIndicator size="small" color="#FFF" />
+                                        ) : (
+                                            <Text style={[styles.formBtnTxt, { color: '#FFF' }]}>Ativar Biometria</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    )}
 
                     {/* Biometric */}
                     <View style={styles.section}>

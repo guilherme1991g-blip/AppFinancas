@@ -112,6 +112,11 @@ const ptBR: Record<string, string> = {
     'prefs.reset_title': 'Começar do Zero? 🗑️',
     'prefs.reset_msg': 'Esta ação apagará permanentemente todas as suas contas, transações, metas e empresas.\n\nSeu perfil de usuário será mantido para que você possa recomeçar.',
     'prefs.reset_confirm': 'Sim, Limpar Tudo',
+    'prefs.delete_account': 'Excluir Minha Conta',
+    'prefs.delete_account_sub': 'Apagar permanentemente seus dados e seu perfil de acesso. Esta ação não pode ser desfeita.',
+    'prefs.delete_account_title': 'Apagar Conta? ⚠️',
+    'prefs.delete_account_msg': 'Esta ação apagará permanentemente seu perfil e todos os seus dados financeiros.\n\nVocê não poderá mais acessar o aplicativo com este e-mail.',
+    'prefs.delete_account_confirm': 'Sim, Excluir Conta',
     'prefs.cancel': 'Cancelar',
 
     // Transaction new/edit
@@ -371,6 +376,11 @@ const en: Record<string, string> = {
     'prefs.reset_title': 'Start Fresh? 🗑️',
     'prefs.reset_msg': 'This action will permanently delete all your accounts, transactions, goals and companies.\n\nYour profile will be kept so you can start over.',
     'prefs.reset_confirm': 'Yes, Clear Everything',
+    'prefs.delete_account': 'Delete My Account',
+    'prefs.delete_account_sub': 'Permanently delete your data and access profile. This action cannot be undone.',
+    'prefs.delete_account_title': 'Delete Account? ⚠️',
+    'prefs.delete_account_msg': 'This action will permanently delete your profile and all your financial data.\n\nYou will no longer be able to access the app with this email.',
+    'prefs.delete_account_confirm': 'Yes, Delete Account',
     'prefs.cancel': 'Cancel',
 
     // Transaction new/edit
@@ -630,6 +640,11 @@ const es: Record<string, string> = {
     'prefs.reset_title': '¿Empezar de Cero? 🗑️',
     'prefs.reset_msg': 'Esta acción eliminará permanentemente todas tus cuentas, transacciones, metas y empresas.\n\nTu perfil se mantendrá para que puedas empezar de nuevo.',
     'prefs.reset_confirm': 'Sí, Borrar Todo',
+    'prefs.delete_account': 'Eliminar Mi Cuenta',
+    'prefs.delete_account_sub': 'Eliminar permanentemente tus datos y perfil de acceso. Esta acción no se puede deshacer.',
+    'prefs.delete_account_title': '¿Eliminar Cuenta? ⚠️',
+    'prefs.delete_account_msg': 'Esta acción eliminará permanentemente tu perfil y todos tus datos financieros.\n\nYa no podrás acceder a la aplicación con este correo electrónico.',
+    'prefs.delete_account_confirm': 'Sí, Eliminar Cuenta',
     'prefs.cancel': 'Cancelar',
 
     // Transaction new/edit

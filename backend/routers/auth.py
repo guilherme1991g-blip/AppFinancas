@@ -49,8 +49,6 @@ async def register(data: UserCreate):
         "name": normalized_name,
         "email": normalized_email,
         "password": hashed_pw,
-        "phone": data.phone,
-        "cpf": data.cpf,
         "created_at": datetime.utcnow()
     }
     result = await users_collection.insert_one(user)
@@ -104,7 +102,24 @@ async def me(current_user=Depends(get_current_user)):
         "name": current_user["name"],
         "email": current_user["email"],
         "phone": current_user.get("phone"),
+        "ddi": current_user.get("ddi"),
         "cpf": current_user.get("cpf"),
+        "is_brazilian": current_user.get("is_brazilian"),
+        "cep": current_user.get("cep"),
+        "city": current_user.get("city"),
+        "state": current_user.get("state"),
+        "address": current_user.get("address"),
+        "birth_date": current_user.get("birth_date"),
+        # Professional
+        "education": current_user.get("education"),
+        "occupation": current_user.get("occupation"),
+        "salary_range": current_user.get("salary_range"),
+        # Financial
+        "housing_type": current_user.get("housing_type"),
+        "household_size": current_user.get("household_size"),
+        "has_vehicle": current_user.get("has_vehicle"),
+        "vehicle_type": current_user.get("vehicle_type"),
+        "equity": current_user.get("equity"),
         "created_at": current_user["created_at"]
     }
 
@@ -123,8 +138,49 @@ async def update_profile(data: UserProfileUpdate, current_user=Depends(get_curre
         updates["email"] = normalized
     if data.phone is not None:
         updates["phone"] = data.phone.strip()
+    if data.ddi is not None:
+        updates["ddi"] = data.ddi.strip()
     if data.cpf is not None:
-        updates["cpf"] = data.cpf.strip()
+        cpf_val = data.cpf.strip()
+        if cpf_val:
+            # Check if CPF already taken by another user
+            existing_cpf = await users_collection.find_one({"cpf": cpf_val, "_id": {"$ne": current_user["_id"]}})
+            if existing_cpf:
+                detail = f"CPF já cadastrado para o email: {existing_cpf['email']}"
+                raise HTTPException(status_code=400, detail=detail)
+        updates["cpf"] = cpf_val
+    if data.is_brazilian is not None:
+        updates["is_brazilian"] = data.is_brazilian
+    if data.cep is not None:
+        updates["cep"] = data.cep.strip()
+    if data.city is not None:
+        updates["city"] = data.city.strip()
+    if data.state is not None:
+        updates["state"] = data.state.strip()
+    if data.address is not None:
+        updates["address"] = data.address.strip()
+    if data.birth_date is not None:
+        updates["birth_date"] = data.birth_date.strip()
+    
+    # Professional
+    if data.education is not None:
+        updates["education"] = data.education.strip()
+    if data.occupation is not None:
+        updates["occupation"] = data.occupation.strip()
+    if data.salary_range is not None:
+        updates["salary_range"] = data.salary_range.strip()
+        
+    # Financial
+    if data.housing_type is not None:
+        updates["housing_type"] = data.housing_type.strip()
+    if data.household_size is not None:
+        updates["household_size"] = data.household_size
+    if data.has_vehicle is not None:
+        updates["has_vehicle"] = data.has_vehicle
+    if data.vehicle_type is not None:
+        updates["vehicle_type"] = data.vehicle_type.strip() if data.vehicle_type else None
+    if data.equity is not None:
+        updates["equity"] = data.equity
     
     if not updates:
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
@@ -137,7 +193,7 @@ async def update_profile(data: UserProfileUpdate, current_user=Depends(get_curre
 
 
 @router.delete("/account")
-async def delete_account(current_user=Depends(get_current_user)):
+async def delete_account(delete_profile: bool = True, current_user=Depends(get_current_user)):
     from database import (
         accounts_collection, categories_collection, transactions_collection,
         transfers_collection, budgets_collection, recurring_collection,
@@ -160,7 +216,9 @@ async def delete_account(current_user=Depends(get_current_user)):
     await sonhos_collection.delete_many({"user_id": user_id_str})
     await compromissos_collection.delete_many({"user_id": user_id_str})
     
-    # Delete user (REMOVED: User requested not to delete the profile)
-    # await users_collection.delete_one({"_id": ObjectId(user_id)})
+    # Delete user profile if requested
+    if delete_profile:
+        await users_collection.delete_one({"_id": ObjectId(user_id_obj)})
+        return {"message": "Sua conta e todos os seus dados foram excluídos permanentemente"}
     
-    return {"message": "Dados e configurações removidos com sucesso"}
+    return {"message": "Seus dados foram limpos, mas seu perfil foi mantido"}

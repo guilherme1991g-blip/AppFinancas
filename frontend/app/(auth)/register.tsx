@@ -13,8 +13,6 @@ export default function RegisterScreen() {
     const { colors, mode } = useTheme();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [cpf, setCpf] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPass, setShowPass] = useState(false);
@@ -34,20 +32,6 @@ export default function RegisterScreen() {
         ]).start();
     }, []);
 
-    function formatPhone(value: string) {
-        const digits = value.replace(/\D/g, '').slice(0, 11);
-        if (digits.length <= 2) return `(${digits}`;
-        if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-        return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-    }
-
-    function formatCPF(value: string) {
-        const digits = value.replace(/\D/g, '').slice(0, 11);
-        if (digits.length <= 3) return digits;
-        if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-        if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-        return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-    }
 
     async function handleRegister() {
         setError('');
@@ -65,7 +49,7 @@ export default function RegisterScreen() {
         }
         setLoading(true);
         try {
-            await register(name, email, password, phone || undefined, cpf || undefined);
+            await register(name, email, password);
         } catch (e: any) {
             setError(e.message || 'Erro ao criar conta');
         } finally {
@@ -76,8 +60,6 @@ export default function RegisterScreen() {
     const fields = [
         { key: 'name', label: 'Nome completo', icon: 'person-outline', placeholder: 'Seu nome', value: name, setter: setName, keyboard: 'default', secure: false },
         { key: 'email', label: 'Email', icon: 'mail-outline', placeholder: 'seu@email.com', value: email, setter: setEmail, keyboard: 'email-address', secure: false },
-        { key: 'phone', label: 'Celular (opcional)', icon: 'call-outline', placeholder: '(11) 99999-9999', value: phone, setter: (v: string) => setPhone(formatPhone(v)), keyboard: 'phone-pad', secure: false },
-        { key: 'cpf', label: 'CPF (opcional)', icon: 'document-text-outline', placeholder: '000.000.000-00', value: cpf, setter: (v: string) => setCpf(formatCPF(v)), keyboard: 'number-pad', secure: false },
         { key: 'password', label: 'Senha', icon: 'lock-closed-outline', placeholder: '••••••••', value: password, setter: setPassword, keyboard: 'default', secure: true },
         { key: 'confirmPassword', label: 'Confirmar Senha', icon: 'checkmark-circle-outline', placeholder: '••••••••', value: confirmPassword, setter: setConfirmPassword, keyboard: 'default', secure: true },
     ];

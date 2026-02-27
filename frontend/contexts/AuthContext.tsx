@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, setUnauthorizedListener } from '@/services/api';
+import * as SecureStore from 'expo-secure-store';
+
+const SECURE_AUTH_KEY = 'auth_credentials';
 
 interface User {
     id: string;
@@ -11,9 +14,10 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string, phone?: string, cpf?: string) => Promise<void>;
+    login: (email: string, password: string, saveSecure?: boolean) => Promise<void>;
+    register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
+    getBiometricCredentials: () => Promise<{ email: string; password: string } | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -43,16 +47,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function login(email: string, password: string) {
+    async function login(email: string, password: string, saveSecure: boolean = false) {
         const normalizedEmail = email.trim().toLowerCase();
         const res = await api.login({ email: normalizedEmail, password }) as { token: string; user: User };
         await AsyncStorage.setItem('auth_token', res.token);
+
+        if (saveSecure) {
+            await SecureStore.setItemAsync(SECURE_AUTH_KEY, JSON.stringify({ email: normalizedEmail, password }));
+        }
+
         setUser(res.user);
     }
 
-    async function register(name: string, email: string, password: string, phone?: string, cpf?: string) {
+    async function getBiometricCredentials() {
+        const data = await SecureStore.getItemAsync(SECURE_AUTH_KEY);
+        return data ? JSON.parse(data) : null;
+    }
+
+    async function register(name: string, email: string, password: string) {
         const normalizedEmail = email.trim().toLowerCase();
-        const res = await api.register({ name: name.trim(), email: normalizedEmail, password, phone, cpf }) as { token: string; user: User };
+        const res = await api.register({ name: name.trim(), email: normalizedEmail, password }) as { token: string; user: User };
         await AsyncStorage.setItem('auth_token', res.token);
         setUser(res.user);
         // Seed default categories on first register
@@ -61,11 +75,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function logout() {
         await AsyncStorage.removeItem('auth_token');
+        await SecureStore.deleteItemAsync(SECURE_AUTH_KEY);
         setUser(null);
     }
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, register, logout, getBiometricCredentials }}>
             {children}
         </AuthContext.Provider>
     );

@@ -63,10 +63,32 @@ export default function PreferencesScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await api.deleteUserAccount();
-                            logout();
+                            await api.deleteUserAccount(false); // keepProfile = true (deleteProfile = false)
+                            Alert.alert('Sucesso', 'Seus dados foram limpos.');
                         } catch (e) {
                             Alert.alert(t('common.error'), 'Failed to reset data.');
+                        }
+                    }
+                }
+            ]
+        );
+    }
+
+    function handleDeleteAccount() {
+        Alert.alert(
+            t('prefs.delete_account_title'),
+            t('prefs.delete_account_msg'),
+            [
+                { text: t('prefs.cancel'), style: 'cancel' },
+                {
+                    text: t('prefs.delete_account_confirm'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.deleteUserAccount(true); // deleteProfile = true
+                            logout();
+                        } catch (e) {
+                            Alert.alert(t('common.error'), 'Failed to delete account.');
                         }
                     }
                 }
@@ -215,13 +237,24 @@ export default function PreferencesScreen() {
                     <Text style={[styles.sectionLabel, { color: colors.danger }]}>{t('prefs.danger_zone')}</Text>
                     <Text style={styles.sectionSub}>{t('prefs.danger_sub')}</Text>
 
-                    <TouchableOpacity style={styles.dangerCard} onPress={handleReset} activeOpacity={0.7}>
+                    <TouchableOpacity style={[styles.dangerCard, { marginBottom: 12 }]} onPress={handleReset} activeOpacity={0.7}>
                         <View style={styles.dangerIconWrap}>
-                            <Ionicons name="nuclear-outline" size={28} color={colors.danger} />
+                            <Ionicons name="refresh-outline" size={28} color={colors.danger} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.dangerTitle}>{t('prefs.reset')}</Text>
                             <Text style={styles.dangerSub}>{t('prefs.reset_sub')}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.danger} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.dangerCard} onPress={handleDeleteAccount} activeOpacity={0.7}>
+                        <View style={styles.dangerIconWrap}>
+                            <Ionicons name="trash-outline" size={28} color={colors.danger} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.dangerTitle}>{t('prefs.delete_account')}</Text>
+                            <Text style={styles.dangerSub}>{t('prefs.delete_account_sub')}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={colors.danger} />
                     </TouchableOpacity>

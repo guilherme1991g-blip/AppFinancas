@@ -7,8 +7,6 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
-    phone: Optional[str] = None
-    cpf: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -75,7 +73,24 @@ class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    ddi: Optional[str] = None
     cpf: Optional[str] = None
+    is_brazilian: Optional[bool] = None
+    cep: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    address: Optional[str] = None
+    birth_date: Optional[str] = None
+    # Professional
+    education: Optional[str] = None
+    occupation: Optional[str] = None
+    salary_range: Optional[str] = None
+    # Financial
+    housing_type: Optional[str] = None
+    household_size: Optional[int] = None
+    has_vehicle: Optional[bool] = None
+    vehicle_type: Optional[str] = None
+    equity: Optional[float] = None
 
 
 class UserResponse(BaseModel):
@@ -83,7 +98,24 @@ class UserResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
+    ddi: Optional[str] = None
     cpf: Optional[str] = None
+    is_brazilian: Optional[bool] = None
+    cep: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    address: Optional[str] = None
+    birth_date: Optional[str] = None
+    # Professional
+    education: Optional[str] = None
+    occupation: Optional[str] = None
+    salary_range: Optional[str] = None
+    # Financial
+    housing_type: Optional[str] = None
+    household_size: Optional[int] = None
+    has_vehicle: Optional[bool] = None
+    vehicle_type: Optional[str] = None
+    equity: Optional[float] = None
     created_at: datetime
     preferences: Optional[UserPreferences] = Field(default_factory=UserPreferences)
     push_token: Optional[str] = None

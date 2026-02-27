@@ -7,11 +7,12 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
-    const { login } = useAuth();
+    const { login, getBiometricCredentials } = useAuth();
     const { colors, mode } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,6 +20,7 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [hasBiometrics, setHasBiometrics] = useState(false);
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
@@ -40,7 +42,38 @@ export default function LoginScreen() {
                 Animated.timing(logoFloat, { toValue: 0, duration: 2000, useNativeDriver: true }),
             ])
         ).start();
+
+        checkBiometrics();
     }, []);
+
+    async function checkBiometrics() {
+        const creds = await getBiometricCredentials();
+        if (creds) {
+            setHasBiometrics(true);
+            handleBiometricLogin();
+        }
+    }
+
+    async function handleBiometricLogin() {
+        const creds = await getBiometricCredentials();
+        if (!creds) return;
+
+        const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: 'Acesse sua conta com biometria',
+            fallbackLabel: 'Usar senha',
+        });
+
+        if (result.success) {
+            setLoading(true);
+            try {
+                await login(creds.email, creds.password);
+            } catch (e: any) {
+                setError(e.message || 'Falha na autenticação biométrica');
+            } finally {
+                setLoading(false);
+            }
+        }
+    }
 
     async function handleLogin() {
         setError('');
@@ -50,7 +83,7 @@ export default function LoginScreen() {
         }
         setLoading(true);
         try {
-            await login(email, password);
+            await login(email, password, true); // Save for next time if login is successful
         } catch (e: any) {
             setError(e.message || 'Email ou senha incorretos');
         } finally {
@@ -140,24 +173,36 @@ export default function LoginScreen() {
                     ) : null}
 
                     {/* Main Action */}
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonLoading]}
-                        onPress={handleLogin}
-                        disabled={loading}
-                        activeOpacity={0.85}
-                    >
-                        {loading
-                            ? <ActivityIndicator color={colors.white} />
-                            : (
-                                <View style={styles.buttonInner}>
-                                    <Text style={styles.buttonText}>Acessar conta</Text>
-                                    <View style={styles.btnIconCircle}>
-                                        <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+                    <View style={{ flexDirection: 'row', gap: 12, marginTop: 10 }}>
+                        <TouchableOpacity
+                            style={[styles.button, { flex: 1 }, loading && styles.buttonLoading]}
+                            onPress={handleLogin}
+                            disabled={loading}
+                            activeOpacity={0.85}
+                        >
+                            {loading
+                                ? <ActivityIndicator color={colors.white} />
+                                : (
+                                    <View style={styles.buttonInner}>
+                                        <Text style={styles.buttonText}>Acessar</Text>
+                                        <View style={styles.btnIconCircle}>
+                                            <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+                                        </View>
                                     </View>
-                                </View>
-                            )
-                        }
-                    </TouchableOpacity>
+                                )
+                            }
+                        </TouchableOpacity>
+
+                        {hasBiometrics && (
+                            <TouchableOpacity
+                                style={[styles.button, { width: 60, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+                                onPress={handleBiometricLogin}
+                                disabled={loading}
+                            >
+                                <Ionicons name="finger-print" size={28} color={colors.primary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
                     {/* Secondary Actions */}
                     <View style={styles.divider}>

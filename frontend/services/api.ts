@@ -209,8 +209,28 @@ export const api = {
     updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
     updatePushToken: (token: string) => request('/preferences/push-token', { method: 'POST', body: JSON.stringify({ token }) }),
     changePassword: (currentPassword: string, newPassword: string) => request('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
-    updateProfile: (data: { name?: string; email?: string; phone?: string; cpf?: string }) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
-    deleteUserAccount: () => request('/auth/account', { method: 'DELETE' }),
+    updateProfile: (data: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        ddi?: string;
+        cpf?: string;
+        is_brazilian?: boolean;
+        cep?: string;
+        city?: string;
+        state?: string;
+        address?: string;
+        birth_date?: string;
+        education?: string;
+        occupation?: string;
+        salary_range?: string;
+        housing_type?: string;
+        household_size?: number;
+        has_vehicle?: boolean;
+        vehicle_type?: string;
+        equity?: number;
+    }) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteUserAccount: (deleteProfile: boolean = true) => request(`/auth/account?delete_profile=${deleteProfile}`, { method: 'DELETE' }),
 
     // Sonhos
     getSonhos: () => request('/sonhos'),
@@ -228,4 +248,8 @@ export const api = {
     getNotifications: () => request('/notifications'),
     markNotificationAsRead: (id: string) => request(`/notifications/${id}/read`, { method: 'POST' }),
     markAllNotificationsAsRead: () => request('/notifications/read-all', { method: 'POST' }),
+
+    // Data Management
+    exportData: () => request('/data/export'),
+    importData: (data: any) => request('/data/import', { method: 'POST', body: JSON.stringify(data) }),
 };

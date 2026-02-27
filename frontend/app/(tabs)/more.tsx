@@ -10,6 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import { api } from '@/services/api';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 
 const FR_LABEL: Record<string, string> = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' };
@@ -40,6 +43,88 @@ export default function SettingsScreen() {
     }
 
     useFocusEffect(useCallback(() => { fetchData(); }, []));
+
+    async function handleExportJSON() {
+        try {
+            const data = await api.exportData();
+            const fileName = `otto_backup_${new Date().toISOString().split('T')[0]}.json`;
+            const filePath = (FileSystem as any).cacheDirectory + fileName;
+
+            await FileSystem.writeAsStringAsync(filePath, JSON.stringify(data, null, 2));
+            await Sharing.shareAsync(filePath);
+        } catch (e: any) {
+            Alert.alert('Erro', 'Não foi possível exportar os dados.');
+        }
+    }
+
+    async function handleExportCSV() {
+        try {
+            const data: any = await api.exportData();
+            const txs = data.transactions || [];
+
+            if (txs.length === 0) {
+                Alert.alert('Aviso', 'Não há transações para exportar.');
+                return;
+            }
+
+            const header = 'Data;Descrição;Categoria;Valor;Tipo;Status\n';
+            const rows = txs.map((t: any) => {
+                const date = new Date(t.date).toLocaleDateString();
+                const type = t.type === 'income' ? 'Receita' : 'Despesa';
+                const status = t.is_paid ? 'Pago' : 'Pendente';
+                return `${date};${t.description};${t.category};${t.amount.toFixed(2).replace('.', ',')};${type};${status}`;
+            }).join('\n');
+
+            const fileName = `otto_transacoes_${new Date().toISOString().split('T')[0]}.csv`;
+            const filePath = FileSystem.documentDirectory + fileName;
+
+            // Add UTF-8 BOM for Excel
+            await FileSystem.writeAsStringAsync(filePath, '\ufeff' + header + rows);
+            await Sharing.shareAsync(filePath);
+        } catch (e: any) {
+            Alert.alert('Erro', 'Não foi possível gerar a planilha.');
+        }
+    }
+
+    async function handleImport() {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true
+            });
+
+            if (result.canceled) return;
+
+            const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+            const data = JSON.parse(fileContent);
+
+            Alert.alert(
+                'Confirmar Importação',
+                'Isso irá substituir todos os dados atuais (exceto seu perfil). Deseja continuar?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Sim, Importar',
+                        style: 'destructive',
+                        onPress: async () => {
+                            setRefreshing(true);
+                            try {
+                                await api.importData(data);
+                                Alert.alert('Sucesso', 'Dados importados com sucesso!');
+                                fetchData();
+                            } catch (e: any) {
+                                Alert.alert('Erro', 'Falha ao importar arquivo. Verifique o formato.');
+                            } finally {
+                                setRefreshing(false);
+                            }
+                        }
+                    }
+                ]
+            );
+        } catch (e: any) {
+            Alert.alert('Erro', 'Formato de arquivo inválido.');
+        }
+    }
 
     function getCat(id: string) { return categories.find(c => c.id === id); }
 
@@ -174,6 +259,42 @@ export default function SettingsScreen() {
                                 <Text style={styles.settingSub}>{t('settings.preferences_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Data Management Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionHeading}>Gestão de Dados</Text>
+                    <View style={styles.settingsGroup}>
+                        <TouchableOpacity style={styles.settingRow} onPress={handleExportCSV}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#10B98115' }]}>
+                                <Ionicons name="download-outline" size={20} color="#10B981" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Exportar Transações (Planilha)</Text>
+                                <Text style={styles.settingSub}>Gere um arquivo CSV para abrir no Excel ou Sheets</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingRow} onPress={handleExportJSON}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#3B82F615' }]}>
+                                <Ionicons name="cloud-download-outline" size={20} color="#3B82F6" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Exportar Backup Completo</Text>
+                                <Text style={styles.settingSub}>Inclui faturas, contas e configurações (JSON)</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={handleImport}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#8B5CF615' }]}>
+                                <Ionicons name="cloud-upload-outline" size={20} color="#8B5CF6" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Importar Backup</Text>
+                                <Text style={styles.settingSub}>Selecione um arquivo de backup anterior (.json)</Text>
+                            </View>
                         </TouchableOpacity>
                     </View>
                 </View>
