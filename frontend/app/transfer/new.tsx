@@ -15,7 +15,9 @@ export default function NewTransferScreen() {
     const [description, setDescription] = useState('');
     const [fromAccount, setFromAccount] = useState('');
     const [toAccount, setToAccount] = useState('');
+    const [toSonho, setToSonho] = useState('');
     const [accounts, setAccounts] = useState<any[]>([]);
+    const [sonhos, setSonhos] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -23,14 +25,19 @@ export default function NewTransferScreen() {
 
     useEffect(() => {
         setLoading(true);
-        api.getAccounts()
-            .then((accs: any) => setAccounts(accs.filter((a: any) => a.type !== 'credit_card')))
+        Promise.all([
+            api.getAccounts(),
+            api.getSonhos()
+        ]).then(([accs, snh]: [any, any]) => {
+            setAccounts(accs.filter((a: any) => a.type !== 'credit_card'));
+            setSonhos(snh);
+        })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
 
     async function handleSave() {
-        if (!amount || !fromAccount || !toAccount || fromAccount === toAccount) {
+        if (!amount || !fromAccount || (!toAccount && !toSonho) || fromAccount === toAccount) {
             Alert.alert('Atenção', 'Selecione contas diferentes e informe o valor');
             return;
         }
@@ -38,7 +45,8 @@ export default function NewTransferScreen() {
         try {
             await api.createTransfer({
                 from_account_id: fromAccount,
-                to_account_id: toAccount,
+                to_account_id: toAccount || undefined,
+                to_sonho_id: toSonho || undefined,
                 amount: parseFloat(amount.replace(',', '.')),
                 description: description || 'Transferência',
                 date: new Date().toISOString(),
@@ -118,6 +126,7 @@ export default function NewTransferScreen() {
                     <View style={styles.selectionColumn}>
                         <Text style={styles.sectionLabel}>Pra onde vai?</Text>
                         <View style={styles.accList}>
+                            <Text style={styles.subCategoryLabel}>Contas</Text>
                             {accounts.map(acc => (
                                 <TouchableOpacity
                                     key={acc.id}
@@ -125,7 +134,7 @@ export default function NewTransferScreen() {
                                         styles.accCard,
                                         toAccount === acc.id && { borderColor: acc.color || colors.primary, backgroundColor: (acc.color || colors.primary) + '15' }
                                     ]}
-                                    onPress={() => setToAccount(acc.id)}
+                                    onPress={() => { setToAccount(acc.id); setToSonho(''); }}
                                 >
                                     <View style={[styles.accIcon, { backgroundColor: (acc.color || colors.primary) + '20' }]}>
                                         <Ionicons name="wallet-outline" size={16} color={acc.color || colors.primary} />
@@ -136,6 +145,30 @@ export default function NewTransferScreen() {
                                     </View>
                                 </TouchableOpacity>
                             ))}
+
+                            {sonhos.length > 0 && (
+                                <>
+                                    <Text style={[styles.subCategoryLabel, { marginTop: 12 }]}>Objetivos</Text>
+                                    {sonhos.map(sonho => (
+                                        <TouchableOpacity
+                                            key={sonho.id}
+                                            style={[
+                                                styles.accCard,
+                                                toSonho === sonho.id && { borderColor: sonho.color || colors.primary, backgroundColor: (sonho.color || colors.primary) + '15' }
+                                            ]}
+                                            onPress={() => { setToSonho(sonho.id); setToAccount(''); }}
+                                        >
+                                            <View style={[styles.accIcon, { backgroundColor: (sonho.color || colors.primary) + '20' }]}>
+                                                <Ionicons name={(sonho.icon || 'star') as any} size={16} color={sonho.color || colors.primary} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[styles.accName, toSonho === sonho.id && { fontWeight: '800' }]} numberOfLines={1}>{sonho.title}</Text>
+                                                <Text style={styles.accBal}>Meta: {formatCurrency(sonho.target_amount)}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </>
+                            )}
                         </View>
                     </View>
                 </View>
@@ -180,6 +213,7 @@ const s = (colors: any) => StyleSheet.create({
     accIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     accName: { fontSize: 13, color: colors.text, fontWeight: '600' },
     accBal: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+    subCategoryLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', marginBottom: 4 },
 
     arrowWrap: { alignItems: 'center', justifyContent: 'center', height: '100%', width: 32 },
     arrowLine: { width: 1, flex: 1, backgroundColor: colors.border },

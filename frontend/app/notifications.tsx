@@ -91,19 +91,6 @@ export default function NotificationsScreen() {
                         </View>
                         <Text style={styles.emptyTitle}>Tudo em dia!</Text>
                         <Text style={styles.emptySub}>Você não tem nenhuma notificação no momento.</Text>
-
-                        <TouchableOpacity
-                            style={[styles.testBtn, { marginTop: 32 }]}
-                            onPress={async () => {
-                                try {
-                                    await api.sendTestNotification();
-                                    fetchNotifications();
-                                } catch (e) { console.error(e); }
-                            }}
-                        >
-                            <Ionicons name="flask-outline" size={20} color={colors.white} />
-                            <Text style={styles.testBtnText}>Mandar Notificação Teste</Text>
-                        </TouchableOpacity>
                     </View>
                 ) : (
                     notifications.map((notif) => {
@@ -162,7 +149,5 @@ const s = (colors: any, mode: string) => StyleSheet.create({
     itemTitleUnread: { color: colors.text, fontWeight: '900' },
     itemBody: { fontSize: 13, color: colors.textMuted, lineHeight: 18, marginBottom: 8 },
     itemDate: { fontSize: 10, color: colors.textMuted, fontWeight: '600', textTransform: 'uppercase' },
-    unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
-    testBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, gap: 8 },
-    testBtnText: { color: colors.white, fontWeight: '800', fontSize: 14 }
+    unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary }
 });
