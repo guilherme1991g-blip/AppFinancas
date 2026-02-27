@@ -22,6 +22,7 @@ class NotificationPreferences(BaseModel):
     whatsapp_transactions: bool = False
     overdue_bills: bool = True
     due_today_bills: bool = True
+    agenda_reminders: bool = True
 
 
 class UserResponse(BaseModel):
@@ -30,3 +31,4 @@ class UserResponse(BaseModel):
     email: str
     created_at: datetime
     preferences: Optional[NotificationPreferences] = Field(default_factory=NotificationPreferences)
+    push_token: Optional[str] = None

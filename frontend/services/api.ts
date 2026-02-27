@@ -206,6 +206,7 @@ export const api = {
     // Preferences
     getPreferences: () => request('/preferences'),
     updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
+    updatePushToken: (token: string) => request('/preferences/push-token', { method: 'POST', body: JSON.stringify({ token }) }),
     deleteUserAccount: () => request('/auth/account', { method: 'DELETE' }),
 
     // Sonhos

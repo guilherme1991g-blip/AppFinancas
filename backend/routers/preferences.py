@@ -19,3 +19,16 @@ async def update_preferences(data: NotificationPreferences, current_user=Depends
         {"$set": {"preferences": data.model_dump()}}
     )
     return data
+
+
+@router.post("/push-token")
+async def save_push_token(data: dict, current_user=Depends(get_current_user)):
+    token = data.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token não fornecido")
+    
+    await users_collection.update_one(
+        {"_id": ObjectId(current_user["_id"])},
+        {"$set": {"push_token": token}}
+    )
+    return {"message": "Token salvo com sucesso"}
