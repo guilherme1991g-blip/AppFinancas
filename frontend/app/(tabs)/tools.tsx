@@ -21,8 +21,8 @@ export default function ToolsScreen() {
     const tools = [
         {
             id: 'analytics',
-            title: 'Análise de Gastos',
-            sub: 'Relatórios detalhados, fluxo de caixa e comparativos mensais.',
+            title: 'Análise Financeira',
+            sub: 'Relatórios detalhados, fluxo de caixa, DRE e indicadores do mês.',
             icon: 'pie-chart',
             color: colors.primary,
             route: '/tools/analytics'
