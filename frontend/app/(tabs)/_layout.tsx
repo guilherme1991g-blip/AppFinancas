@@ -1,15 +1,84 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { Tabs, Redirect, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { View, ActivityIndicator, Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Platform, TouchableOpacity, StyleSheet, Animated, Modal, Text, Pressable } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+
+function QuickActionMenu({ visible, onClose, colors, router }: { visible: boolean; onClose: () => void; colors: any; router: any }) {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(60)).current;
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+    useEffect(() => {
+        if (visible) {
+            Animated.parallel([
+                Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+                Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 9, useNativeDriver: true }),
+                Animated.spring(scaleAnim, { toValue: 1, tension: 65, friction: 9, useNativeDriver: true }),
+            ]).start();
+        } else {
+            Animated.parallel([
+                Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+                Animated.timing(slideAnim, { toValue: 60, duration: 150, useNativeDriver: true }),
+                Animated.timing(scaleAnim, { toValue: 0.8, duration: 150, useNativeDriver: true }),
+            ]).start();
+        }
+    }, [visible]);
+
+    const actions = [
+        { icon: 'arrow-up-circle', label: 'Despesa', sub: 'Registrar um gasto', color: colors.expense, route: '/transaction/new?type=expense' },
+        { icon: 'arrow-down-circle', label: 'Receita', sub: 'Registrar um ganho', color: colors.income, route: '/transaction/new?type=income' },
+        { icon: 'swap-horizontal', label: 'Transferência', sub: 'Mover entre contas', color: colors.primary, route: '/transfer/new' },
+    ];
+
+    const ms = menuS(colors);
+
+    if (!visible) return null;
+
+    return (
+        <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
+            <Pressable style={ms.overlay} onPress={onClose}>
+                <Animated.View style={{ opacity: fadeAnim, flex: 1 }} />
+            </Pressable>
+            <Animated.View style={[ms.menuContainer, { transform: [{ translateY: slideAnim }, { scale: scaleAnim }], opacity: fadeAnim }]}>
+                <View style={ms.menuCard}>
+                    <Text style={ms.menuTitle}>Nova Operação</Text>
+                    {actions.map((action, i) => (
+                        <TouchableOpacity
+                            key={i}
+                            style={[ms.actionRow, i === actions.length - 1 && { borderBottomWidth: 0 }]}
+                            activeOpacity={0.7}
+                            onPress={() => { onClose(); setTimeout(() => router.push(action.route as any), 100); }}
+                        >
+                            <View style={[ms.actionIcon, { backgroundColor: action.color + '15' }]}>
+                                <Ionicons name={action.icon as any} size={26} color={action.color} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={ms.actionLabel}>{action.label}</Text>
+                                <Text style={ms.actionSub}>{action.sub}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Cancel button */}
+                <TouchableOpacity style={ms.cancelBtn} onPress={onClose} activeOpacity={0.8}>
+                    <Text style={ms.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
+            </Animated.View>
+        </Modal>
+    );
+}
 
 export default function TabsLayout() {
     const { user, isLoading } = useAuth();
     const { colors } = useTheme();
     const router = useRouter();
     const segments = useSegments();
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const TABS = ['index', 'transactions', 'accounts', 'tools', 'more'];
     const currentTab = segments[1] || 'index';
@@ -104,21 +173,11 @@ export default function TabsLayout() {
                         options={{
                             title: '',
                             tabBarLabel: () => null,
-                            tabBarIcon: () => (
-                                <TouchableOpacity
-                                    style={fabStyles.fab}
-                                    onPress={() => router.push('/transaction/new' as any)}
-                                    activeOpacity={0.85}
-                                >
-                                    <View style={fabStyles.fabInner}>
-                                        <Ionicons name="add" size={32} color="#FFFFFF" />
-                                    </View>
-                                </TouchableOpacity>
-                            ),
+                            tabBarIcon: () => null,
                             tabBarButton: () => (
                                 <TouchableOpacity
                                     style={fabStyles.fabContainer}
-                                    onPress={() => router.push('/transaction/new' as any)}
+                                    onPress={() => setMenuOpen(true)}
                                     activeOpacity={0.85}
                                 >
                                     <View style={fabStyles.fab}>
@@ -155,11 +214,15 @@ export default function TabsLayout() {
                     />
                     <Tabs.Screen name="cards" options={{ href: null }} />
                 </Tabs>
+
+                {/* Quick Action Menu Modal */}
+                <QuickActionMenu visible={menuOpen} onClose={() => setMenuOpen(false)} colors={colors} router={router} />
             </View>
         </PanGestureHandler>
     );
 }
 
+/* ──────────── FAB Styles ──────────── */
 const fabS = (colors: any) => StyleSheet.create({
     fabContainer: {
         top: -20,
@@ -196,5 +259,82 @@ const fabS = (colors: any) => StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 14,
         elevation: 8,
+    },
+});
+
+/* ──────────── Menu Styles ──────────── */
+const menuS = (colors: any) => StyleSheet.create({
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.overlay,
+    },
+    menuContainer: {
+        position: 'absolute',
+        bottom: Platform.OS === 'ios' ? 110 : 90,
+        left: 20,
+        right: 20,
+    },
+    menuCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 28,
+        padding: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+        elevation: 10,
+    },
+    menuTitle: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        paddingHorizontal: 16,
+        paddingTop: 14,
+        paddingBottom: 8,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    actionIcon: {
+        width: 50,
+        height: 50,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    actionLabel: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.text,
+    },
+    actionSub: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    cancelBtn: {
+        marginTop: 10,
+        backgroundColor: colors.surface,
+        borderRadius: 20,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    cancelText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.textSecondary,
     },
 });
