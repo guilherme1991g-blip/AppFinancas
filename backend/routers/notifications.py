@@ -59,9 +59,9 @@ async def send_test_notification(current_user=Depends(get_current_user)):
     }
     result = await notifications_collection.insert_one(notif)
     
-    # Optional: If you want to also trigger real push, uncomment this:
-    # from utils.notifications import send_push_notification
-    # if current_user.get("push_token"):
-    #     send_push_notification(current_user["push_token"], notif["title"], notif["body"])
+    # Trigger real push notification
+    from utils.notifications import send_push_notification
+    if current_user.get("push_token"):
+        send_push_notification(current_user["push_token"], notif["title"], notif["body"])
     
-    return {"message": "Notificação de teste criada!", "id": str(result.inserted_id)}
+    return {"message": "Notificação enviada para o celular e salva no histórico!", "id": str(result.inserted_id)}
