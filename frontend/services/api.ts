@@ -220,4 +220,9 @@ export const api = {
     createCompromisso: (data: any) => request('/compromissos', { method: 'POST', body: JSON.stringify(data) }),
     updateCompromisso: (id: string, data: any) => request(`/compromissos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteCompromisso: (id: string) => request(`/compromissos/${id}`, { method: 'DELETE' }),
+
+    // Notifications
+    getNotifications: () => request('/notifications'),
+    markNotificationAsRead: (id: string) => request(`/notifications/${id}/read`, { method: 'POST' }),
+    markAllNotificationsAsRead: () => request('/notifications/read-all', { method: 'POST' }),
 };

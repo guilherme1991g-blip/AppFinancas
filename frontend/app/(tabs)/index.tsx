@@ -114,9 +114,22 @@ export default function DashboardScreen() {
                     <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]} 👋</Text>
                     <Text style={styles.greetingSub}>{MONTH_NAMES[month - 1]} {year}</Text>
                 </View>
-                <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/(tabs)/more')}>
-                    <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase()}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <TouchableOpacity
+                        style={styles.notifBtn}
+                        onPress={() => router.push('/notifications' as any)}
+                    >
+                        <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                        {(overdueTransactions.length > 0) && (
+                            <View style={styles.notifBadge}>
+                                <Text style={styles.notifBadgeText}>{overdueTransactions.length}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/(tabs)/more')}>
+                        <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase()}</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Month selector */}
@@ -582,6 +595,9 @@ const s = (colors: any) => StyleSheet.create({
     greetingSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
     avatarBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
     avatarText: { color: colors.white, fontWeight: '800', fontSize: 16 },
+    notifBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+    notifBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: colors.expense, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.background, paddingHorizontal: 4 },
+    notifBadgeText: { color: colors.white, fontSize: 10, fontWeight: '900' },
 
     monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 16 },
     monthArrow: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
