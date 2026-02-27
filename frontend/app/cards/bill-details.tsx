@@ -7,16 +7,13 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 import PaymentModal from '@/components/PaymentModal';
 
-function formatCurrency(v: number) {
-    const absValue = Math.abs(v);
-    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
-    return v < 0 ? `-${formatted}` : formatted;
-}
 
 export default function BillDetailsScreen() {
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const { billId, name } = useLocalSearchParams<{ billId: string, name: string }>();
     const [transactions, setTransactions] = useState<any[]>([]);
     const [billStatus, setBillStatus] = useState<string>('open');
@@ -87,7 +84,7 @@ export default function BillDetailsScreen() {
                 <Text style={styles.txDate}>{new Date(item.date).toLocaleDateString('pt-BR')}</Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                <Text style={styles.txAmount}>{formatCurrency(Math.abs(item.amount))}</Text>
+                <Text style={styles.txAmount}>{fmt(Math.abs(item.amount))}</Text>
                 {billStatus === 'open' && (
                     <View style={{ flexDirection: 'row', gap: 12 }}>
                         <TouchableOpacity onPress={() => router.push(`/transaction/${item.id}` as any)}>
@@ -123,7 +120,7 @@ export default function BillDetailsScreen() {
                     <Ionicons name="receipt" size={24} color={colors.primary} />
                 </View>
                 <Text style={styles.summaryLabel}>Total da Fatura</Text>
-                <Text style={[styles.summaryValue, { color: total < 0 ? colors.income : colors.text }]}>{formatCurrency(total)}</Text>
+                <Text style={[styles.summaryValue, { color: total < 0 ? colors.income : colors.text }]}>{fmt(total)}</Text>
                 <TouchableOpacity
                     style={[styles.payBtn, (paying || billStatus === 'paid' || billStatus === 'open') && { opacity: 0.7, backgroundColor: colors.textMuted }]}
                     onPress={handlePay}

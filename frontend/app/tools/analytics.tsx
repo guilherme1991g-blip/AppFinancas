@@ -8,12 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Rect, Line, Text as SvgText, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 function fmtShort(v: number) {
     if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(1)}k`;
     return v.toFixed(0);
@@ -135,6 +133,7 @@ function ProgressBar({ value, max, color, colors: c }: { value: number; max: num
 /* ══════════════════════════════════════════════════ */
 export default function FinancialAnalysisScreen() {
     const { colors, mode } = useTheme();
+    const { fmt } = useLocale();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());

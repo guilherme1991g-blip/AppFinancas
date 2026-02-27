@@ -7,10 +7,8 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 const STATUS_LABELS: Record<string, string> = {
     open: 'Aberta',
@@ -21,6 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function CardBillsScreen() {
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const { id, name } = useLocalSearchParams<{ id: string, name?: string }>();
     const [bills, setBills] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,7 +69,7 @@ export default function CardBillsScreen() {
             </View>
             <View style={styles.billAmountWrap}>
                 <Text style={[styles.billAmount, item.amount < 0 ? { color: colors.income } : (item.status === 'overdue' && { color: colors.expense })]}>
-                    {formatCurrency(item.amount)}
+                    {fmt(item.amount)}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>

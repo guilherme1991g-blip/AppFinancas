@@ -9,13 +9,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Svg, G, Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 import { api } from '@/services/api';
 import { getBrand } from '@/constants/Brands';
 import PaymentModal from '@/components/PaymentModal';
 
 const { width } = Dimensions.get('window');
-const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-const MONTH_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MONTH_NAMES_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MONTH_NAMES_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_NAMES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MONTH_SHORT_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MONTH_SHORT_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_SHORT_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+const MONTHS: Record<string, string[]> = { 'pt-BR': MONTH_NAMES_PT, 'en': MONTH_NAMES_EN, 'es': MONTH_NAMES_ES };
+const MONTHS_SHORT: Record<string, string[]> = { 'pt-BR': MONTH_SHORT_PT, 'en': MONTH_SHORT_EN, 'es': MONTH_SHORT_ES };
 
 function BrandLogo({ brand, color, size = 28 }: { brand: any, color: string, size?: number }) {
     if (brand.logo) {
@@ -30,18 +38,14 @@ function BrandLogo({ brand, color, size = 28 }: { brand: any, color: string, siz
     return <Ionicons name={brand.icon || "card"} size={size * 0.8} color={color} />;
 }
 
-// Função unificada para formatar valores, tratando o sinal de menos.
-function fmt(v: number) {
-    const absValue = Math.abs(v);
-    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
-    // Só adicionamos o sinal de menos se o valor real for negativo (crédito no cartão)
-    return v < 0 ? `-${formatted}` : formatted;
-}
 
 
 export default function DashboardScreen() {
     const { user } = useAuth();
     const { mode, colors } = useTheme();
+    const { t, fmt, language } = useLocale();
+    const monthNames = MONTHS[language] || MONTHS['pt-BR'];
+    const monthShort = MONTHS_SHORT[language] || MONTHS_SHORT['pt-BR'];
     const insets = useSafeAreaInsets();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
@@ -112,7 +116,7 @@ export default function DashboardScreen() {
             <View style={styles.header}>
                 <View>
                     <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]} 👋</Text>
-                    <Text style={styles.greetingSub}>{MONTH_NAMES[month - 1]} {year}</Text>
+                    <Text style={styles.greetingSub}>{monthNames[month - 1]} {year}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <TouchableOpacity
@@ -137,7 +141,7 @@ export default function DashboardScreen() {
                 <TouchableOpacity onPress={prevMonth} style={styles.monthArrow}>
                     <Ionicons name="chevron-back" size={18} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.monthLabel}>{MONTH_SHORT[month - 1]} {year}</Text>
+                <Text style={styles.monthLabel}>{monthShort[month - 1]} {year}</Text>
                 <TouchableOpacity onPress={nextMonth} style={styles.monthArrow}>
                     <Ionicons name="chevron-forward" size={18} color={colors.text} />
                 </TouchableOpacity>
@@ -159,7 +163,7 @@ export default function DashboardScreen() {
                         <View style={styles.balanceCard}>
                             <View style={styles.balanceTop}>
                                 <View>
-                                    <Text style={styles.balanceLabel}>Saldo Total</Text>
+                                    <Text style={styles.balanceLabel}>{t('home.total_balance')}</Text>
                                     <Text style={styles.balanceValue}>
                                         {balanceVisible ? fmt(summary?.total_balance || 0) : '••••••'}
                                     </Text>
@@ -175,7 +179,7 @@ export default function DashboardScreen() {
                                         <Ionicons name="arrow-down" size={12} color="#FFF" />
                                     </View>
                                     <View>
-                                        <Text style={styles.balanceItemLabel}>Receitas</Text>
+                                        <Text style={styles.balanceItemLabel}>{t('home.income')}</Text>
                                         <Text style={styles.balanceItemVal}>{fmt(Math.abs(summary?.income || 0))}</Text>
                                     </View>
                                 </View>
@@ -185,7 +189,7 @@ export default function DashboardScreen() {
                                         <Ionicons name="arrow-up" size={12} color="#FFF" />
                                     </View>
                                     <View>
-                                        <Text style={styles.balanceItemLabel}>Despesas</Text>
+                                        <Text style={styles.balanceItemLabel}>{t('home.expense')}</Text>
                                         <Text style={styles.balanceItemVal}>{fmt(Math.abs(summary?.expense || 0))}</Text>
                                     </View>
                                 </View>
@@ -209,7 +213,7 @@ export default function DashboardScreen() {
                                     <Ionicons name="trending-up" size={18} color={colors.primary} />
                                     <Text style={styles.forecastTitle}>Previsão do Mês</Text>
                                 </View>
-                                <Text style={styles.forecastDate}>{MONTH_SHORT[month - 1]} {year}</Text>
+                                <Text style={styles.forecastDate}>{monthShort[month - 1]} {year}</Text>
                             </View>
                             <View style={styles.forecastMain}>
                                 <Text style={styles.forecastValue}>{fmt(summary?.forecast || 0)}</Text>
@@ -241,9 +245,9 @@ export default function DashboardScreen() {
             {/* Credit Cards Carousel Section */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Meus Cartões</Text>
+                    <Text style={styles.sectionTitle}>{t('home.my_cards')}</Text>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/cards' as any)}>
-                        <Text style={styles.seeAll}>Gerenciar</Text>
+                        <Text style={styles.seeAll}>{t('home.manage')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -256,7 +260,7 @@ export default function DashboardScreen() {
                                     <Ionicons name="card" size={28} color={colors.white} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.cardsCardTitle}>Nenhum cartão</Text>
+                                    <Text style={styles.cardsCardTitle}>{t('home.no_cards')}</Text>
                                     <Text style={styles.cardsCardSub}>Toque para cadastrar seu primeiro cartão de crédito.</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />

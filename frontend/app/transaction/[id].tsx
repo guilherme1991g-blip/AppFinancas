@@ -4,13 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 export default function TransactionDetailScreen() {
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [tx, setTx] = useState<any>(null);
     const [cat, setCat] = useState<any>(null);
@@ -121,7 +120,7 @@ export default function TransactionDetailScreen() {
                         <Ionicons name={isIncome ? 'chevron-down' : 'chevron-up'} size={24} color={colors.white} />
                     </View>
                     <Text style={[styles.amount, { color: isIncome ? colors.income : colors.expense }]}>
-                        {isIncome ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                        {isIncome ? '+' : '-'}{fmt(Math.abs(tx.amount))}
                     </Text>
                     <Text style={styles.description}>{tx.description}</Text>
                     <View style={styles.dateLabel}>

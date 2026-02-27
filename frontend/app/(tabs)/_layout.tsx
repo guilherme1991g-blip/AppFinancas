@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator, Platform, TouchableOpacity, StyleSheet, Animated, Modal, Text, Pressable } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function QuickActionMenu({ visible, onClose, colors, router }: { visible: boolean; onClose: () => void; colors: any; router: any }) {
+function QuickActionMenu({ visible, onClose, colors, router, t }: { visible: boolean; onClose: () => void; colors: any; router: any; t: (key: string) => string }) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(60)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -28,9 +29,9 @@ function QuickActionMenu({ visible, onClose, colors, router }: { visible: boolea
     }, [visible]);
 
     const actions = [
-        { icon: 'arrow-up-circle', label: 'Despesa', sub: 'Registrar um gasto', color: colors.expense, route: '/transaction/new?type=expense' },
-        { icon: 'arrow-down-circle', label: 'Receita', sub: 'Registrar um ganho', color: colors.income, route: '/transaction/new?type=income' },
-        { icon: 'swap-horizontal', label: 'Transferência', sub: 'Mover entre contas', color: colors.primary, route: '/transfer/new' },
+        { icon: 'arrow-up-circle', label: t('action.expense'), sub: t('action.expense_sub'), color: colors.expense, route: '/transaction/new?type=expense' },
+        { icon: 'arrow-down-circle', label: t('action.income'), sub: t('action.income_sub'), color: colors.income, route: '/transaction/new?type=income' },
+        { icon: 'swap-horizontal', label: t('action.transfer'), sub: t('action.transfer_sub'), color: colors.primary, route: '/transfer/new' },
     ];
 
     const ms = menuS(colors);
@@ -44,7 +45,7 @@ function QuickActionMenu({ visible, onClose, colors, router }: { visible: boolea
             </Pressable>
             <Animated.View style={[ms.menuContainer, { transform: [{ translateY: slideAnim }, { scale: scaleAnim }], opacity: fadeAnim }]}>
                 <View style={ms.menuCard}>
-                    <Text style={ms.menuTitle}>Nova Operação</Text>
+                    <Text style={ms.menuTitle}>{t('action.title')}</Text>
                     {actions.map((action, i) => (
                         <TouchableOpacity
                             key={i}
@@ -66,7 +67,7 @@ function QuickActionMenu({ visible, onClose, colors, router }: { visible: boolea
 
                 {/* Cancel button */}
                 <TouchableOpacity style={ms.cancelBtn} onPress={onClose} activeOpacity={0.8}>
-                    <Text style={ms.cancelText}>Cancelar</Text>
+                    <Text style={ms.cancelText}>{t('action.cancel')}</Text>
                 </TouchableOpacity>
             </Animated.View>
         </Modal>
@@ -79,6 +80,7 @@ export default function TabsLayout() {
     const router = useRouter();
     const segments = useSegments();
     const [menuOpen, setMenuOpen] = useState(false);
+    const { t } = useLocale();
 
     const TABS = ['index', 'transactions', 'accounts', 'tools', 'more'];
     const currentTab = segments[1] || 'index';
@@ -149,7 +151,7 @@ export default function TabsLayout() {
                     <Tabs.Screen
                         name="index"
                         options={{
-                            title: 'Início',
+                            title: t('tab.home'),
                             tabBarIcon: ({ color, focused }) => (
                                 <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : undefined}>
                                     <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
@@ -160,7 +162,7 @@ export default function TabsLayout() {
                     <Tabs.Screen
                         name="transactions"
                         options={{
-                            title: 'Transações',
+                            title: t('tab.transactions'),
                             tabBarIcon: ({ color, focused }) => (
                                 <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : undefined}>
                                     <Ionicons name={focused ? 'list' : 'list-outline'} size={22} color={color} />
@@ -193,7 +195,7 @@ export default function TabsLayout() {
                     <Tabs.Screen
                         name="tools"
                         options={{
-                            title: 'Ferramentas',
+                            title: t('tab.tools'),
                             tabBarIcon: ({ color, focused }) => (
                                 <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : undefined}>
                                     <Ionicons name={focused ? 'apps' : 'apps-outline'} size={22} color={color} />
@@ -204,7 +206,7 @@ export default function TabsLayout() {
                     <Tabs.Screen
                         name="more"
                         options={{
-                            title: 'Ajustes',
+                            title: t('tab.settings'),
                             tabBarIcon: ({ color, focused }) => (
                                 <View style={focused ? { backgroundColor: colors.primary + '15', padding: 8, borderRadius: 14 } : undefined}>
                                     <Ionicons name={focused ? 'menu' : 'menu-outline'} size={22} color={color} />
@@ -216,7 +218,7 @@ export default function TabsLayout() {
                 </Tabs>
 
                 {/* Quick Action Menu Modal */}
-                <QuickActionMenu visible={menuOpen} onClose={() => setMenuOpen(false)} colors={colors} router={router} />
+                <QuickActionMenu visible={menuOpen} onClose={() => setMenuOpen(false)} colors={colors} router={router} t={t} />
             </View>
         </PanGestureHandler>
     );

@@ -8,11 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 import { api } from '@/services/api';
 
-function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 const FR_LABEL: Record<string, string> = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' };
 
@@ -20,6 +18,7 @@ export default function SettingsScreen() {
     const insets = useSafeAreaInsets();
     const { user, logout } = useAuth();
     const { mode, colors, toggleTheme } = useTheme();
+    const { t, fmt } = useLocale();
     const now = new Date();
     const [budgets, setBudgets] = useState<any[]>([]);
     const [recurring, setRecurring] = useState<any[]>([]);
@@ -61,8 +60,8 @@ export default function SettingsScreen() {
                 {/* Header */}
                 <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                     <View>
-                        <Text style={styles.title}>Ajustes</Text>
-                        <Text style={styles.sub}>Gerenciamento da sua conta</Text>
+                        <Text style={styles.title}>{t('settings.title')}</Text>
+                        <Text style={styles.sub}>{t('settings.subtitle')}</Text>
                     </View>
                     <TouchableOpacity style={styles.headerBtn} onPress={logout}>
                         <Ionicons name="log-out-outline" size={22} color={colors.danger} />
@@ -80,22 +79,22 @@ export default function SettingsScreen() {
                             <Text style={styles.profileEmail}>{user?.email}</Text>
                         </View>
                         <View style={styles.profileBadge}>
-                            <Text style={styles.profileBadgeTxt}>Premium</Text>
+                            <Text style={styles.profileBadgeTxt}>{t('settings.premium')}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Settings Rows */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionHeading}>Ajustes</Text>
+                    <Text style={styles.sectionHeading}>{t('settings.title')}</Text>
                     <View style={styles.settingsGroup}>
                         <View style={styles.settingRow}>
                             <View style={styles.settingIconWrap}>
                                 <Ionicons name="moon-outline" size={20} color={colors.primary} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Modo Escuro</Text>
-                                <Text style={styles.settingSub}>Alterne o visual do aplicativo</Text>
+                                <Text style={styles.settingLabel}>{t('settings.dark_mode')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.dark_mode_sub')}</Text>
                             </View>
                             <Switch
                                 value={mode === 'dark'}
@@ -110,8 +109,8 @@ export default function SettingsScreen() {
                                 <Ionicons name="notifications-outline" size={20} color={colors.secondary} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Notificações</Text>
-                                <Text style={styles.settingSub}>Alertas de vencimento e gastos</Text>
+                                <Text style={styles.settingLabel}>{t('settings.notifications')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.notifications_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -121,8 +120,8 @@ export default function SettingsScreen() {
                                 <Ionicons name="pricetags-outline" size={20} color="#6366F1" />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Categorias</Text>
-                                <Text style={styles.settingSub}>Gerenciar categorias de gastos</Text>
+                                <Text style={styles.settingLabel}>{t('settings.categories')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.categories_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -132,8 +131,8 @@ export default function SettingsScreen() {
                                 <Ionicons name="wallet-outline" size={20} color={colors.income} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Contas</Text>
-                                <Text style={styles.settingSub}>Gerenciar suas contas bancárias</Text>
+                                <Text style={styles.settingLabel}>{t('settings.accounts')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.accounts_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -143,8 +142,8 @@ export default function SettingsScreen() {
                                 <Ionicons name="card-outline" size={20} color={colors.warning} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Cartões</Text>
-                                <Text style={styles.settingSub}>Gerenciar cartões de crédito e faturas</Text>
+                                <Text style={styles.settingLabel}>{t('settings.cards')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.cards_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -154,8 +153,8 @@ export default function SettingsScreen() {
                                 <Ionicons name="options-outline" size={20} color="#EC4899" />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Preferências</Text>
-                                <Text style={styles.settingSub}>Moeda, idioma e opções avançadas</Text>
+                                <Text style={styles.settingLabel}>{t('settings.preferences')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.preferences_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -167,12 +166,12 @@ export default function SettingsScreen() {
                     <View style={styles.listCard}>
                         <View style={styles.listItem}>
                             <Ionicons name="shield-checkmark-outline" size={18} color={colors.textSecondary} />
-                            <Text style={styles.infoLabel}>Segurança</Text>
-                            <Text style={styles.infoVal}>Criptografado</Text>
+                            <Text style={styles.infoLabel}>{t('settings.security')}</Text>
+                            <Text style={styles.infoVal}>{t('settings.encrypted')}</Text>
                         </View>
                         <View style={[styles.listItem, { borderBottomWidth: 0 }]}>
                             <Ionicons name="server-outline" size={18} color={colors.textSecondary} />
-                            <Text style={styles.infoLabel}>Versão do Sistema</Text>
+                            <Text style={styles.infoLabel}>{t('settings.version')}</Text>
                             <Text style={styles.infoVal}>1.3.0</Text>
                         </View>
                     </View>

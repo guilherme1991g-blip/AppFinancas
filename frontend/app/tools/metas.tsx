@@ -7,13 +7,12 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 export default function MetasListScreen() {
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const now = new Date();
     const [budgets, setBudgets] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);

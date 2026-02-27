@@ -7,46 +7,44 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
-
-function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
+import { useLocale } from '@/contexts/LocaleContext';
 
 const FR_LABEL: Record<string, string> = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' };
 
 export default function ToolsScreen() {
     const { colors } = useTheme();
+    const { t, fmt } = useLocale();
     const [refreshing, setRefreshing] = useState(false);
 
     const tools = [
         {
             id: 'analytics',
-            title: 'Análise Financeira',
-            sub: 'Relatórios detalhados, fluxo de caixa, DRE e indicadores do mês.',
+            title: t('tools.analytics'),
+            sub: t('tools.analytics_sub'),
             icon: 'pie-chart',
             color: colors.primary,
             route: '/tools/analytics'
         },
         {
             id: 'metas',
-            title: 'Minhas Metas',
-            sub: 'Gerencie seus limites de gastos por categoria e acompanhe seu progresso.',
+            title: t('tools.budgets'),
+            sub: t('tools.budgets_sub'),
             icon: 'trending-up',
             color: '#6366F1',
             route: '/tools/metas'
         },
         {
             id: 'sonhos',
-            title: 'Meus Objetivos',
-            sub: 'Planeje e acompanhe seus objetivos financeiros de longo prazo.',
+            title: t('tools.goals'),
+            sub: t('tools.goals_sub'),
             icon: 'rocket',
             color: '#EC4899',
             route: '/tools/objetivos'
         },
         {
             id: 'agenda',
-            title: 'Agenda',
-            sub: 'Gerencie seus compromissos e receba lembretes importantes.',
+            title: t('tools.agenda'),
+            sub: t('tools.agenda_sub'),
             icon: 'calendar',
             color: '#F59E0B',
             route: '/tools/agenda'
@@ -64,8 +62,8 @@ export default function ToolsScreen() {
             >
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.title}>Ferramentas</Text>
-                    <Text style={styles.sub}>Gestão e análises avançadas</Text>
+                    <Text style={styles.title}>{t('tools.title')}</Text>
+                    <Text style={styles.sub}>{t('tools.subtitle')}</Text>
                 </View>
 
                 {/* Tools Grid/List */}
@@ -100,7 +98,7 @@ const s = (colors: any) => StyleSheet.create({
     container: { paddingHorizontal: 20, gap: 16 },
     toolCard: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
-        borderRadius: 24, padding: 20, borderSize: 1, borderColor: colors.border,
+        borderRadius: 24, padding: 20, borderColor: colors.border,
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
         gap: 16, borderWidth: 1
     },

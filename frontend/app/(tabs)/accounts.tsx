@@ -8,12 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function formatCurrency(v: number) {
-    const absValue = Math.abs(v);
-    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
-    return v < 0 ? `-${formatted}` : formatted;
-}
 
 const ACCOUNT_ICONS: Record<string, string> = {
     checking: 'business', savings: 'piggy-bank', credit_card: 'card',
@@ -26,6 +22,7 @@ const ACCOUNT_LABELS: Record<string, string> = {
 
 export default function AccountsScreen() {
     const { mode, colors } = useTheme();
+    const { fmt } = useLocale();
     const insets = useSafeAreaInsets();
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -78,7 +75,7 @@ export default function AccountsScreen() {
             <View style={styles.totalCard}>
                 <Text style={styles.totalLabel}>Patrimônio Total</Text>
                 <Text style={[styles.totalValue, { color: totalBalance >= 0 ? colors.income : colors.expense }]}>
-                    {formatCurrency(totalBalance)}
+                    {fmt(totalBalance)}
                 </Text>
                 <Text style={styles.totalSub}>{accounts.length} conta{accounts.length !== 1 ? 's' : ''}</Text>
             </View>
@@ -111,7 +108,7 @@ export default function AccountsScreen() {
                             </View>
                             <View style={styles.accountRight}>
                                 <Text style={[styles.accountBalance, { color: acc.balance >= 0 ? colors.text : colors.expense }]}>
-                                    {formatCurrency(acc.balance)}
+                                    {fmt(acc.balance)}
                                 </Text>
                                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                                     <Ionicons name="create-outline" size={16} color={colors.primary} />

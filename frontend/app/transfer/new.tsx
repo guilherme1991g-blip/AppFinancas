@@ -4,13 +4,12 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function formatCurrency(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 export default function NewTransferScreen() {
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [fromAccount, setFromAccount] = useState('');
@@ -108,7 +107,7 @@ export default function NewTransferScreen() {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.accName, fromAccount === acc.id && { fontWeight: '800' }]} numberOfLines={1}>{acc.name}</Text>
-                                        <Text style={styles.accBal}>{formatCurrency(acc.balance)}</Text>
+                                        <Text style={styles.accBal}>{fmt(acc.balance)}</Text>
                                     </View>
                                 </TouchableOpacity>
                             ))}
@@ -141,7 +140,7 @@ export default function NewTransferScreen() {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.accName, toAccount === acc.id && { fontWeight: '800' }]} numberOfLines={1}>{acc.name}</Text>
-                                        <Text style={styles.accBal}>{formatCurrency(acc.balance)}</Text>
+                                        <Text style={styles.accBal}>{fmt(acc.balance)}</Text>
                                     </View>
                                 </TouchableOpacity>
                             ))}
@@ -163,7 +162,7 @@ export default function NewTransferScreen() {
                                             </View>
                                             <View style={{ flex: 1 }}>
                                                 <Text style={[styles.accName, toSonho === sonho.id && { fontWeight: '800' }]} numberOfLines={1}>{sonho.title}</Text>
-                                                <Text style={styles.accBal}>Meta: {formatCurrency(sonho.target_amount)}</Text>
+                                                <Text style={styles.accBal}>Meta: {fmt(sonho.target_amount)}</Text>
                                             </View>
                                         </TouchableOpacity>
                                     ))}

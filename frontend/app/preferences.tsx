@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocale } from '@/contexts/LocaleContext';
 import { api } from '@/services/api';
 
 const CURRENCIES = [
     { code: 'BRL', symbol: 'R$', name: 'Real Brasileiro', flag: '🇧🇷' },
-    { code: 'USD', symbol: '$', name: 'Dólar Americano', flag: '🇺🇸' },
+    { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
     { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
-    { code: 'GBP', symbol: '£', name: 'Libra Esterlina', flag: '🇬🇧' },
+    { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
     { code: 'ARS', symbol: '$', name: 'Peso Argentino', flag: '🇦🇷' },
-    { code: 'JPY', symbol: '¥', name: 'Iene Japonês', flag: '🇯🇵' },
+    { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵' },
 ];
 
 const LANGUAGES = [
@@ -29,47 +29,25 @@ export default function PreferencesScreen() {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { logout } = useAuth();
-    const [currency, setCurrency] = useState('BRL');
-    const [language, setLanguage] = useState('pt-BR');
+    const { language, currency, setLanguage, setCurrency, t } = useLocale();
     const [showCurrencies, setShowCurrencies] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
 
-    useEffect(() => {
-        (async () => {
-            const savedCurrency = await AsyncStorage.getItem('user-currency');
-            const savedLanguage = await AsyncStorage.getItem('user-language');
-            if (savedCurrency) setCurrency(savedCurrency);
-            if (savedLanguage) setLanguage(savedLanguage);
-        })();
-    }, []);
-
-    async function selectCurrency(code: string) {
-        setCurrency(code);
-        await AsyncStorage.setItem('user-currency', code);
-        setShowCurrencies(false);
-    }
-
-    async function selectLanguage(code: string) {
-        setLanguage(code);
-        await AsyncStorage.setItem('user-language', code);
-        setShowLanguages(false);
-    }
-
     function handleReset() {
         Alert.alert(
-            'Começar do Zero? 🗑️',
-            'Esta ação apagará permanentemente todas as suas contas, transações, metas e empresas.\n\nSeu perfil de usuário será mantido para que você possa recomeçar.',
+            t('prefs.reset_title'),
+            t('prefs.reset_msg'),
             [
-                { text: 'Cancelar', style: 'cancel' },
+                { text: t('prefs.cancel'), style: 'cancel' },
                 {
-                    text: 'Sim, Limpar Tudo',
+                    text: t('prefs.reset_confirm'),
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             await api.deleteUserAccount();
                             logout();
                         } catch (e) {
-                            Alert.alert('Erro', 'Não foi possível limpar seus dados. Tente novamente.');
+                            Alert.alert(t('common.error'), 'Failed to reset data.');
                         }
                     }
                 }
@@ -77,8 +55,8 @@ export default function PreferencesScreen() {
         );
     }
 
-    const selectedCurrency = CURRENCIES.find(c => c.code === currency)!;
-    const selectedLanguage = LANGUAGES.find(l => l.code === language)!;
+    const selectedCurrency = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
+    const selectedLanguage = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
     const styles = s(colors);
 
     return (
@@ -88,7 +66,7 @@ export default function PreferencesScreen() {
                 <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={22} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Preferências</Text>
+                <Text style={styles.headerTitle}>{t('prefs.title')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -96,8 +74,8 @@ export default function PreferencesScreen() {
 
                 {/* ─── Moeda ─── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Moeda</Text>
-                    <Text style={styles.sectionSub}>Escolha a moeda principal do aplicativo</Text>
+                    <Text style={styles.sectionLabel}>{t('prefs.currency')}</Text>
+                    <Text style={styles.sectionSub}>{t('prefs.currency_sub')}</Text>
 
                     <TouchableOpacity style={styles.selectorCard} onPress={() => setShowCurrencies(!showCurrencies)} activeOpacity={0.7}>
                         <Text style={styles.selectorFlag}>{selectedCurrency.flag}</Text>
@@ -116,7 +94,7 @@ export default function PreferencesScreen() {
                                     <TouchableOpacity
                                         key={cur.code}
                                         style={[styles.optionRow, isSelected && { backgroundColor: colors.primary + '10' }]}
-                                        onPress={() => selectCurrency(cur.code)}
+                                        onPress={() => { setCurrency(cur.code as any); setShowCurrencies(false); }}
                                         activeOpacity={0.7}
                                     >
                                         <Text style={styles.optionFlag}>{cur.flag}</Text>
@@ -134,8 +112,8 @@ export default function PreferencesScreen() {
 
                 {/* ─── Idioma ─── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Idioma</Text>
-                    <Text style={styles.sectionSub}>Escolha o idioma da interface</Text>
+                    <Text style={styles.sectionLabel}>{t('prefs.language')}</Text>
+                    <Text style={styles.sectionSub}>{t('prefs.language_sub')}</Text>
 
                     <TouchableOpacity style={styles.selectorCard} onPress={() => setShowLanguages(!showLanguages)} activeOpacity={0.7}>
                         <Text style={styles.selectorFlag}>{selectedLanguage.flag}</Text>
@@ -154,7 +132,7 @@ export default function PreferencesScreen() {
                                     <TouchableOpacity
                                         key={lang.code}
                                         style={[styles.optionRow, isSelected && { backgroundColor: colors.primary + '10' }]}
-                                        onPress={() => selectLanguage(lang.code)}
+                                        onPress={() => { setLanguage(lang.code as any); setShowLanguages(false); }}
                                         activeOpacity={0.7}
                                     >
                                         <Text style={styles.optionFlag}>{lang.flag}</Text>
@@ -171,16 +149,16 @@ export default function PreferencesScreen() {
 
                 {/* ─── Zona de Perigo ─── */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionLabel, { color: colors.danger }]}>Zona de Perigo</Text>
-                    <Text style={styles.sectionSub}>Ações irreversíveis para sua conta</Text>
+                    <Text style={[styles.sectionLabel, { color: colors.danger }]}>{t('prefs.danger_zone')}</Text>
+                    <Text style={styles.sectionSub}>{t('prefs.danger_sub')}</Text>
 
                     <TouchableOpacity style={styles.dangerCard} onPress={handleReset} activeOpacity={0.7}>
                         <View style={styles.dangerIconWrap}>
                             <Ionicons name="nuclear-outline" size={28} color={colors.danger} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.dangerTitle}>Começar do Zero</Text>
-                            <Text style={styles.dangerSub}>Apagar todas as contas, transações, metas e empresas. Seu perfil será mantido.</Text>
+                            <Text style={styles.dangerTitle}>{t('prefs.reset')}</Text>
+                            <Text style={styles.dangerSub}>{t('prefs.reset_sub')}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={colors.danger} />
                     </TouchableOpacity>

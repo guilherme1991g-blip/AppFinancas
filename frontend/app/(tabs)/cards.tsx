@@ -8,10 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 
-function fmt(v: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 const BRANDS = [
     { key: 'visa', label: 'Visa', color: '#1A1F71', icon: '💳' },
@@ -116,6 +114,7 @@ const cv = StyleSheet.create({
 export default function CardsScreen() {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { fmt } = useLocale();
     const [cards, setCards] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);

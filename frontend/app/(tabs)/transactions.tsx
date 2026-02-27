@@ -8,21 +8,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from '@/contexts/LocaleContext';
 import PaymentModal from '@/components/PaymentModal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-function formatCurrency(v: number) {
-    const absValue = Math.abs(v);
-    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(absValue);
-    return v < 0 ? `-${formatted}` : formatted;
-}
+const TX_MONTHS: Record<string, string[]> = {
+    'pt-BR': ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+    'en': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    'es': ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+};
 
-const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 export default function TransactionsScreen() {
     const { mode, colors } = useTheme();
+    const { t, fmt, language } = useLocale();
+    const MONTHS = TX_MONTHS[language] || TX_MONTHS['pt-BR'];
     const insets = useSafeAreaInsets();
     const now = new Date();
 
@@ -215,7 +217,7 @@ export default function TransactionsScreen() {
 
                 <View style={styles.txRight}>
                     <Text style={[styles.txAmount, { color: it.type === 'income' ? colors.income : (it.amount < 0 && it.isBill ? colors.income : colors.text) }]}>
-                        {it.type === 'income' ? '+' : ''}{formatCurrency(it.amount)}
+                        {it.type === 'income' ? '+' : ''}{fmt(it.amount)}
                     </Text>
 
                     <View style={styles.txActions}>
@@ -243,7 +245,7 @@ export default function TransactionsScreen() {
             {/* Header */}
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
                 <View>
-                    <Text style={styles.title}>Transações</Text>
+                    <Text style={styles.title}>{t('transactions.title')}</Text>
                     <Text style={styles.subtitle}>
                         {filters.isCustomDate
                             ? `${format(filters.startDate, 'dd/MM')} — ${format(filters.endDate, 'dd/MM')}`
