@@ -97,8 +97,12 @@ export default function LoginScreen() {
                                 placeholderTextColor={colors.textMuted + '80'}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
+                                autoComplete="email"
+                                textContentType="emailAddress"
                                 onFocus={() => setFocusedField('email')}
                                 onBlur={() => setFocusedField(null)}
+                                onSubmitEditing={() => setFocusedField('password')}
+                                blurOnSubmit={false}
                             />
                         </View>
                     </View>
@@ -115,8 +119,11 @@ export default function LoginScreen() {
                                 placeholder="••••••••"
                                 placeholderTextColor={colors.textMuted + '80'}
                                 secureTextEntry={!showPass}
+                                autoComplete="password"
+                                textContentType="password"
                                 onFocus={() => setFocusedField('password')}
                                 onBlur={() => setFocusedField(null)}
+                                onSubmitEditing={handleLogin}
                             />
                             <TouchableOpacity onPress={() => setShowPass(!showPass)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
