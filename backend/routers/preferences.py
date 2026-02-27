@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from database import users_collection
 from routers.auth import get_current_user
-from models.user import NotificationPreferences, UserPreferences
+from models.user import NotificationPreferences, UserPreferences, SecurityPreferences
 from bson import ObjectId
 from pydantic import BaseModel
 from typing import Optional
@@ -13,7 +13,7 @@ def _parse_preferences(raw: dict) -> UserPreferences:
     """Parse preferences from DB with backward compatibility.
     
     Old format (flat): { bill_reminders: true, budget_alerts: true, ... }
-    New format (nested): { notifications: {...}, language: "pt-BR", currency: "BRL", theme: "light" }
+    New format (nested): { notifications: {...}, security: {...}, language: "pt-BR", currency: "BRL", theme: "light" }
     """
     if not raw:
         return UserPreferences()
@@ -27,6 +27,7 @@ def _parse_preferences(raw: dict) -> UserPreferences:
         }
         return UserPreferences(
             notifications=NotificationPreferences(**notif_fields),
+            security=SecurityPreferences(**{k: v for k, v in raw.items() if k in SecurityPreferences.model_fields}),
             language=raw.get("language", "pt-BR"),
             currency=raw.get("currency", "BRL"),
             theme=raw.get("theme", "light"),
@@ -45,9 +46,11 @@ async def get_preferences(current_user=Depends(get_current_user)):
 class PreferencesUpdate(BaseModel):
     """Partial update model — all fields optional."""
     notifications: Optional[NotificationPreferences] = None
+    security: Optional[SecurityPreferences] = None
     language: Optional[str] = None
     currency: Optional[str] = None
     theme: Optional[str] = None
+    whatsapp_enabled: Optional[bool] = None
 
 
 @router.patch("", response_model=UserPreferences)
@@ -59,12 +62,16 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
     # Merge updates
     if data.notifications is not None:
         current.notifications = data.notifications
+    if data.security is not None:
+        current.security = data.security
     if data.language is not None:
         current.language = data.language
     if data.currency is not None:
         current.currency = data.currency
     if data.theme is not None:
         current.theme = data.theme
+    if data.whatsapp_enabled is not None:
+        current.whatsapp_enabled = data.whatsapp_enabled
 
     # Save in new format
     await users_collection.update_one(

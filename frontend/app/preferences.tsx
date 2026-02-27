@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Switch
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,25 @@ export default function PreferencesScreen() {
     const { language, currency, setLanguage, setCurrency, t } = useLocale();
     const [showCurrencies, setShowCurrencies] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
+    const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const prefs: any = await api.getPreferences();
+                if (prefs?.whatsapp_enabled !== undefined) setWhatsappEnabled(prefs.whatsapp_enabled);
+            } catch { }
+        })();
+    }, []);
+
+    async function toggleWhatsApp(value: boolean) {
+        setWhatsappEnabled(value);
+        try {
+            await api.updatePreferences({ whatsapp_enabled: value });
+        } catch {
+            setWhatsappEnabled(!value);
+        }
+    }
 
     function handleReset() {
         Alert.alert(
@@ -147,6 +166,28 @@ export default function PreferencesScreen() {
                     )}
                 </View>
 
+                {/* ─── WhatsApp ─── */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>{t('prefs.whatsapp')}</Text>
+                    <Text style={styles.sectionSub}>{t('prefs.whatsapp_sub')}</Text>
+
+                    <View style={styles.selectorCard}>
+                        <View style={[styles.whatsappIcon, { backgroundColor: '#25D36615' }]}>
+                            <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.selectorTitle}>WhatsApp</Text>
+                            <Text style={styles.selectorCode}>{whatsappEnabled ? 'Ativado' : 'Desativado'}</Text>
+                        </View>
+                        <Switch
+                            value={whatsappEnabled}
+                            onValueChange={toggleWhatsApp}
+                            trackColor={{ false: colors.border, true: '#25D366' + '80' }}
+                            thumbColor={whatsappEnabled ? '#25D366' : colors.textSecondary}
+                        />
+                    </View>
+                </View>
+
                 {/* ─── Zona de Perigo ─── */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionLabel, { color: colors.danger }]}>{t('prefs.danger_zone')}</Text>
@@ -207,6 +248,8 @@ const s = (colors: any) => StyleSheet.create({
     optionFlag: { fontSize: 22 },
     optionName: { fontSize: 14, fontWeight: '600', color: colors.text },
     optionCode: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 1 },
+
+    whatsappIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
     dangerCard: {
         flexDirection: 'row', alignItems: 'center', gap: 14,

@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from bson import ObjectId
 from database import users_collection
-from models.user import UserCreate, UserLogin, UserResponse
+from models.user import UserCreate, UserLogin, UserResponse, ChangePassword, UserProfileUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
@@ -49,6 +49,8 @@ async def register(data: UserCreate):
         "name": normalized_name,
         "email": normalized_email,
         "password": hashed_pw,
+        "phone": data.phone,
+        "cpf": data.cpf,
         "created_at": datetime.utcnow()
     }
     result = await users_collection.insert_one(user)
@@ -76,14 +78,62 @@ async def login(data: UserLogin):
         raise e
 
 
+@router.post("/change-password")
+async def change_password(data: ChangePassword, current_user=Depends(get_current_user)):
+    # Verify current password
+    if not bcrypt.checkpw(data.current_password.encode(), current_user["password"].encode()):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter pelo menos 6 caracteres")
+    
+    # Hash and save
+    hashed = bcrypt.hashpw(data.new_password.encode(), bcrypt.gensalt()).decode()
+    await users_collection.update_one(
+        {"_id": ObjectId(current_user["_id"])},
+        {"$set": {"password": hashed}}
+    )
+    return {"message": "Senha alterada com sucesso"}
+
+
 @router.get("/me")
 async def me(current_user=Depends(get_current_user)):
     return {
         "id": str(current_user["_id"]),
         "name": current_user["name"],
         "email": current_user["email"],
+        "phone": current_user.get("phone"),
+        "cpf": current_user.get("cpf"),
         "created_at": current_user["created_at"]
     }
+
+
+@router.patch("/profile")
+async def update_profile(data: UserProfileUpdate, current_user=Depends(get_current_user)):
+    updates = {}
+    if data.name is not None:
+        updates["name"] = data.name.strip()
+    if data.email is not None:
+        normalized = data.email.strip().lower()
+        # Check if email already taken by another user
+        existing = await users_collection.find_one({"email": normalized, "_id": {"$ne": current_user["_id"]}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Este email já está em uso")
+        updates["email"] = normalized
+    if data.phone is not None:
+        updates["phone"] = data.phone.strip()
+    if data.cpf is not None:
+        updates["cpf"] = data.cpf.strip()
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+    
+    await users_collection.update_one(
+        {"_id": ObjectId(current_user["_id"])},
+        {"$set": updates}
+    )
+    return {"message": "Perfil atualizado com sucesso"}
 
 
 @router.delete("/account")

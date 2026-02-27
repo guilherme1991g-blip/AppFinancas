@@ -65,7 +65,7 @@ async function request<T>(
 
 export const api = {
     // Auth
-    register: (data: { name: string; email: string; password: string }) =>
+    register: (data: { name: string; email: string; password: string; phone?: string; cpf?: string }) =>
         request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
     login: (data: { email: string; password: string }) =>
         request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
@@ -203,10 +203,13 @@ export const api = {
         return response.json();
     },
 
-    // Preferences
+    // Profile & Preferences
+    getMe: () => request('/auth/me'),
     getPreferences: () => request('/preferences'),
     updatePreferences: (data: any) => request('/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
     updatePushToken: (token: string) => request('/preferences/push-token', { method: 'POST', body: JSON.stringify({ token }) }),
+    changePassword: (currentPassword: string, newPassword: string) => request('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
+    updateProfile: (data: { name?: string; email?: string; phone?: string; cpf?: string }) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
     deleteUserAccount: () => request('/auth/account', { method: 'DELETE' }),
 
     // Sonhos

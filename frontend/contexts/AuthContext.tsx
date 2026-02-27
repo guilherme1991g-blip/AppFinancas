@@ -12,7 +12,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string) => Promise<void>;
+    register: (name: string, email: string, password: string, phone?: string, cpf?: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -50,9 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.user);
     }
 
-    async function register(name: string, email: string, password: string) {
+    async function register(name: string, email: string, password: string, phone?: string, cpf?: string) {
         const normalizedEmail = email.trim().toLowerCase();
-        const res = await api.register({ name: name.trim(), email: normalizedEmail, password }) as { token: string; user: User };
+        const res = await api.register({ name: name.trim(), email: normalizedEmail, password, phone, cpf }) as { token: string; user: User };
         await AsyncStorage.setItem('auth_token', res.token);
         setUser(res.user);
         // Seed default categories on first register

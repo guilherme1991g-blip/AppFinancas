@@ -193,6 +193,56 @@ const ptBR: Record<string, string> = {
     'common.no': 'Não',
     'common.back': 'Voltar',
     'common.of': 'de',
+
+    // Security
+    'security.title': 'Segurança',
+    'security.password': 'Senha',
+    'security.password_sub': 'Altere sua senha de acesso ao aplicativo',
+    'security.change_password': 'Alterar Senha',
+    'security.current_password': 'Senha atual',
+    'security.new_password': 'Nova senha',
+    'security.confirm_password': 'Confirmar nova senha',
+    'security.cancel': 'Cancelar',
+    'security.save': 'Salvar',
+    'security.error': 'Erro',
+    'security.current_required': 'Informe a senha atual',
+    'security.min_length': 'A nova senha deve ter pelo menos 6 caracteres',
+    'security.mismatch': 'As senhas não coincidem',
+    'security.password_changed': 'Senha alterada com sucesso!',
+    'security.change_error': 'Não foi possível alterar a senha',
+    'security.save_error': 'Não foi possível salvar a preferência',
+    'security.authentication': 'Autenticação',
+    'security.authentication_sub': 'Configure como você acessa o aplicativo',
+    'security.biometric': 'Login por Biometria',
+    'security.biometric_sub': 'Use impressão digital ou reconhecimento facial para entrar',
+    'security.multi_device': 'Múltiplos Dispositivos',
+    'security.multi_device_sub': 'Permitir login simultâneo em mais de um aparelho',
+    'security.info': 'Seus dados são protegidos com criptografia. A biometria adiciona uma camada extra de segurança ao seu acesso.',
+    'security.saving': 'Salvando...',
+
+    // Profile
+    'profile.title': 'Meu Perfil',
+    'profile.full_name': 'Nome Completo',
+    'profile.email': 'E-mail',
+    'profile.phone': 'Celular',
+    'profile.cpf': 'CPF',
+    'profile.save': 'Salvar Alterações',
+    'profile.error': 'Erro',
+    'profile.name_required': 'O nome é obrigatório',
+    'profile.email_required': 'O e-mail é obrigatório',
+    'profile.saved': 'Perfil atualizado com sucesso!',
+    'profile.save_error': 'Não foi possível salvar o perfil',
+    'profile.info': 'Para alterar sua senha, acesse a seção de Segurança nos Ajustes.',
+
+    // Settings extra
+    'settings.profile': 'Meu Perfil',
+    'settings.profile_sub': 'Nome, e-mail, celular e CPF',
+    'settings.security_menu': 'Segurança',
+    'settings.security_menu_sub': 'Senha, biometria e sessões',
+
+    // Preferences extra
+    'prefs.whatsapp': 'WhatsApp',
+    'prefs.whatsapp_sub': 'Ativar notificações e funcionalidades pelo WhatsApp',
 };
 
 const en: Record<string, string> = {
@@ -387,6 +437,56 @@ const en: Record<string, string> = {
     'common.no': 'No',
     'common.back': 'Back',
     'common.of': 'of',
+
+    // Security
+    'security.title': 'Security',
+    'security.password': 'Password',
+    'security.password_sub': 'Change your app login password',
+    'security.change_password': 'Change Password',
+    'security.current_password': 'Current password',
+    'security.new_password': 'New password',
+    'security.confirm_password': 'Confirm new password',
+    'security.cancel': 'Cancel',
+    'security.save': 'Save',
+    'security.error': 'Error',
+    'security.current_required': 'Enter your current password',
+    'security.min_length': 'New password must be at least 6 characters',
+    'security.mismatch': 'Passwords do not match',
+    'security.password_changed': 'Password changed successfully!',
+    'security.change_error': 'Could not change password',
+    'security.save_error': 'Could not save preference',
+    'security.authentication': 'Authentication',
+    'security.authentication_sub': 'Configure how you access the app',
+    'security.biometric': 'Biometric Login',
+    'security.biometric_sub': 'Use fingerprint or face recognition to sign in',
+    'security.multi_device': 'Multiple Devices',
+    'security.multi_device_sub': 'Allow simultaneous login on more than one device',
+    'security.info': 'Your data is protected with encryption. Biometrics adds an extra layer of security to your access.',
+    'security.saving': 'Saving...',
+
+    // Profile
+    'profile.title': 'My Profile',
+    'profile.full_name': 'Full Name',
+    'profile.email': 'Email',
+    'profile.phone': 'Phone',
+    'profile.cpf': 'Tax ID (CPF)',
+    'profile.save': 'Save Changes',
+    'profile.error': 'Error',
+    'profile.name_required': 'Name is required',
+    'profile.email_required': 'Email is required',
+    'profile.saved': 'Profile updated successfully!',
+    'profile.save_error': 'Could not save profile',
+    'profile.info': 'To change your password, go to the Security section in Settings.',
+
+    // Settings extra
+    'settings.profile': 'My Profile',
+    'settings.profile_sub': 'Name, email, phone and tax ID',
+    'settings.security_menu': 'Security',
+    'settings.security_menu_sub': 'Password, biometrics and sessions',
+
+    // Preferences extra
+    'prefs.whatsapp': 'WhatsApp',
+    'prefs.whatsapp_sub': 'Enable notifications and features via WhatsApp',
 };
 
 const es: Record<string, string> = {
@@ -581,6 +681,56 @@ const es: Record<string, string> = {
     'common.no': 'No',
     'common.back': 'Volver',
     'common.of': 'de',
+
+    // Security
+    'security.title': 'Seguridad',
+    'security.password': 'Contraseña',
+    'security.password_sub': 'Cambia tu contraseña de acceso a la aplicación',
+    'security.change_password': 'Cambiar Contraseña',
+    'security.current_password': 'Contraseña actual',
+    'security.new_password': 'Nueva contraseña',
+    'security.confirm_password': 'Confirmar nueva contraseña',
+    'security.cancel': 'Cancelar',
+    'security.save': 'Guardar',
+    'security.error': 'Error',
+    'security.current_required': 'Ingresa tu contraseña actual',
+    'security.min_length': 'La nueva contraseña debe tener al menos 6 caracteres',
+    'security.mismatch': 'Las contraseñas no coinciden',
+    'security.password_changed': '¡Contraseña cambiada exitosamente!',
+    'security.change_error': 'No se pudo cambiar la contraseña',
+    'security.save_error': 'No se pudo guardar la preferencia',
+    'security.authentication': 'Autenticación',
+    'security.authentication_sub': 'Configura cómo accedes a la aplicación',
+    'security.biometric': 'Inicio con Biometría',
+    'security.biometric_sub': 'Usa huella digital o reconocimiento facial para ingresar',
+    'security.multi_device': 'Múltiples Dispositivos',
+    'security.multi_device_sub': 'Permitir inicio de sesión simultáneo en más de un dispositivo',
+    'security.info': 'Tus datos están protegidos con cifrado. La biometría agrega una capa extra de seguridad a tu acceso.',
+    'security.saving': 'Guardando...',
+
+    // Profile
+    'profile.title': 'Mi Perfil',
+    'profile.full_name': 'Nombre Completo',
+    'profile.email': 'Correo Electrónico',
+    'profile.phone': 'Celular',
+    'profile.cpf': 'Documento (CPF)',
+    'profile.save': 'Guardar Cambios',
+    'profile.error': 'Error',
+    'profile.name_required': 'El nombre es obligatorio',
+    'profile.email_required': 'El correo es obligatorio',
+    'profile.saved': '¡Perfil actualizado exitosamente!',
+    'profile.save_error': 'No se pudo guardar el perfil',
+    'profile.info': 'Para cambiar tu contraseña, accede a la sección de Seguridad en Ajustes.',
+
+    // Settings extra
+    'settings.profile': 'Mi Perfil',
+    'settings.profile_sub': 'Nombre, correo, celular y documento',
+    'settings.security_menu': 'Seguridad',
+    'settings.security_menu_sub': 'Contraseña, biometría y sesiones',
+
+    // Preferences extra
+    'prefs.whatsapp': 'WhatsApp',
+    'prefs.whatsapp_sub': 'Activar notificaciones y funciones por WhatsApp',
 };
 
 export const translations: Record<LangCode, Record<string, string>> = {

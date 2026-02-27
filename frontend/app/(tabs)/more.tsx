@@ -88,6 +88,28 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionHeading}>{t('settings.title')}</Text>
                     <View style={styles.settingsGroup}>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/profile' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="person-outline" size={20} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>{t('settings.profile')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.profile_sub')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/security' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#F59E0B15' }]}>
+                                <Ionicons name="shield-checkmark-outline" size={20} color="#F59E0B" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>{t('settings.security_menu')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.security_menu_sub')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
                         <View style={styles.settingRow}>
                             <View style={styles.settingIconWrap}>
                                 <Ionicons name="moon-outline" size={20} color={colors.primary} />

@@ -7,6 +7,8 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    phone: Optional[str] = None
+    cpf: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -25,18 +27,39 @@ class NotificationPreferences(BaseModel):
     agenda_reminders: bool = True
 
 
+class SecurityPreferences(BaseModel):
+    biometric_enabled: bool = False
+    multi_device: bool = True
+
+
 class UserPreferences(BaseModel):
-    """Unified preferences model: notifications + display settings."""
+    """Unified preferences model: notifications + display + security settings."""
     notifications: NotificationPreferences = Field(default_factory=NotificationPreferences)
+    security: SecurityPreferences = Field(default_factory=SecurityPreferences)
     language: str = "pt-BR"
     currency: str = "BRL"
     theme: str = "light"
+    whatsapp_enabled: bool = False
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    cpf: Optional[str] = None
 
 
 class UserResponse(BaseModel):
     id: str
     name: str
     email: str
+    phone: Optional[str] = None
+    cpf: Optional[str] = None
     created_at: datetime
     preferences: Optional[UserPreferences] = Field(default_factory=UserPreferences)
     push_token: Optional[str] = None
