@@ -39,13 +39,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 @router.post("/register")
 async def register(data: UserCreate):
-    existing = await users_collection.find_one({"email": data.email})
+    normalized_email = data.email.strip().lower()
+    normalized_name = data.name.strip()
+    existing = await users_collection.find_one({"email": normalized_email})
     if existing:
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     hashed_pw = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
     user = {
-        "name": data.name,
-        "email": data.email,
+        "name": normalized_name,
+        "email": normalized_email,
         "password": hashed_pw,
         "created_at": datetime.utcnow()
     }
@@ -56,9 +58,10 @@ async def register(data: UserCreate):
 
 @router.post("/login")
 async def login(data: UserLogin):
-    print(f"DEBUG: Tentativa de login para email: {data.email}")
+    normalized_email = data.email.strip().lower()
+    print(f"DEBUG: Tentativa de login para email: {normalized_email}")
     try:
-        user = await users_collection.find_one({"email": data.email})
+        user = await users_collection.find_one({"email": normalized_email})
         print(f"DEBUG: Busca no banco concluída. Usuário encontrado: {user is not None}")
         
         if not user or not bcrypt.checkpw(data.password.encode(), user["password"].encode()):

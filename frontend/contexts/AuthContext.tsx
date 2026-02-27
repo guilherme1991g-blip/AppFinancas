@@ -44,13 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function login(email: string, password: string) {
-        const res = await api.login({ email, password }) as { token: string; user: User };
+        const normalizedEmail = email.trim().toLowerCase();
+        const res = await api.login({ email: normalizedEmail, password }) as { token: string; user: User };
         await AsyncStorage.setItem('auth_token', res.token);
         setUser(res.user);
     }
 
     async function register(name: string, email: string, password: string) {
-        const res = await api.register({ name, email, password }) as { token: string; user: User };
+        const normalizedEmail = email.trim().toLowerCase();
+        const res = await api.register({ name: name.trim(), email: normalizedEmail, password }) as { token: string; user: User };
         await AsyncStorage.setItem('auth_token', res.token);
         setUser(res.user);
         // Seed default categories on first register
