@@ -19,12 +19,20 @@ async def export_data(current_user=Depends(get_current_user)):
     
     # helper to convert BSON to JSON serializable
     def clean(docs):
-        for doc in docs:
-            if "_id" in doc: doc["_id"] = str(doc["_id"])
-            if "user_id" in doc: doc["user_id"] = str(doc["user_id"])
-            for k, v in doc.items():
-                if isinstance(v, datetime):
-                    doc[k] = v.isoformat()
+        if isinstance(docs, list):
+            return [clean(doc) for doc in docs]
+        if isinstance(docs, dict):
+            new_doc = {}
+            for k, v in docs.items():
+                if isinstance(v, ObjectId):
+                    new_doc[k] = str(v)
+                elif isinstance(v, datetime):
+                    new_doc[k] = v.isoformat()
+                elif isinstance(v, (dict, list)):
+                    new_doc[k] = clean(v)
+                else:
+                    new_doc[k] = v
+            return new_doc
         return docs
 
     data = {
@@ -62,24 +70,33 @@ async def import_data(data: dict, current_user=Depends(get_current_user)):
     # 2. Insert new data
     # Helper to fix IDs and dates
     def prepare(docs, as_string=False):
+        if not docs: return []
+        new_docs = []
         for doc in docs:
-            if "_id" in doc: del doc["_id"] # generate new ones
-            doc["user_id"] = user_id_str if as_string else user_id_obj
-            for k, v in doc.items():
+            d = dict(doc)
+            if "_id" in d: del d["_id"] # generate new ones
+            d["user_id"] = user_id_str if as_string else user_id_obj
+            for k, v in d.items():
                 if isinstance(v, str) and (k.endswith("_at") or k == "date" or k == "due_date"):
-                    try: doc[k] = datetime.fromisoformat(v)
+                    try: d[k] = datetime.fromisoformat(v)
                     except: pass
-        return docs
+            new_docs.append(d)
+        return new_docs
 
-    if "accounts" in data: await accounts_collection.insert_many(prepare(data["accounts"]))
-    if "categories" in data: await categories_collection.insert_many(prepare(data["categories"]))
-    if "transactions" in data: await transactions_collection.insert_many(prepare(data["transactions"]))
-    if "transfers" in data: await transfers_collection.insert_many(prepare(data["transfers"]))
-    if "budgets" in data: await budgets_collection.insert_many(prepare(data["budgets"]))
-    if "recurring" in data: await recurring_collection.insert_many(prepare(data["recurring"]))
-    if "companies" in data: await companies_collection.insert_many(prepare(data["companies"]))
-    if "bills" in data: await bills_collection.insert_many(prepare(data["bills"]))
-    if "sonhos" in data: await sonhos_collection.insert_many(prepare(data["sonhos"], True))
-    if "compromissos" in data: await compromissos_collection.insert_many(prepare(data["compromissos"], True))
+    async def safe_insert(coll, docs, as_string=False):
+        prepared = prepare(docs, as_string)
+        if prepared:
+            await coll.insert_many(prepared)
+
+    await safe_insert(accounts_collection, data.get("accounts", []))
+    await safe_insert(categories_collection, data.get("categories", []))
+    await safe_insert(transactions_collection, data.get("transactions", []))
+    await safe_insert(transfers_collection, data.get("transfers", []))
+    await safe_insert(budgets_collection, data.get("budgets", []))
+    await safe_insert(recurring_collection, data.get("recurring", []))
+    await safe_insert(companies_collection, data.get("companies", []))
+    await safe_insert(bills_collection, data.get("bills", []))
+    await safe_insert(sonhos_collection, data.get("sonhos", []), True)
+    await safe_insert(compromissos_collection, data.get("compromissos", []), True)
     
     return {"message": "Dados importados com sucesso"}
