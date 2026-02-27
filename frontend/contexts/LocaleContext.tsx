@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translations, LangCode } from '@/constants/translations';
+import { api } from '@/services/api';
 
 type CurrencyCode = 'BRL' | 'USD' | 'EUR' | 'GBP' | 'ARS' | 'JPY';
 
@@ -37,6 +38,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         (async () => {
+            // 1. Load from local cache (instant)
             const savedLang = await AsyncStorage.getItem('user-language');
             const savedCur = await AsyncStorage.getItem('user-currency');
             if (savedLang && (savedLang === 'pt-BR' || savedLang === 'en' || savedLang === 'es')) {
@@ -45,17 +47,38 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
             if (savedCur && savedCur in CURRENCY_CONFIG) {
                 setCur(savedCur as CurrencyCode);
             }
+
+            // 2. Sync from backend (overrides local if different)
+            try {
+                const prefs: any = await api.getPreferences();
+                if (prefs?.language && (prefs.language === 'pt-BR' || prefs.language === 'en' || prefs.language === 'es')) {
+                    setLang(prefs.language as LangCode);
+                    await AsyncStorage.setItem('user-language', prefs.language);
+                }
+                if (prefs?.currency && prefs.currency in CURRENCY_CONFIG) {
+                    setCur(prefs.currency as CurrencyCode);
+                    await AsyncStorage.setItem('user-currency', prefs.currency);
+                }
+            } catch {
+                // Offline or not logged in — keep local cache
+            }
         })();
     }, []);
 
     const setLanguage = useCallback(async (lang: LangCode) => {
         setLang(lang);
         await AsyncStorage.setItem('user-language', lang);
+        try {
+            await api.updatePreferences({ language: lang });
+        } catch { /* offline fallback — saved locally */ }
     }, []);
 
     const setCurrency = useCallback(async (cur: CurrencyCode) => {
         setCur(cur);
         await AsyncStorage.setItem('user-currency', cur);
+        try {
+            await api.updatePreferences({ currency: cur });
+        } catch { /* offline fallback */ }
     }, []);
 
     const t = useCallback((key: string): string => {
@@ -64,7 +87,6 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
     const fmt = useCallback((value: number): string => {
         const config = CURRENCY_CONFIG[currency];
-        // Format with the proper locale for number formatting but replace the currency symbol
         const formatted = new Intl.NumberFormat(config.locale, {
             style: 'currency',
             currency: currency,

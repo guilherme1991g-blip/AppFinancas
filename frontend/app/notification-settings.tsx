@@ -28,11 +28,16 @@ export default function NotificationSettingsScreen() {
     useEffect(() => {
         async function load() {
             try {
-                const data = await api.getPreferences();
-                if (data) setPrefs(data as any);
+                const data: any = await api.getPreferences();
+                // New format: { notifications: {...}, language, currency, theme }
+                // Fall back to flat format for backward compat
+                if (data?.notifications) {
+                    setPrefs(data.notifications as any);
+                } else if (data) {
+                    setPrefs(data as any);
+                }
             } catch (e) {
                 console.error('Error loading preferences:', e);
-                // On error, we keep default prefs but stop loading
             } finally {
                 setLoading(false);
             }
@@ -45,7 +50,7 @@ export default function NotificationSettingsScreen() {
         setPrefs(newPrefs);
         setSaving(true);
         try {
-            await api.updatePreferences(newPrefs);
+            await api.updatePreferences({ notifications: newPrefs });
         } catch (e: any) {
             Alert.alert('Erro', 'Não foi possível salvar sua preferência');
             setPrefs(prefs); // Revert

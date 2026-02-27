@@ -25,10 +25,18 @@ class NotificationPreferences(BaseModel):
     agenda_reminders: bool = True
 
 
+class UserPreferences(BaseModel):
+    """Unified preferences model: notifications + display settings."""
+    notifications: NotificationPreferences = Field(default_factory=NotificationPreferences)
+    language: str = "pt-BR"
+    currency: str = "BRL"
+    theme: str = "light"
+
+
 class UserResponse(BaseModel):
     id: str
     name: str
     email: str
     created_at: datetime
-    preferences: Optional[NotificationPreferences] = Field(default_factory=NotificationPreferences)
+    preferences: Optional[UserPreferences] = Field(default_factory=UserPreferences)
     push_token: Optional[str] = None
