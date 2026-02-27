@@ -27,7 +27,7 @@ const LANGUAGES = [
 
 export default function PreferencesScreen() {
     const insets = useSafeAreaInsets();
-    const { colors } = useTheme();
+    const { colors, mode, toggleTheme } = useTheme();
     const { logout } = useAuth();
     const { language, currency, setLanguage, setCurrency, t } = useLocale();
     const [showCurrencies, setShowCurrencies] = useState(false);
@@ -90,6 +90,28 @@ export default function PreferencesScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}>
+
+                {/* ─── Modo Escuro ─── */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>{t('settings.dark_mode')}</Text>
+                    <Text style={styles.sectionSub}>{t('settings.dark_mode_sub')}</Text>
+
+                    <View style={styles.selectorCard}>
+                        <View style={[styles.whatsappIcon, { backgroundColor: colors.primary + '15' }]}>
+                            <Ionicons name="moon-outline" size={22} color={colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.selectorTitle}>{t('settings.dark_mode')}</Text>
+                            <Text style={styles.selectorCode}>{mode === 'dark' ? 'Ativado' : 'Desativado'}</Text>
+                        </View>
+                        <Switch
+                            value={mode === 'dark'}
+                            onValueChange={toggleTheme}
+                            trackColor={{ false: colors.border, true: colors.primary + '80' }}
+                            thumbColor={mode === 'dark' ? colors.primary : colors.textSecondary}
+                        />
+                    </View>
+                </View>
 
                 {/* ─── Moeda ─── */}
                 <View style={styles.section}>

@@ -243,6 +243,20 @@ const ptBR: Record<string, string> = {
     // Preferences extra
     'prefs.whatsapp': 'WhatsApp',
     'prefs.whatsapp_sub': 'Ativar notificações e funcionalidades pelo WhatsApp',
+
+    // Dashboard Customization
+    'settings.dashboard': 'Personalizar Início',
+    'settings.dashboard_sub': 'Organizar e escolher cards da home',
+    'dashboard.customization_title': 'Layout do Início',
+    'dashboard.card_balance': 'Saldo Total',
+    'dashboard.card_summary': 'Resumo Mensal',
+    'dashboard.card_cards': 'Meus Cartões',
+    'dashboard.card_transactions': 'Transações Recentes',
+    'dashboard.card_goals': 'Objetivos Financeiros',
+    'dashboard.card_spending_categories': 'Gastos por Categoria',
+    'dashboard.card_upcoming_bills': 'Próximos Vencimentos',
+    'dashboard.card_budget_progress': 'Progresso do Orçamento',
+    'dashboard.save_success': 'Layout atualizado com sucesso!',
 };
 
 const en: Record<string, string> = {
@@ -487,6 +501,20 @@ const en: Record<string, string> = {
     // Preferences extra
     'prefs.whatsapp': 'WhatsApp',
     'prefs.whatsapp_sub': 'Enable notifications and features via WhatsApp',
+
+    // Dashboard Customization
+    'settings.dashboard': 'Customize Home',
+    'settings.dashboard_sub': 'Organize and choose home cards',
+    'dashboard.customization_title': 'Home Layout',
+    'dashboard.card_balance': 'Total Balance',
+    'dashboard.card_summary': 'Monthly Summary',
+    'dashboard.card_cards': 'My Cards',
+    'dashboard.card_transactions': 'Recent Transactions',
+    'dashboard.card_goals': 'Financial Goals',
+    'dashboard.card_spending_categories': 'Spending by Category',
+    'dashboard.card_upcoming_bills': 'Upcoming Bills',
+    'dashboard.card_budget_progress': 'Budget Progress',
+    'dashboard.save_success': 'Layout updated successfully!',
 };
 
 const es: Record<string, string> = {
@@ -731,6 +759,20 @@ const es: Record<string, string> = {
     // Preferences extra
     'prefs.whatsapp': 'WhatsApp',
     'prefs.whatsapp_sub': 'Activar notificaciones y funciones por WhatsApp',
+
+    // Dashboard Customization
+    'settings.dashboard': 'Personalizar Inicio',
+    'settings.dashboard_sub': 'Organizar y elegir tarjetas de la home',
+    'dashboard.customization_title': 'Diseño de Inicio',
+    'dashboard.card_balance': 'Saldo Total',
+    'dashboard.card_summary': 'Resumen Mensual',
+    'dashboard.card_cards': 'Mis Tarjetas',
+    'dashboard.card_transactions': 'Transacciones Recientes',
+    'dashboard.card_goals': 'Objetivos Financieros',
+    'dashboard.card_spending_categories': 'Gastos por Categoría',
+    'dashboard.card_upcoming_bills': 'Próximos Vencimientos',
+    'dashboard.card_budget_progress': 'Progreso del Presupuesto',
+    'dashboard.save_success': '¡Diseño actualizado exitosamente!',
 };
 
 export const translations: Record<LangCode, Record<string, string>> = {

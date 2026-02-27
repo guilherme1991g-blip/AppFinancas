@@ -32,6 +32,26 @@ class SecurityPreferences(BaseModel):
     multi_device: bool = True
 
 
+class DashboardCard(BaseModel):
+    id: str
+    enabled: bool = True
+    order: int
+
+
+def get_default_dashboard_cards():
+    return [
+        DashboardCard(id="balance", enabled=True, order=0),
+        DashboardCard(id="summary", enabled=True, order=1),
+        DashboardCard(id="cards", enabled=True, order=2),
+        DashboardCard(id="transactions", enabled=True, order=3),
+        DashboardCard(id="goals", enabled=True, order=4),
+        # New "interesting" cards, disabled by default
+        DashboardCard(id="spending_categories", enabled=False, order=5),
+        DashboardCard(id="upcoming_bills", enabled=False, order=6),
+        DashboardCard(id="budget_progress", enabled=False, order=7),
+    ]
+
+
 class UserPreferences(BaseModel):
     """Unified preferences model: notifications + display + security settings."""
     notifications: NotificationPreferences = Field(default_factory=NotificationPreferences)
@@ -40,6 +60,7 @@ class UserPreferences(BaseModel):
     currency: str = "BRL"
     theme: str = "light"
     whatsapp_enabled: bool = False
+    dashboard_cards: list[DashboardCard] = Field(default_factory=get_default_dashboard_cards)
 
 
 class ChangePassword(BaseModel):

@@ -1,40 +1,41 @@
 from fastapi import APIRouter, Depends, HTTPException
 from database import users_collection
 from routers.auth import get_current_user
-from models.user import NotificationPreferences, UserPreferences, SecurityPreferences
+from models.user import NotificationPreferences, UserPreferences, SecurityPreferences, DashboardCard
 from bson import ObjectId
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
 
 def _parse_preferences(raw: dict) -> UserPreferences:
-    """Parse preferences from DB with backward compatibility.
-    
-    Old format (flat): { bill_reminders: true, budget_alerts: true, ... }
-    New format (nested): { notifications: {...}, security: {...}, language: "pt-BR", currency: "BRL", theme: "light" }
-    """
+    """Parse preferences from DB with backward compatibility."""
     if not raw:
         return UserPreferences()
 
-    # Check if it's the old flat format (has notification keys at top level)
-    if "bill_reminders" in raw or "budget_alerts" in raw:
-        # Old format: wrap notification fields into nested structure
-        notif_fields = {
-            k: v for k, v in raw.items()
-            if k in NotificationPreferences.model_fields
-        }
+    # Check if it's the old flat format
+    is_old = any(k in raw for k in NotificationPreferences.model_fields)
+    
+    if is_old:
+        notif_fields = {k: v for k, v in raw.items() if k in NotificationPreferences.model_fields}
+        security_fields = {k: v for k, v in raw.items() if k in SecurityPreferences.model_fields}
         return UserPreferences(
             notifications=NotificationPreferences(**notif_fields),
-            security=SecurityPreferences(**{k: v for k, v in raw.items() if k in SecurityPreferences.model_fields}),
+            security=SecurityPreferences(**security_fields),
             language=raw.get("language", "pt-BR"),
             currency=raw.get("currency", "BRL"),
             theme=raw.get("theme", "light"),
+            dashboard_cards=raw.get("dashboard_cards") or get_default_dashboard_cards()
         )
 
-    # New format
-    return UserPreferences(**raw)
+    # New format - handle potential validation errors gracefully
+    try:
+        return UserPreferences(**raw)
+    except Exception as e:
+        print(f"ERROR parsing preferences: {e}")
+        # Return defaults but log it
+        return UserPreferences()
 
 
 @router.get("", response_model=UserPreferences)
@@ -51,34 +52,39 @@ class PreferencesUpdate(BaseModel):
     currency: Optional[str] = None
     theme: Optional[str] = None
     whatsapp_enabled: Optional[bool] = None
+    dashboard_cards: Optional[List[DashboardCard]] = None
 
 
 @router.patch("", response_model=UserPreferences)
 async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_current_user)):
-    # Load current preferences (with backward compat)
-    raw = current_user.get("preferences", {})
-    current = _parse_preferences(raw)
+    user_id = current_user["_id"]
+    
+    # Get only the fields explicitly sent by the client
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Sem dados para atualizar")
 
-    # Merge updates
-    if data.notifications is not None:
-        current.notifications = data.notifications
-    if data.security is not None:
-        current.security = data.security
-    if data.language is not None:
-        current.language = data.language
-    if data.currency is not None:
-        current.currency = data.currency
-    if data.theme is not None:
-        current.theme = data.theme
-    if data.whatsapp_enabled is not None:
-        current.whatsapp_enabled = data.whatsapp_enabled
+    # Construct the $set dictionary for nested preferences
+    set_query = {}
+    for key, value in update_data.items():
+        # Pydantic models need to be dumped to dict for MongoDB
+        if hasattr(value, "model_dump"):
+            set_query[f"preferences.{key}"] = value.model_dump()
+        elif isinstance(value, list) and len(value) > 0 and hasattr(value[0], "model_dump"):
+            set_query[f"preferences.{key}"] = [item.model_dump() for item in value]
+        else:
+            set_query[f"preferences.{key}"] = value
 
-    # Save in new format
+    # Final check: ensure the preferences object exists
     await users_collection.update_one(
-        {"_id": ObjectId(current_user["_id"])},
-        {"$set": {"preferences": current.model_dump()}}
+        {"_id": user_id},
+        {"$set": set_query},
+        upsert=True
     )
-    return current
+    
+    # Fetch updated user to return fresh preferences
+    updated_user = await users_collection.find_one({"_id": user_id})
+    return _parse_preferences(updated_user.get("preferences", {}))
 
 
 @router.post("/push-token")

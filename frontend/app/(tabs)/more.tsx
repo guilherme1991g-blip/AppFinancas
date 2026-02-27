@@ -110,22 +110,6 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
 
-                        <View style={styles.settingRow}>
-                            <View style={styles.settingIconWrap}>
-                                <Ionicons name="moon-outline" size={20} color={colors.primary} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>{t('settings.dark_mode')}</Text>
-                                <Text style={styles.settingSub}>{t('settings.dark_mode_sub')}</Text>
-                            </View>
-                            <Switch
-                                value={mode === 'dark'}
-                                onValueChange={toggleTheme}
-                                trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                                thumbColor={mode === 'dark' ? colors.primary : colors.textSecondary}
-                            />
-                        </View>
-
                         <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/notification-settings' as any)}>
                             <View style={[styles.settingIconWrap, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="notifications-outline" size={20} color={colors.secondary} />
@@ -133,6 +117,17 @@ export default function SettingsScreen() {
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.settingLabel}>{t('settings.notifications')}</Text>
                                 <Text style={styles.settingSub}>{t('settings.notifications_sub')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/dashboard-customization' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="grid-outline" size={20} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>{t('settings.dashboard')}</Text>
+                                <Text style={styles.settingSub}>{t('settings.dashboard_sub')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>

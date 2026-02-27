@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLocale } from '@/contexts/LocaleContext';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function SecurityScreen() {
     const { colors } = useTheme();
@@ -44,6 +45,29 @@ export default function SecurityScreen() {
     }, []);
 
     async function toggleSecurity(key: 'biometric_enabled' | 'multi_device', value: boolean) {
+        if (key === 'biometric_enabled' && value) {
+            // Check biometric support and authenticate before enabling
+            const hasAuth = await LocalAuthentication.hasHardwareAsync();
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+            if (!hasAuth || !isEnrolled) {
+                Alert.alert(
+                    t('common.attention'),
+                    'Seu dispositivo não suporta biometria ou não possui nenhuma cadastrada.'
+                );
+                return;
+            }
+
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Confirme sua identidade para ativar o login por biometria',
+                fallbackLabel: 'Usar senha',
+            });
+
+            if (!result.success) {
+                return;
+            }
+        }
+
         const prev = key === 'biometric_enabled' ? biometric : multiDevice;
         if (key === 'biometric_enabled') setBiometric(value);
         else setMultiDevice(value);
