@@ -138,13 +138,24 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/(tabs)/cards' as any)}>
+                        <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/(tabs)/cards' as any)}>
                             <View style={[styles.settingIconWrap, { backgroundColor: colors.warning + '15' }]}>
                                 <Ionicons name="card-outline" size={20} color={colors.warning} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.settingLabel}>Cartões</Text>
                                 <Text style={styles.settingSub}>Gerenciar cartões de crédito e faturas</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.settingRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/preferences' as any)}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#EC489915' }]}>
+                                <Ionicons name="options-outline" size={20} color="#EC4899" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Preferências</Text>
+                                <Text style={styles.settingSub}>Moeda, idioma e opções avançadas</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -166,36 +177,8 @@ export default function SettingsScreen() {
                         </View>
                     </View>
 
-                    <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => {
-                            Alert.alert(
-                                'Limpar todos os dados?',
-                                'Esta ação apagará permanentemente todas as suas contas, transações, metas e empresas. Seu perfil de usuário será mantido para que você possa recomeçar.',
-                                [
-                                    { text: 'Cancelar', style: 'cancel' },
-                                    {
-                                        text: 'Sim, Limpar Tudo',
-                                        style: 'destructive',
-                                        onPress: async () => {
-                                            try {
-                                                await api.deleteUserAccount();
-                                                logout();
-                                            } catch (e) {
-                                                Alert.alert('Erro', 'Não foi possível limpar seus dados. Tente novamente.');
-                                            }
-                                        }
-                                    }
-                                ]
-                            );
-                        }}
-                    >
-                        <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                        <Text style={styles.deleteBtnTxt}>Limpar dados e começar do zero</Text>
-                    </TouchableOpacity>
+                    <View style={{ height: 20 }} />
                 </View>
-
-                <View style={{ height: 20 }} />
             </ScrollView>
         </View>
     );

@@ -1,0 +1,244 @@
+import React, { useState, useEffect } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform
+} from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/services/api';
+
+const CURRENCIES = [
+    { code: 'BRL', symbol: 'R$', name: 'Real Brasileiro', flag: '🇧🇷' },
+    { code: 'USD', symbol: '$', name: 'Dólar Americano', flag: '🇺🇸' },
+    { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
+    { code: 'GBP', symbol: '£', name: 'Libra Esterlina', flag: '🇬🇧' },
+    { code: 'ARS', symbol: '$', name: 'Peso Argentino', flag: '🇦🇷' },
+    { code: 'JPY', symbol: '¥', name: 'Iene Japonês', flag: '🇯🇵' },
+];
+
+const LANGUAGES = [
+    { code: 'pt-BR', name: 'Português (Brasil)', flag: '🇧🇷' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+];
+
+export default function PreferencesScreen() {
+    const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { logout } = useAuth();
+    const [currency, setCurrency] = useState('BRL');
+    const [language, setLanguage] = useState('pt-BR');
+    const [showCurrencies, setShowCurrencies] = useState(false);
+    const [showLanguages, setShowLanguages] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            const savedCurrency = await AsyncStorage.getItem('user-currency');
+            const savedLanguage = await AsyncStorage.getItem('user-language');
+            if (savedCurrency) setCurrency(savedCurrency);
+            if (savedLanguage) setLanguage(savedLanguage);
+        })();
+    }, []);
+
+    async function selectCurrency(code: string) {
+        setCurrency(code);
+        await AsyncStorage.setItem('user-currency', code);
+        setShowCurrencies(false);
+    }
+
+    async function selectLanguage(code: string) {
+        setLanguage(code);
+        await AsyncStorage.setItem('user-language', code);
+        setShowLanguages(false);
+    }
+
+    function handleReset() {
+        Alert.alert(
+            'Começar do Zero? 🗑️',
+            'Esta ação apagará permanentemente todas as suas contas, transações, metas e empresas.\n\nSeu perfil de usuário será mantido para que você possa recomeçar.',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Sim, Limpar Tudo',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.deleteUserAccount();
+                            logout();
+                        } catch (e) {
+                            Alert.alert('Erro', 'Não foi possível limpar seus dados. Tente novamente.');
+                        }
+                    }
+                }
+            ]
+        );
+    }
+
+    const selectedCurrency = CURRENCIES.find(c => c.code === currency)!;
+    const selectedLanguage = LANGUAGES.find(l => l.code === language)!;
+    const styles = s(colors);
+
+    return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={22} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Preferências</Text>
+                <View style={{ width: 40 }} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}>
+
+                {/* ─── Moeda ─── */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Moeda</Text>
+                    <Text style={styles.sectionSub}>Escolha a moeda principal do aplicativo</Text>
+
+                    <TouchableOpacity style={styles.selectorCard} onPress={() => setShowCurrencies(!showCurrencies)} activeOpacity={0.7}>
+                        <Text style={styles.selectorFlag}>{selectedCurrency.flag}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.selectorTitle}>{selectedCurrency.name}</Text>
+                            <Text style={styles.selectorCode}>{selectedCurrency.code} ({selectedCurrency.symbol})</Text>
+                        </View>
+                        <Ionicons name={showCurrencies ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {showCurrencies && (
+                        <View style={styles.optionsList}>
+                            {CURRENCIES.map((cur) => {
+                                const isSelected = cur.code === currency;
+                                return (
+                                    <TouchableOpacity
+                                        key={cur.code}
+                                        style={[styles.optionRow, isSelected && { backgroundColor: colors.primary + '10' }]}
+                                        onPress={() => selectCurrency(cur.code)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.optionFlag}>{cur.flag}</Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.optionName, isSelected && { color: colors.primary, fontWeight: '800' }]}>{cur.name}</Text>
+                                            <Text style={styles.optionCode}>{cur.code} ({cur.symbol})</Text>
+                                        </View>
+                                        {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
+                </View>
+
+                {/* ─── Idioma ─── */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Idioma</Text>
+                    <Text style={styles.sectionSub}>Escolha o idioma da interface</Text>
+
+                    <TouchableOpacity style={styles.selectorCard} onPress={() => setShowLanguages(!showLanguages)} activeOpacity={0.7}>
+                        <Text style={styles.selectorFlag}>{selectedLanguage.flag}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.selectorTitle}>{selectedLanguage.name}</Text>
+                            <Text style={styles.selectorCode}>{selectedLanguage.code}</Text>
+                        </View>
+                        <Ionicons name={showLanguages ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    {showLanguages && (
+                        <View style={styles.optionsList}>
+                            {LANGUAGES.map((lang) => {
+                                const isSelected = lang.code === language;
+                                return (
+                                    <TouchableOpacity
+                                        key={lang.code}
+                                        style={[styles.optionRow, isSelected && { backgroundColor: colors.primary + '10' }]}
+                                        onPress={() => selectLanguage(lang.code)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.optionFlag}>{lang.flag}</Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.optionName, isSelected && { color: colors.primary, fontWeight: '800' }]}>{lang.name}</Text>
+                                        </View>
+                                        {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
+                </View>
+
+                {/* ─── Zona de Perigo ─── */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionLabel, { color: colors.danger }]}>Zona de Perigo</Text>
+                    <Text style={styles.sectionSub}>Ações irreversíveis para sua conta</Text>
+
+                    <TouchableOpacity style={styles.dangerCard} onPress={handleReset} activeOpacity={0.7}>
+                        <View style={styles.dangerIconWrap}>
+                            <Ionicons name="nuclear-outline" size={28} color={colors.danger} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.dangerTitle}>Começar do Zero</Text>
+                            <Text style={styles.dangerSub}>Apagar todas as contas, transações, metas e empresas. Seu perfil será mantido.</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.danger} />
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
+        </View>
+    );
+}
+
+const s = (colors: any) => StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.background },
+
+    header: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border,
+    },
+    backBtn: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
+        alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
+    },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+
+    section: { paddingHorizontal: 20, marginTop: 28 },
+    sectionLabel: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
+    sectionSub: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginBottom: 16 },
+
+    selectorCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 14,
+        backgroundColor: colors.surface, borderRadius: 20, padding: 16,
+        borderWidth: 1, borderColor: colors.border,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2,
+    },
+    selectorFlag: { fontSize: 28 },
+    selectorTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+    selectorCode: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginTop: 2 },
+
+    optionsList: {
+        marginTop: 10, backgroundColor: colors.surface, borderRadius: 20,
+        overflow: 'hidden', borderWidth: 1, borderColor: colors.border,
+    },
+    optionRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 14,
+        paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border,
+    },
+    optionFlag: { fontSize: 22 },
+    optionName: { fontSize: 14, fontWeight: '600', color: colors.text },
+    optionCode: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 1 },
+
+    dangerCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 14,
+        backgroundColor: colors.danger + '08', borderRadius: 20, padding: 18,
+        borderWidth: 1.5, borderColor: colors.danger + '25',
+    },
+    dangerIconWrap: {
+        width: 52, height: 52, borderRadius: 16, backgroundColor: colors.danger + '15',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    dangerTitle: { fontSize: 16, fontWeight: '800', color: colors.danger },
+    dangerSub: { fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginTop: 4, lineHeight: 16 },
+});
