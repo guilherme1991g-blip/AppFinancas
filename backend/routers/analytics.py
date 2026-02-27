@@ -28,7 +28,8 @@ async def get_summary(
     query = {
         "user_id": current_user["_id"], 
         "date": {"$gte": start, "$lt": end},
-        "account_id": {"$nin": cc_account_ids}
+        "account_id": {"$nin": cc_account_ids},
+        "description": {"$ne": "Ajuste de Saldo"}
     }
     if company_id:
         query["company_id"] = ObjectId(company_id)
@@ -167,7 +168,8 @@ async def get_by_category(
         "user_id": current_user["_id"], 
         "type": type, 
         "date": {"$gte": start, "$lt": end},
-        "account_id": {"$nin": cc_account_ids}
+        "account_id": {"$nin": cc_account_ids},
+        "description": {"$ne": "Ajuste de Saldo"}
     }
     if is_paid is not None:
         query["is_paid"] = is_paid
@@ -201,7 +203,7 @@ async def get_cashflow(year: Optional[int] = None, company_id: Optional[str] = N
     start = datetime(y, 1, 1)
     end = datetime(y + 1, 1, 1)
 
-    query = {"user_id": current_user["_id"], "date": {"$gte": start, "$lt": end}}
+    query = {"user_id": current_user["_id"], "date": {"$gte": start, "$lt": end}, "description": {"$ne": "Ajuste de Saldo"}}
     if company_id:
         query["company_id"] = ObjectId(company_id)
 
@@ -234,7 +236,7 @@ async def get_dre(
     start = datetime(y, m, 1)
     end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
 
-    query = {"user_id": current_user["_id"], "date": {"$gte": start, "$lt": end}}
+    query = {"user_id": current_user["_id"], "date": {"$gte": start, "$lt": end}, "description": {"$ne": "Ajuste de Saldo"}}
     if company_id:
         query["company_id"] = ObjectId(company_id)
 
