@@ -225,4 +225,5 @@ export const api = {
     getNotifications: () => request('/notifications'),
     markNotificationAsRead: (id: string) => request(`/notifications/${id}/read`, { method: 'POST' }),
     markAllNotificationsAsRead: () => request('/notifications/read-all', { method: 'POST' }),
+    sendTestNotification: () => request('/notifications/test', { method: 'POST' }),
 };
