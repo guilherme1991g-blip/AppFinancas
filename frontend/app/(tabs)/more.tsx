@@ -27,17 +27,19 @@ export default function SettingsScreen() {
     const [recurring, setRecurring] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [accounts, setAccounts] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<'recurring' | 'companies'>('recurring');
 
     async function fetchData() {
         try {
-            const [r, c, cats] = await Promise.all([
+            const [r, c, cats, accs] = await Promise.all([
                 api.getRecurring() as Promise<any[]>,
                 api.getCompanies() as Promise<any[]>,
                 api.getCategories() as Promise<any[]>,
+                api.getAccounts() as Promise<any[]>,
             ]);
-            setRecurring(r); setCompanies(c); setCategories(cats);
+            setRecurring(r); setCompanies(c); setCategories(cats); setAccounts(accs);
         } catch (e) { console.error(e); }
         finally { setRefreshing(false); }
     }
@@ -127,6 +129,162 @@ export default function SettingsScreen() {
     }
 
     function getCat(id: string) { return categories.find(c => c.id === id); }
+
+    async function handleImportCSV() {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel', '*/*'],
+                copyToCacheDirectory: true
+            });
+
+            if (result.canceled) return;
+
+            const file = result.assets[0];
+            const ext = file.name?.toLowerCase()?.split('.').pop();
+            if (ext !== 'csv' && ext !== 'txt') {
+                Alert.alert('Erro', 'Selecione um arquivo .csv ou .txt');
+                return;
+            }
+
+            const fileContent = await FileSystem.readAsStringAsync(file.uri);
+
+            // Detectar separador (;  ou ,)
+            const firstLine = fileContent.split('\n')[0];
+            const separator = firstLine.includes(';') ? ';' : ',';
+
+            const lines = fileContent.split('\n').filter(l => l.trim());
+            if (lines.length < 2) {
+                Alert.alert('Erro', 'Arquivo vazio ou sem dados.');
+                return;
+            }
+
+            // Parse header
+            const header = lines[0].split(separator).map(h => h.trim().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')); // Remove acentos
+
+            // Detectar colunas
+            const colDate = header.findIndex(h => h.includes('data'));
+            const colDesc = header.findIndex(h => h.includes('descri'));
+            const colCat = header.findIndex(h => h.includes('categ'));
+            const colAmount = header.findIndex(h => h.includes('valor') || h.includes('amount'));
+            const colType = header.findIndex(h => h.includes('tipo') || h.includes('type'));
+            const colStatus = header.findIndex(h => h.includes('status') || h.includes('pago'));
+
+            if (colDate === -1 || colDesc === -1 || colAmount === -1) {
+                Alert.alert('Erro', 'Planilha precisa ter pelo menos colunas: Data, Descrição, Valor');
+                return;
+            }
+
+            // Parse rows
+            const rows = lines.slice(1).map(line => {
+                const cols = line.split(separator).map(c => c.trim());
+                return {
+                    date: cols[colDate] || '',
+                    description: cols[colDesc] || '',
+                    category: colCat >= 0 ? cols[colCat] || '' : '',
+                    amount: colAmount >= 0 ? cols[colAmount] || '0' : '0',
+                    type: colType >= 0 ? cols[colType] || '' : '',
+                    status: colStatus >= 0 ? cols[colStatus] || '' : '',
+                };
+            }).filter(r => r.description && r.amount !== '0');
+
+            if (rows.length === 0) {
+                Alert.alert('Aviso', 'Nenhuma transação encontrada na planilha.');
+                return;
+            }
+
+            // Pedir para escolher a conta
+            if (accounts.length === 0) {
+                Alert.alert('Erro', 'Você precisa cadastrar pelo menos uma conta antes de importar.');
+                return;
+            }
+
+            const accountButtons = accounts.slice(0, 8).map((acc: any) => ({
+                text: acc.name,
+                onPress: () => processCSVImport(rows, acc)
+            }));
+            accountButtons.push({ text: 'Cancelar', onPress: async () => { } });
+
+            Alert.alert(
+                'Escolha a Conta',
+                `${rows.length} transações encontradas. Para qual conta deseja importar?`,
+                accountButtons as any
+            );
+        } catch (e: any) {
+            Alert.alert('Erro', e.message || 'Não foi possível ler a planilha.');
+        }
+    }
+
+    async function processCSVImport(rows: any[], account: any) {
+        setRefreshing(true);
+        let imported = 0;
+        let errors = 0;
+
+        // Buscar categorias para mapeamento por nome
+        const catMap: Record<string, string> = {};
+        categories.forEach((c: any) => {
+            catMap[c.name.toLowerCase()] = c.id;
+        });
+        const defaultCatId = categories.length > 0 ? categories[0].id : null;
+
+        for (const row of rows) {
+            try {
+                // Parse valor - aceita "1.234,56" ou "1234.56"
+                let amountStr = row.amount.replace(/[^\d.,-]/g, '');
+                if (amountStr.includes(',')) {
+                    amountStr = amountStr.replace(/\./g, '').replace(',', '.');
+                }
+                const amount = Math.abs(parseFloat(amountStr));
+                if (isNaN(amount) || amount === 0) continue;
+
+                // Parse tipo
+                let type: 'income' | 'expense' = 'expense';
+                const typeLower = row.type.toLowerCase();
+                if (typeLower.includes('receita') || typeLower.includes('income') || typeLower.includes('entrada')) {
+                    type = 'income';
+                }
+
+                // Parse data - aceita dd/mm/yyyy ou yyyy-mm-dd
+                let dateObj: Date;
+                const dateParts = row.date.split('/');
+                if (dateParts.length === 3) {
+                    const [d, m, y] = dateParts;
+                    dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                } else {
+                    dateObj = new Date(row.date);
+                }
+                if (isNaN(dateObj.getTime())) dateObj = new Date();
+
+                // Mapear categoria
+                const catId = catMap[row.category.toLowerCase()] || defaultCatId;
+                if (!catId) continue;
+
+                // Parse status
+                const statusLower = row.status.toLowerCase();
+                const isPaid = statusLower.includes('pago') || statusLower.includes('paid') || statusLower === '';
+
+                await api.createTransaction({
+                    account_id: account.id,
+                    category_id: catId,
+                    type,
+                    amount,
+                    description: row.description,
+                    date: dateObj.toISOString(),
+                    is_paid: isPaid,
+                });
+                imported++;
+            } catch {
+                errors++;
+            }
+        }
+
+        setRefreshing(false);
+        Alert.alert(
+            'Importação Concluída',
+            `✅ ${imported} transações importadas${errors > 0 ? `\n⚠️ ${errors} falharam` : ''}`
+        );
+        fetchData();
+    }
 
     const tabs = [
         { key: 'recurring', label: 'Recorrentes', icon: 'repeat' },
@@ -284,6 +442,16 @@ export default function SettingsScreen() {
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.settingLabel}>Exportar Backup Completo</Text>
                                 <Text style={styles.settingSub}>Inclui faturas, contas e configurações (JSON)</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingRow} onPress={handleImportCSV}>
+                            <View style={[styles.settingIconWrap, { backgroundColor: '#F59E0B15' }]}>
+                                <Ionicons name="document-text-outline" size={20} color="#F59E0B" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>Importar Planilha (CSV)</Text>
+                                <Text style={styles.settingSub}>Importe transações de um arquivo .csv</Text>
                             </View>
                         </TouchableOpacity>
 
