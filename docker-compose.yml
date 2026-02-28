@@ -6,7 +6,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: appfinancas
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-adminotto}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-Otto@Fin2024Secure!}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-OttoFin2024Secure}
     volumes:
       - mongo_data:/data/db
     # Porta NÃO exposta externamente — só acessível pela rede interna Docker
@@ -21,7 +21,7 @@ services:
     container_name: financas_backend
     restart: unless-stopped
     environment:
-      MONGODB_URL: mongodb://${MONGO_USER:-adminotto}:${MONGO_PASS:-Otto@Fin2024Secure!}@mongodb:27017
+      MONGODB_URL: mongodb://${MONGO_USER:-adminotto}:${MONGO_PASS:-OttoFin2024Secure}@mongodb:27017
       DATABASE_NAME: appfinancas
       SECRET_KEY: ${SECRET_KEY:-mude-esta-chave-em-producao-2024}
     ports:
