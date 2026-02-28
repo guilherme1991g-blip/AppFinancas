@@ -12,7 +12,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { api } from '@/services/api';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 
 const FR_LABEL: Record<string, string> = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' };
@@ -48,7 +48,7 @@ export default function SettingsScreen() {
         try {
             const data = await api.exportData();
             const fileName = `otto_backup_${new Date().toISOString().split('T')[0]}.json`;
-            const filePath = `${(FileSystem as any).cacheDirectory}${fileName}`;
+            const filePath = `${FileSystem.cacheDirectory}${fileName}`;
 
             await FileSystem.writeAsStringAsync(filePath, JSON.stringify(data, null, 2));
             await Sharing.shareAsync(filePath);
@@ -76,7 +76,7 @@ export default function SettingsScreen() {
             }).join('\n');
 
             const fileName = `otto_transacoes_${new Date().toISOString().split('T')[0]}.csv`;
-            const filePath = `${(FileSystem as any).documentDirectory}${fileName}`;
+            const filePath = `${FileSystem.documentDirectory}${fileName}`;
 
             // Add UTF-8 BOM for Excel
             await FileSystem.writeAsStringAsync(filePath, '\ufeff' + header + rows);
