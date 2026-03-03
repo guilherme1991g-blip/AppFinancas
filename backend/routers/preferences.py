@@ -5,6 +5,7 @@ from models.user import NotificationPreferences, UserPreferences, SecurityPrefer
 from bson import ObjectId
 from pydantic import BaseModel
 from typing import Optional, List
+import secrets
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -63,6 +64,12 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="Sem dados para atualizar")
+
+    # Auto-generate API key when enabling WhatsApp
+    if update_data.get("whatsapp_enabled") is True:
+        existing_key = current_user.get("preferences", {}).get("api_key")
+        if not existing_key:
+            update_data["api_key"] = f"otto_{secrets.token_hex(20)}"
 
     # Construct the $set dictionary for nested preferences
     set_query = {}

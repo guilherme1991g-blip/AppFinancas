@@ -61,6 +61,7 @@ class UserPreferences(BaseModel):
     currency: str = "BRL"
     theme: str = "light"
     whatsapp_enabled: bool = False
+    api_key: Optional[str] = None
     dashboard_cards: list[DashboardCard] = Field(default_factory=get_default_dashboard_cards)
 
 
