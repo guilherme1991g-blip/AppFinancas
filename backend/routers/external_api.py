@@ -2,6 +2,7 @@
 API Externa — Endpoints públicos autenticados via API Key (header X-API-Key).
 Habilitados/desabilitados pelo toggle WhatsApp nas preferências do usuário.
 """
+import calendar
 from fastapi import APIRouter, HTTPException, Header, Query
 from typing import Optional
 from datetime import datetime
@@ -11,6 +12,7 @@ from database import (
     transactions_collection, bills_collection, compromissos_collection,
     recurring_collection
 )
+from utils.date_utils import calculate_due_date
 
 router = APIRouter(prefix="/v1", tags=["external_api"])
 
@@ -260,27 +262,54 @@ async def lancar_fatura(
     if account.get("type") != "credit_card":
         raise HTTPException(status_code=400, detail="Esta conta não é um cartão de crédito")
 
-    tx_date = datetime.fromisoformat(data["date"])
+    tx_date_base = datetime.fromisoformat(data["date"])
+    installments = int(data.get("installments", 1))
 
-    # Criar transação vinculada ao cartão
-    doc = {
-        "user_id": user["_id"],
-        "account_id": ObjectId(data["account_id"]),
-        "category_id": ObjectId(data["category_id"]),
-        "type": "expense",
-        "amount": float(data["amount"]),
-        "description": data["description"],
-        "date": tx_date,
-        "notes": data.get("notes"),
-        "tags": data.get("tags", []),
-        "is_paid": False,  # Faturas ficam pendentes até pagar a fatura
-        "is_credit_card": True,
-        "created_at": datetime.utcnow()
-    }
+    closing_day = account.get("closing_day", 10)
+    due_day = account.get("due_day", closing_day + 7)
 
-    result = await transactions_collection.insert_one(doc)
-    doc["_id"] = result.inserted_id
-    return _serialize(doc)
+    created_docs = []
+
+    for i in range(installments):
+        # Calculate date for each installment (same day, consecutive months)
+        new_month = (tx_date_base.month + i - 1) % 12 + 1
+        new_year = tx_date_base.year + (tx_date_base.month + i - 1) // 12
+
+        last_day = calendar.monthrange(new_year, new_month)[1]
+        tx_day = min(tx_date_base.day, last_day)
+        tx_date = datetime(new_year, new_month, tx_day, tx_date_base.hour, tx_date_base.minute, tx_date_base.second)
+
+        # Calculate due_date based on card rules
+        due_date = calculate_due_date(tx_date, closing_day, due_day)
+
+        description = data["description"]
+        if installments > 1:
+            description = f"{description} ({i+1}/{installments})"
+
+        doc = {
+            "user_id": user["_id"],
+            "account_id": ObjectId(data["account_id"]),
+            "category_id": ObjectId(data["category_id"]),
+            "type": "expense",
+            "amount": float(data["amount"]),
+            "description": description,
+            "date": tx_date,
+            "due_date": due_date,
+            "notes": data.get("notes"),
+            "tags": data.get("tags", []),
+            "is_paid": False,
+            "is_credit_card": True,
+            "created_at": datetime.utcnow()
+        }
+
+        result = await transactions_collection.insert_one(doc)
+        doc["_id"] = result.inserted_id
+        created_docs.append(doc)
+
+    if installments == 1:
+        return _serialize(created_docs[0])
+
+    return [_serialize(d) for d in created_docs]
 
 
 # ──────────────── RECORRENTES ────────────────
