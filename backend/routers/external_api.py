@@ -128,10 +128,19 @@ async def criar_despesa(
 ):
     user = await get_user_by_api_key(x_api_key)
 
-    required = ["account_id", "category_id", "amount", "description"]
-    for field in required:
-        if field not in data:
-            raise HTTPException(status_code=400, detail=f"Campo obrigatório: {field}")
+    # Verificar se é cartão de crédito
+    account = await accounts_collection.find_one({"_id": ObjectId(data["account_id"]), "user_id": user["_id"]})
+    if not account:
+         raise HTTPException(status_code=404, detail="Conta não encontrada")
+
+    # Se for cartão, forçar is_paid=True e calcular due_date
+    is_paid = data.get("is_paid", True)
+    due_date = None
+    if account.get("type") == "credit_card":
+        is_paid = True
+        closing_day = account.get("closing_day", 10)
+        due_day = account.get("due_day", closing_day + 7)
+        due_date = calculate_due_date(datetime.fromisoformat(data.get("date", datetime.utcnow().isoformat())), closing_day, due_day)
 
     doc = {
         "user_id": user["_id"],
@@ -143,7 +152,9 @@ async def criar_despesa(
         "date": datetime.fromisoformat(data.get("date", datetime.utcnow().isoformat())),
         "notes": data.get("notes"),
         "tags": data.get("tags", []),
-        "is_paid": data.get("is_paid", True),
+        "is_paid": is_paid,
+        "due_date": due_date,
+        "is_credit_card": account.get("type") == "credit_card",
         "created_at": datetime.utcnow()
     }
 
@@ -194,6 +205,20 @@ async def criar_receita(
         if field not in data:
             raise HTTPException(status_code=400, detail=f"Campo obrigatório: {field}")
 
+    # Verificar se é cartão de crédito
+    account = await accounts_collection.find_one({"_id": ObjectId(data["account_id"]), "user_id": user["_id"]})
+    if not account:
+         raise HTTPException(status_code=404, detail="Conta não encontrada")
+
+    # Se for cartão (estorno ou pagamento), forçar is_paid=True e calcular due_date
+    is_paid = data.get("is_paid", True)
+    due_date = None
+    if account.get("type") == "credit_card":
+        is_paid = True
+        closing_day = account.get("closing_day", 10)
+        due_day = account.get("due_day", closing_day + 7)
+        due_date = calculate_due_date(datetime.fromisoformat(data.get("date", datetime.utcnow().isoformat())), closing_day, due_day)
+
     doc = {
         "user_id": user["_id"],
         "account_id": ObjectId(data["account_id"]),
@@ -204,12 +229,15 @@ async def criar_receita(
         "date": datetime.fromisoformat(data.get("date", datetime.utcnow().isoformat())),
         "notes": data.get("notes"),
         "tags": data.get("tags", []),
-        "is_paid": data.get("is_paid", True),
+        "is_paid": is_paid,
+        "due_date": due_date,
+        "is_credit_card": account.get("type") == "credit_card",
         "created_at": datetime.utcnow()
     }
 
     result = await transactions_collection.insert_one(doc)
 
+    # Update account balance
     if doc["is_paid"]:
         await accounts_collection.update_one(
             {"_id": doc["account_id"]},
@@ -297,7 +325,7 @@ async def lancar_fatura(
             "due_date": due_date,
             "notes": data.get("notes"),
             "tags": data.get("tags", []),
-            "is_paid": False,
+            "is_paid": True,  # Para atualizar o saldo/limite do cartão imediatamente
             "is_credit_card": True,
             "created_at": datetime.utcnow()
         }
@@ -305,6 +333,12 @@ async def lancar_fatura(
         result = await transactions_collection.insert_one(doc)
         doc["_id"] = result.inserted_id
         created_docs.append(doc)
+
+        # Atualizar o saldo (limite utilizado) do cartão
+        await accounts_collection.update_one(
+            {"_id": ObjectId(data["account_id"])},
+            {"$inc": {"balance": -float(data["amount"])}}
+        )
 
     if installments == 1:
         return _serialize(created_docs[0])
