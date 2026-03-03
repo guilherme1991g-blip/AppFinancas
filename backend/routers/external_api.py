@@ -116,10 +116,11 @@ async def listar_despesas(
     query = {"user_id": user["_id"], "type": "expense"}
 
     if start_date and end_date:
-        query["date"] = {
-            "$gte": datetime.fromisoformat(start_date),
-            "$lte": datetime.fromisoformat(end_date)
-        }
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+        if len(end_date) <= 10:
+            end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        query["date"] = {"$gte": start, "$lte": end}
     elif month and year:
         if day:
             start = datetime(year, month, day)
@@ -215,10 +216,11 @@ async def listar_receitas(
     query = {"user_id": user["_id"], "type": "income"}
 
     if start_date and end_date:
-        query["date"] = {
-            "$gte": datetime.fromisoformat(start_date),
-            "$lte": datetime.fromisoformat(end_date)
-        }
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+        if len(end_date) <= 10:
+            end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        query["date"] = {"$gte": start, "$lte": end}
     elif month and year:
         if day:
             start = datetime(year, month, day)
@@ -534,6 +536,8 @@ async def relatorio_consolidado(
     if start_date and end_date:
         start = datetime.fromisoformat(start_date)
         end = datetime.fromisoformat(end_date)
+        if len(end_date) <= 10:
+            end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif day:
         start = datetime(y, m, day)
         end = start + timedelta(days=1)
