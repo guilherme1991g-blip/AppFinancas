@@ -506,9 +506,17 @@ async def relatorio_consolidado(
         else:
             total_simple_expense += d["amount"]
 
-    # --- 3. Faturas de Cartão ---
-    total_bills = 0
-    for acc_id in cc_account_ids:
+    # --- 3. Faturas de Cartão (Individualizadas) ---
+    total_bills_consolidated = 0
+    cards_detail = []
+    
+    for acc in accounts:
+        if acc["type"] != "credit_card":
+            continue
+            
+        acc_id = acc["_id"]
+        card_total = 0
+        
         # Tenta achar documento de fatura fechada
         bill = await bills_collection.find_one({
             "account_id": acc_id,
@@ -517,7 +525,7 @@ async def relatorio_consolidado(
         })
         
         if bill:
-            total_bills += abs(bill.get("amount", 0))
+            card_total = abs(bill.get("amount", 0))
         else:
             # Cálculo virtual (transações que vencem neste mês)
             cc_tx_query = {
@@ -531,9 +539,16 @@ async def relatorio_consolidado(
             async for tx in transactions_collection.find(cc_tx_query):
                 amount = abs(tx["amount"])
                 if tx["type"] == "expense":
-                    total_bills += amount
+                    card_total += amount
                 else:
-                    total_bills -= amount
+                    card_total -= amount
+        
+        if card_total > 0.01:
+            cards_detail.append({
+                "cartao": acc["name"],
+                "total": card_total
+            })
+            total_bills_consolidated += card_total
 
     # --- 4. Consolidação por Categoria (Todas as Despesas + Faturas) ---
     # Para simplicidade, vamos agrupar todas as transações de despesa do período
@@ -577,9 +592,10 @@ async def relatorio_consolidado(
             "receitas": total_income,
             "despesas_simples": total_simple_expense,
             "despesas_recorrentes": total_recurring_expense,
-            "faturas_cartao": total_bills,
-            "total_despesas": total_simple_expense + total_recurring_expense + total_bills,
-            "saldo_periodo": total_income - (total_simple_expense + total_recurring_expense + total_bills)
+            "faturas_total": total_bills_consolidated,
+            "total_despesas": total_simple_expense + total_recurring_expense + total_bills_consolidated,
+            "saldo_periodo": total_income - (total_simple_expense + total_recurring_expense + total_bills_consolidated)
         },
+        "detalhamento_cartoes": cards_detail,
         "categorias": categories_summary
     }
