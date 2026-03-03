@@ -16,12 +16,15 @@ router = APIRouter(prefix="/v1", tags=["external_api"])
 
 
 async def get_user_by_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
-    """Authenticate user via API key (phone number) and check if API is enabled."""
+    """Authenticate user via phone number (DDI+DDD+number)."""
     if not x_api_key:
         raise HTTPException(status_code=401, detail="API key não fornecida")
 
-    # Clean the key
-    clean_key = x_api_key.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    # Keep only digits (removes +, spaces, dashes)
+    clean_key = "".join(c for c in x_api_key if c.isdigit())
+
+    if len(clean_key) < 10:
+        raise HTTPException(status_code=401, detail="API key inválida")
 
     user = await users_collection.find_one({"preferences.api_key": clean_key})
     if not user:

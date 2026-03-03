@@ -240,42 +240,6 @@ export default function PreferencesScreen() {
                             thumbColor={whatsappEnabled ? '#25D366' : colors.textSecondary}
                         />
                     </View>
-
-                    {whatsappEnabled && apiKey && (
-                        <View style={{ marginTop: 16 }}>
-                            <View style={[styles.selectorCard, { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <Ionicons name="key-outline" size={18} color={colors.primary} />
-                                    <Text style={[styles.selectorTitle, { flex: 1 }]}>Sua API Key</Text>
-                                    <TouchableOpacity onPress={copyApiKey} style={{ backgroundColor: colors.primary + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                                        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>Copiar</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={{ backgroundColor: colors.background, borderRadius: 10, padding: 12 }}>
-                                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{apiKey}</Text>
-                                </View>
-                                <View style={{ gap: 6 }}>
-                                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '600' }}>Endpoints disponíveis:</Text>
-                                    <Text style={{ fontSize: 10, color: colors.textMuted, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
-                                        {`GET  /api/v1/contas
-GET  /api/v1/cartoes
-GET  /api/v1/categorias
-GET  /api/v1/despesas
-POST /api/v1/despesas
-GET  /api/v1/receitas
-POST /api/v1/receitas
-GET  /api/v1/faturas
-POST /api/v1/faturas
-GET  /api/v1/recorrentes
-POST /api/v1/recorrentes
-GET  /api/v1/agenda
-POST /api/v1/agenda`}
-                                    </Text>
-                                    <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>Header: X-API-Key: {'{sua_key}'}</Text>
-                                </View>
-                            </View>
-                        </View>
-                    )}
                 </View>
 
                 {/* ─── Zona de Perigo ─── */}
