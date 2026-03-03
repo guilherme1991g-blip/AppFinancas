@@ -12,7 +12,7 @@ from database import (
     recurring_collection
 )
 
-router = APIRouter(prefix="/api/v1", tags=["external_api"])
+router = APIRouter(prefix="/v1", tags=["external_api"])
 
 
 async def get_user_by_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
