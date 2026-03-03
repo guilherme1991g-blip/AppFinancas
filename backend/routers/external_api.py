@@ -456,3 +456,130 @@ async def excluir_agenda(
         raise HTTPException(status_code=404, detail="Compromisso não encontrado ou não pertence ao usuário")
 
     return {"message": "Compromisso excluído com sucesso"}
+
+
+# ──────────────── RELATÓRIO ────────────────
+@router.get("/relatorio")
+async def relatorio_consolidado(
+    x_api_key: str = Header(..., alias="X-API-Key"),
+    month: Optional[int] = None,
+    year: Optional[int] = None
+):
+    """Retorna um relatório consolidado de receitas, despesas (simples e recorrentes) e faturas."""
+    user = await get_user_by_api_key(x_api_key)
+    
+    now = datetime.utcnow()
+    m = month or now.month
+    y = year or now.year
+    start = datetime(y, m, 1)
+    end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
+
+    # Buscar todas as contas do usuário
+    accounts = await accounts_collection.find({"user_id": user["_id"]}).to_list(100)
+    cc_account_ids = [acc["_id"] for acc in accounts if acc["type"] == "credit_card"]
+    
+    # --- 1. Receitas ---
+    income_query = {
+        "user_id": user["_id"],
+        "type": "income",
+        "date": {"$gte": start, "$lt": end}
+    }
+    income_docs = await transactions_collection.find(income_query).to_list(None)
+    total_income = sum(d["amount"] for d in income_docs)
+
+    # --- 2. Despesas Simples vs Recorrentes (Não-Cartão) ---
+    expense_query = {
+        "user_id": user["_id"],
+        "type": "expense",
+        "date": {"$gte": start, "$lt": end},
+        "account_id": {"$nin": cc_account_ids}
+    }
+    expense_docs = await transactions_collection.find(expense_query).to_list(None)
+    
+    total_simple_expense = 0
+    total_recurring_expense = 0
+    
+    for d in expense_docs:
+        # Se tem recurring_id, é recorrente
+        if d.get("recurring_id"):
+            total_recurring_expense += d["amount"]
+        else:
+            total_simple_expense += d["amount"]
+
+    # --- 3. Faturas de Cartão ---
+    total_bills = 0
+    for acc_id in cc_account_ids:
+        # Tenta achar documento de fatura fechada
+        bill = await bills_collection.find_one({
+            "account_id": acc_id,
+            "month": m,
+            "year": y
+        })
+        
+        if bill:
+            total_bills += abs(bill.get("amount", 0))
+        else:
+            # Cálculo virtual (transações que vencem neste mês)
+            cc_tx_query = {
+                "account_id": acc_id,
+                "user_id": user["_id"],
+                "$or": [
+                    {"due_date": {"$gte": start, "$lt": end}},
+                    {"due_date": None, "date": {"$gte": start, "$lt": end}}
+                ]
+            }
+            async for tx in transactions_collection.find(cc_tx_query):
+                amount = abs(tx["amount"])
+                if tx["type"] == "expense":
+                    total_bills += amount
+                else:
+                    total_bills -= amount
+
+    # --- 4. Consolidação por Categoria (Todas as Despesas + Faturas) ---
+    # Para simplicidade, vamos agrupar todas as transações de despesa do período
+    cat_pipeline = [
+        {
+            "$match": {
+                "user_id": user["_id"],
+                "type": "expense",
+                "$or": [
+                    # Despesas normais do período
+                    {"date": {"$gte": start, "$lt": end}, "account_id": {"$nin": cc_account_ids}},
+                    # Despesas de cartão que vencem no período
+                    {"due_date": {"$gte": start, "$lt": end}, "account_id": {"$in": cc_account_ids}}
+                ]
+            }
+        },
+        {
+            "$group": {
+                "_id": "$category_id",
+                "total": {"$sum": "$amount"},
+                "count": {"$sum": 1}
+            }
+        },
+        {"$sort": {"total": -1}}
+    ]
+    
+    cat_results = await transactions_collection.aggregate(cat_pipeline).to_list(100)
+    categories_summary = []
+    
+    for r in cat_results:
+        cat = await categories_collection.find_one({"_id": r["_id"]})
+        categories_summary.append({
+            "category_name": cat["name"] if cat else "Sem categoria",
+            "total": r["total"],
+            "count": r["count"]
+        })
+
+    return {
+        "periodo": f"{m:02d}/{y}",
+        "resumo": {
+            "receitas": total_income,
+            "despesas_simples": total_simple_expense,
+            "despesas_recorrentes": total_recurring_expense,
+            "faturas_cartao": total_bills,
+            "total_despesas": total_simple_expense + total_recurring_expense + total_bills,
+            "saldo_periodo": total_income - (total_simple_expense + total_recurring_expense + total_bills)
+        },
+        "categorias": categories_summary
+    }
