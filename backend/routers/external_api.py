@@ -8,7 +8,8 @@ from datetime import datetime
 from bson import ObjectId
 from database import (
     users_collection, accounts_collection, categories_collection,
-    transactions_collection, bills_collection, compromissos_collection
+    transactions_collection, bills_collection, compromissos_collection,
+    recurring_collection
 )
 
 router = APIRouter(prefix="/api/v1", tags=["external_api"])
@@ -217,6 +218,100 @@ async def listar_faturas(
     return [_serialize(d) for d in docs]
 
 
+@router.post("/faturas")
+async def lancar_fatura(
+    data: dict,
+    x_api_key: str = Header(..., alias="X-API-Key")
+):
+    """Lançar uma transação na fatura do cartão de crédito."""
+    user = await get_user_by_api_key(x_api_key)
+
+    required = ["account_id", "category_id", "amount", "description", "date"]
+    for field in required:
+        if field not in data:
+            raise HTTPException(status_code=400, detail=f"Campo obrigatório: {field}")
+
+    # Verificar se é cartão de crédito
+    account = await accounts_collection.find_one({
+        "_id": ObjectId(data["account_id"]),
+        "user_id": user["_id"]
+    })
+    if not account:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    if account.get("type") != "credit_card":
+        raise HTTPException(status_code=400, detail="Esta conta não é um cartão de crédito")
+
+    tx_date = datetime.fromisoformat(data["date"])
+
+    # Criar transação vinculada ao cartão
+    doc = {
+        "user_id": user["_id"],
+        "account_id": ObjectId(data["account_id"]),
+        "category_id": ObjectId(data["category_id"]),
+        "type": "expense",
+        "amount": float(data["amount"]),
+        "description": data["description"],
+        "date": tx_date,
+        "notes": data.get("notes"),
+        "tags": data.get("tags", []),
+        "is_paid": False,  # Faturas ficam pendentes até pagar a fatura
+        "is_credit_card": True,
+        "created_at": datetime.utcnow()
+    }
+
+    result = await transactions_collection.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return _serialize(doc)
+
+
+# ──────────────── RECORRENTES ────────────────
+@router.get("/recorrentes")
+async def listar_recorrentes(
+    x_api_key: str = Header(..., alias="X-API-Key"),
+    limit: int = Query(50, le=200)
+):
+    user = await get_user_by_api_key(x_api_key)
+    docs = await recurring_collection.find(
+        {"user_id": user["_id"]}
+    ).to_list(limit)
+    return [_serialize(d) for d in docs]
+
+
+@router.post("/recorrentes")
+async def criar_recorrente(
+    data: dict,
+    x_api_key: str = Header(..., alias="X-API-Key")
+):
+    """Criar uma despesa/receita recorrente."""
+    user = await get_user_by_api_key(x_api_key)
+
+    required = ["account_id", "category_id", "amount", "description", "date"]
+    for field in required:
+        if field not in data:
+            raise HTTPException(status_code=400, detail=f"Campo obrigatório: {field}")
+
+    doc = {
+        "user_id": user["_id"],
+        "account_id": ObjectId(data["account_id"]),
+        "category_id": ObjectId(data["category_id"]),
+        "type": data.get("type", "expense"),
+        "amount": float(data["amount"]),
+        "description": data["description"],
+        "frequency": data.get("frequency", "monthly"),
+        "start_date": datetime.fromisoformat(data["date"]),
+        "end_date": datetime.fromisoformat(data["end_date"]) if data.get("end_date") else None,
+        "day_of_month": data.get("day_of_month"),
+        "is_active": True,
+        "company_id": ObjectId(data["company_id"]) if data.get("company_id") else None,
+        "installments": data.get("installments"),
+        "created_at": datetime.utcnow()
+    }
+
+    result = await recurring_collection.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return _serialize(doc)
+
+
 # ──────────────── AGENDA ────────────────
 @router.get("/agenda")
 async def listar_agenda(
@@ -228,3 +323,33 @@ async def listar_agenda(
         {"user_id": user["_id"]}
     ).sort("date", -1).to_list(limit)
     return [_serialize(d) for d in docs]
+
+
+@router.post("/agenda")
+async def criar_agenda(
+    data: dict,
+    x_api_key: str = Header(..., alias="X-API-Key")
+):
+    """Criar um compromisso na agenda."""
+    user = await get_user_by_api_key(x_api_key)
+
+    required = ["title", "date"]
+    for field in required:
+        if field not in data:
+            raise HTTPException(status_code=400, detail=f"Campo obrigatório: {field}")
+
+    now = datetime.utcnow()
+    doc = {
+        "user_id": user["_id"],
+        "title": data["title"],
+        "description": data.get("description"),
+        "date": datetime.fromisoformat(data["date"]),
+        "location": data.get("location"),
+        "reminder": data.get("reminder", True),
+        "created_at": now,
+        "updated_at": now
+    }
+
+    result = await compromissos_collection.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return _serialize(doc)

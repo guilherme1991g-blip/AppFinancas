@@ -265,7 +265,11 @@ POST /api/v1/despesas
 GET  /api/v1/receitas
 POST /api/v1/receitas
 GET  /api/v1/faturas
-GET  /api/v1/agenda`}
+POST /api/v1/faturas
+GET  /api/v1/recorrentes
+POST /api/v1/recorrentes
+GET  /api/v1/agenda
+POST /api/v1/agenda`}
                                     </Text>
                                     <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>Header: X-API-Key: {'{sua_key}'}</Text>
                                 </View>
