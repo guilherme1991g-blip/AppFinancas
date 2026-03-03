@@ -292,6 +292,8 @@ async def lancar_fatura(
 
     tx_date_base = datetime.fromisoformat(data["date"])
     installments = int(data.get("installments", 1))
+    total_amount = float(data["amount"])
+    installment_amount = total_amount / installments
 
     closing_day = account.get("closing_day", 10)
     due_day = account.get("due_day", closing_day + 7)
@@ -319,7 +321,7 @@ async def lancar_fatura(
             "account_id": ObjectId(data["account_id"]),
             "category_id": ObjectId(data["category_id"]),
             "type": "expense",
-            "amount": float(data["amount"]),
+            "amount": installment_amount,
             "description": description,
             "date": tx_date,
             "due_date": due_date,
@@ -337,7 +339,7 @@ async def lancar_fatura(
         # Atualizar o saldo (limite utilizado) do cartão
         await accounts_collection.update_one(
             {"_id": ObjectId(data["account_id"])},
-            {"$inc": {"balance": -float(data["amount"])}}
+            {"$inc": {"balance": -installment_amount}}
         )
 
     if installments == 1:
