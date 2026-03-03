@@ -22,7 +22,7 @@ const BRANDS = [
 
 const CARD_COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#3B82F6', '#64748B'];
 
-function CardVisual({ card, colors, onDelete }: { card: any; colors: any; onDelete: () => void }) {
+function CardVisual({ card, colors, onDelete, fmt }: { card: any; colors: any; onDelete: () => void; fmt: (v: number) => string }) {
     const brand = BRANDS.find(b => b.key === card.card_brand) || BRANDS[5];
     const balance = card.balance || 0;
     const used = Math.max(0, -balance);
@@ -180,7 +180,7 @@ export default function CardsScreen() {
                 ) : (
                     <View style={styles.section}>
                         {cards.map(card => (
-                            <CardVisual key={card.id} card={card} colors={colors} onDelete={() => handleDelete(card.id)} />
+                            <CardVisual key={card.id} card={card} colors={colors} fmt={fmt} onDelete={() => handleDelete(card.id)} />
                         ))}
                     </View>
                 )}
