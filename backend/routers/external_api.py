@@ -666,8 +666,8 @@ async def relatorio_consolidado(
     chart_base_url = "https://quickchart.io/chart?c="
     
     # Gráfico de Pizza (Categorias)
-    pie_labels = [c["category_name"] for c in categories_summary[:8]]  # Top 8
-    pie_data = [c["total"] for c in categories_summary[:8]]
+    pie_labels = [c["category_name"] for c in categories_summary]
+    pie_data = [c["total"] for c in categories_summary]
     pie_config = {
         "type": "pie",
         "data": {
