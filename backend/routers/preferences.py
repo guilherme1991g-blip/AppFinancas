@@ -71,7 +71,16 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
         phone = current_user.get("phone", "")
         if not phone:
             raise HTTPException(status_code=400, detail="Cadastre seu número de celular no perfil antes de ativar a API.")
-        api_key = f"{ddi}{phone}".replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        # Limpar e extrair apenas dígitos do telefone
+        phone_digits = "".join(c for c in phone if c.isdigit())
+        # Pegar DDD (2 primeiros dígitos) + últimos 8 dígitos
+        if len(phone_digits) >= 10:
+            ddd = phone_digits[:2]
+            last8 = phone_digits[-8:]
+        else:
+            ddd = ""
+            last8 = phone_digits
+        api_key = f"{ddi}{ddd}{last8}"
         update_data["api_key"] = api_key
 
     # Construct the $set dictionary for nested preferences
