@@ -106,12 +106,19 @@ async def listar_despesas(
     month: Optional[int] = None,
     year: Optional[int] = None,
     day: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     limit: int = Query(50, le=200)
 ):
     user = await get_user_by_api_key(x_api_key)
     query = {"user_id": user["_id"], "type": "expense"}
 
-    if month and year:
+    if start_date and end_date:
+        query["date"] = {
+            "$gte": datetime.fromisoformat(start_date),
+            "$lte": datetime.fromisoformat(end_date)
+        }
+    elif month and year:
         if day:
             start = datetime(year, month, day)
             end = start + timedelta(days=1)
@@ -183,12 +190,19 @@ async def listar_receitas(
     month: Optional[int] = None,
     year: Optional[int] = None,
     day: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     limit: int = Query(50, le=200)
 ):
     user = await get_user_by_api_key(x_api_key)
     query = {"user_id": user["_id"], "type": "income"}
 
-    if month and year:
+    if start_date and end_date:
+        query["date"] = {
+            "$gte": datetime.fromisoformat(start_date),
+            "$lte": datetime.fromisoformat(end_date)
+        }
+    elif month and year:
         if day:
             start = datetime(year, month, day)
             end = start + timedelta(days=1)
@@ -474,7 +488,9 @@ async def relatorio_consolidado(
     x_api_key: str = Header(..., alias="X-API-Key"),
     month: Optional[int] = None,
     year: Optional[int] = None,
-    day: Optional[int] = None
+    day: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
 ):
     """Retorna um relatório consolidado de receitas, despesas (simples e recorrentes) e faturas."""
     user = await get_user_by_api_key(x_api_key)
@@ -483,7 +499,10 @@ async def relatorio_consolidado(
     m = month or now.month
     y = year or now.year
     
-    if day:
+    if start_date and end_date:
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+    elif day:
         start = datetime(y, m, day)
         end = start + timedelta(days=1)
     else:
