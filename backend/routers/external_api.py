@@ -130,7 +130,22 @@ async def listar_despesas(
         query["date"] = {"$gte": start, "$lt": end}
 
     docs = await transactions_collection.find(query).sort("date", -1).to_list(limit)
-    return [_serialize(d) for d in docs]
+
+    items = []
+    total = 0
+    for d in docs:
+        valor = d["amount"]
+        total += valor
+        items.append({
+            "data": d["date"].isoformat(),
+            "valor": valor,
+            "descricao": d["description"]
+        })
+        
+    return {
+        "total": total,
+        "itens": items
+    }
 
 
 @router.post("/despesas")
@@ -214,7 +229,22 @@ async def listar_receitas(
         query["date"] = {"$gte": start, "$lt": end}
 
     docs = await transactions_collection.find(query).sort("date", -1).to_list(limit)
-    return [_serialize(d) for d in docs]
+
+    items = []
+    total = 0
+    for d in docs:
+        valor = d["amount"]
+        total += valor
+        items.append({
+            "data": d["date"].isoformat(),
+            "valor": valor,
+            "descricao": d["description"]
+        })
+
+    return {
+        "total": total,
+        "itens": items
+    }
 
 
 @router.post("/receitas")
