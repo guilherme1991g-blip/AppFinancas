@@ -586,6 +586,15 @@ async def relatorio_consolidado(
             "count": r["count"]
         })
 
+    # --- 5. Saldos de Contas (Não-Cartão) ---
+    accounts_balances = []
+    for acc in accounts:
+        if acc["type"] != "credit_card":
+            accounts_balances.append({
+                "conta": acc["name"],
+                "saldo": acc.get("balance", 0)
+            })
+
     return {
         "periodo": f"{m:02d}/{y}",
         "resumo": {
@@ -597,5 +606,6 @@ async def relatorio_consolidado(
             "saldo_periodo": total_income - (total_simple_expense + total_recurring_expense + total_bills_consolidated)
         },
         "detalhamento_cartoes": cards_detail,
+        "saldos_contas": accounts_balances,
         "categorias": categories_summary
     }
