@@ -5,7 +5,7 @@ Habilitados/desabilitados pelo toggle WhatsApp nas preferências do usuário.
 import calendar
 from fastapi import APIRouter, HTTPException, Header, Query
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 from database import (
     users_collection, accounts_collection, categories_collection,
@@ -105,16 +105,21 @@ async def listar_despesas(
     x_api_key: str = Header(..., alias="X-API-Key"),
     month: Optional[int] = None,
     year: Optional[int] = None,
+    day: Optional[int] = None,
     limit: int = Query(50, le=200)
 ):
     user = await get_user_by_api_key(x_api_key)
     query = {"user_id": user["_id"], "type": "expense"}
 
     if month and year:
-        start = datetime(year, month, 1)
-        nm = month + 1 if month < 12 else 1
-        ny = year if month < 12 else year + 1
-        end = datetime(ny, nm, 1)
+        if day:
+            start = datetime(year, month, day)
+            end = start + timedelta(days=1)
+        else:
+            start = datetime(year, month, 1)
+            nm = month + 1 if month < 12 else 1
+            ny = year if month < 12 else year + 1
+            end = datetime(ny, nm, 1)
         query["date"] = {"$gte": start, "$lt": end}
 
     docs = await transactions_collection.find(query).sort("date", -1).to_list(limit)
@@ -177,16 +182,21 @@ async def listar_receitas(
     x_api_key: str = Header(..., alias="X-API-Key"),
     month: Optional[int] = None,
     year: Optional[int] = None,
+    day: Optional[int] = None,
     limit: int = Query(50, le=200)
 ):
     user = await get_user_by_api_key(x_api_key)
     query = {"user_id": user["_id"], "type": "income"}
 
     if month and year:
-        start = datetime(year, month, 1)
-        nm = month + 1 if month < 12 else 1
-        ny = year if month < 12 else year + 1
-        end = datetime(ny, nm, 1)
+        if day:
+            start = datetime(year, month, day)
+            end = start + timedelta(days=1)
+        else:
+            start = datetime(year, month, 1)
+            nm = month + 1 if month < 12 else 1
+            ny = year if month < 12 else year + 1
+            end = datetime(ny, nm, 1)
         query["date"] = {"$gte": start, "$lt": end}
 
     docs = await transactions_collection.find(query).sort("date", -1).to_list(limit)
@@ -463,7 +473,8 @@ async def excluir_agenda(
 async def relatorio_consolidado(
     x_api_key: str = Header(..., alias="X-API-Key"),
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    day: Optional[int] = None
 ):
     """Retorna um relatório consolidado de receitas, despesas (simples e recorrentes) e faturas."""
     user = await get_user_by_api_key(x_api_key)
@@ -471,8 +482,13 @@ async def relatorio_consolidado(
     now = datetime.utcnow()
     m = month or now.month
     y = year or now.year
-    start = datetime(y, m, 1)
-    end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
+    
+    if day:
+        start = datetime(y, m, day)
+        end = start + timedelta(days=1)
+    else:
+        start = datetime(y, m, 1)
+        end = datetime(y, m + 1, 1) if m < 12 else datetime(y + 1, 1, 1)
 
     # Buscar todas as contas do usuário
     accounts = await accounts_collection.find({"user_id": user["_id"]}).to_list(100)
