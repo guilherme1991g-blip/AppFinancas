@@ -21,7 +21,7 @@ const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', '
 const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 /* ──────────────── SVG Donut Chart ──────────────── */
-function DonutChart({ data, size = 180, strokeWidth = 22, colors: themeColors }: { data: { label: string; value: number; color: string }[]; size?: number; strokeWidth?: number; colors: any }) {
+function DonutChart({ data, size = 180, strokeWidth = 22, colors: themeColors, fmt }: { data: { label: string; value: number; color: string }[]; size?: number; strokeWidth?: number; colors: any; fmt: (v: number) => string }) {
     const total = data.reduce((s, d) => s + d.value, 0);
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -314,7 +314,7 @@ export default function FinancialAnalysisScreen() {
                             <>
                                 {/* Donut */}
                                 <View style={styles.donutWrap}>
-                                    <DonutChart data={donutData} colors={colors} />
+                                    <DonutChart data={donutData} colors={colors} fmt={fmt} />
                                 </View>
 
                                 {/* Category List */}
