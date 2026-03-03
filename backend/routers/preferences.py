@@ -65,11 +65,14 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
     if not update_data:
         raise HTTPException(status_code=400, detail="Sem dados para atualizar")
 
-    # Auto-generate API key when enabling WhatsApp
+    # Auto-generate API key from phone number when enabling WhatsApp
     if update_data.get("whatsapp_enabled") is True:
-        existing_key = current_user.get("preferences", {}).get("api_key")
-        if not existing_key:
-            update_data["api_key"] = f"otto_{secrets.token_hex(20)}"
+        ddi = current_user.get("ddi", "55")
+        phone = current_user.get("phone", "")
+        if not phone:
+            raise HTTPException(status_code=400, detail="Cadastre seu número de celular no perfil antes de ativar a API.")
+        api_key = f"{ddi}{phone}".replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        update_data["api_key"] = api_key
 
     # Construct the $set dictionary for nested preferences
     set_query = {}
