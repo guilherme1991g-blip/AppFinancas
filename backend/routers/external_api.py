@@ -404,7 +404,7 @@ async def listar_agenda(
 ):
     user = await get_user_by_api_key(x_api_key)
     docs = await compromissos_collection.find(
-        {"user_id": user["_id"]}
+        {"user_id": str(user["_id"])}
     ).sort("date", -1).to_list(limit)
     return [_serialize(d) for d in docs]
 
@@ -424,7 +424,7 @@ async def criar_agenda(
 
     now = datetime.utcnow()
     doc = {
-        "user_id": user["_id"],
+        "user_id": str(user["_id"]),
         "title": data["title"],
         "description": data.get("description"),
         "date": datetime.fromisoformat(data["date"]),
