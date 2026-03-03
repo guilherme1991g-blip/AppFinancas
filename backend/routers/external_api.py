@@ -437,3 +437,22 @@ async def criar_agenda(
     result = await compromissos_collection.insert_one(doc)
     doc["_id"] = result.inserted_id
     return _serialize(doc)
+
+
+@router.delete("/agenda/{agenda_id}")
+async def excluir_agenda(
+    agenda_id: str,
+    x_api_key: str = Header(..., alias="X-API-Key")
+):
+    """Excluir um compromisso na agenda."""
+    user = await get_user_by_api_key(x_api_key)
+
+    result = await compromissos_collection.delete_one({
+        "_id": ObjectId(agenda_id),
+        "user_id": str(user["_id"])
+    })
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Compromisso não encontrado ou não pertence ao usuário")
+
+    return {"message": "Compromisso excluído com sucesso"}
