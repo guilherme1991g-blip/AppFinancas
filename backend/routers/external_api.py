@@ -4,6 +4,8 @@ Habilitados/desabilitados pelo toggle WhatsApp nas preferências do usuário.
 """
 import calendar
 from fastapi import APIRouter, HTTPException, Header, Query
+import json
+import urllib.parse
 from typing import Optional
 from datetime import datetime, timedelta
 from bson import ObjectId
@@ -660,6 +662,49 @@ async def relatorio_consolidado(
                 "saldo": acc.get("balance", 0)
             })
 
+    # --- 6. Geração de URLs de Gráficos (QuickChart.io) ---
+    chart_base_url = "https://quickchart.io/chart?c="
+    
+    # Gráfico de Pizza (Categorias)
+    pie_labels = [c["category_name"] for c in categories_summary[:8]]  # Top 8
+    pie_data = [c["total"] for c in categories_summary[:8]]
+    pie_config = {
+        "type": "pie",
+        "data": {
+            "labels": pie_labels,
+            "datasets": [{"data": pie_data}]
+        },
+        "options": {
+            "title": {"display": True, "text": f"Gastos por Categoria ({m:02d}/{y})"},
+            "plugins": {
+                "datalabels": {"display": True, "color": "white", "font": {"weight": "bold"}}
+            }
+        }
+    }
+    chart_categorias_url = chart_base_url + urllib.parse.quote(json.dumps(pie_config))
+
+    # Gráfico de Barras (Receitas vs Despesas)
+    bar_config = {
+        "type": "bar",
+        "data": {
+            "labels": ["Receitas", "Simples", "Recorrentes", "Faturas"],
+            "datasets": [{
+                "label": "R$",
+                "backgroundColor": ["#2ecc71", "#3498db", "#9b59b6", "#e74c3c"],
+                "data": [
+                    total_income, 
+                    total_simple_expense, 
+                    total_recurring_expense, 
+                    total_bills_consolidated
+                ]
+            }]
+        },
+        "options": {
+            "title": {"display": True, "text": "Comparativo Mensal"}
+        }
+    }
+    chart_comparativo_url = chart_base_url + urllib.parse.quote(json.dumps(bar_config))
+
     return {
         "periodo": f"{m:02d}/{y}",
         "resumo": {
@@ -672,5 +717,9 @@ async def relatorio_consolidado(
         },
         "detalhamento_cartoes": cards_detail,
         "saldos_contas": accounts_balances,
-        "categorias": categories_summary
+        "categorias": categories_summary,
+        "graficos": {
+            "categorias_url": chart_categorias_url,
+            "comparativo_url": chart_comparativo_url
+        }
     }
