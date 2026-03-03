@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    RefreshControl, ActivityIndicator
+    RefreshControl, ActivityIndicator, Alert
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,31 @@ export default function AgendaScreen() {
     }
 
     useFocusEffect(useCallback(() => { fetchData(); }, []));
+
+    async function handleDelete(id: string) {
+        Alert.alert(
+            "Excluir Compromisso",
+            "Tem certeza que deseja remover este compromisso da sua agenda?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Excluir",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await api.deleteCompromisso(id);
+                            fetchData();
+                        } catch (e: any) {
+                            Alert.alert("Erro", e.message || "Não foi possível excluir o compromisso.");
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    }
 
     const styles = s(colors);
 
@@ -80,8 +105,16 @@ export default function AgendaScreen() {
                                         <Text style={styles.cardTime}>{fmtDate(c.date)}</Text>
                                         {c.description && <Text style={styles.cardDesc} numberOfLines={2}>{c.description}</Text>}
                                     </View>
-                                    <View style={[styles.statusTag, { backgroundColor: c.reminder ? colors.primary + '15' : colors.textMuted + '15' }]}>
-                                        <Ionicons name={c.reminder ? "notifications" : "notifications-off"} size={14} color={c.reminder ? colors.primary : colors.textMuted} />
+                                    <View style={{ alignItems: 'flex-end', gap: 10 }}>
+                                        <View style={[styles.statusTag, { backgroundColor: c.reminder ? colors.primary + '15' : colors.textMuted + '15' }]}>
+                                            <Ionicons name={c.reminder ? "notifications" : "notifications-off"} size={14} color={c.reminder ? colors.primary : colors.textMuted} />
+                                        </View>
+                                        <TouchableOpacity
+                                            style={[styles.statusTag, { backgroundColor: colors.expense + '15' }]}
+                                            onPress={() => handleDelete(c.id)}
+                                        >
+                                            <Ionicons name="trash-outline" size={16} color={colors.expense} />
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -102,7 +135,7 @@ const s = (colors: any) => StyleSheet.create({
     sub: { fontSize: 13, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
     itemRow: { flexDirection: 'row', gap: 16 },
     timeline: { alignItems: 'center', width: 20 },
-    timeDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary, borderSize: 2, borderColor: colors.background, zIndex: 1 },
+    timeDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.background, zIndex: 1 },
     timeLine: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: -2 },
     card: { flex: 1, backgroundColor: colors.surface, borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
     cardContent: { flexDirection: 'row', gap: 12 },
