@@ -17,7 +17,7 @@ RUN npm run build
 # Stage 2: Nginx
 FROM nginx:alpine
 
-# Copy to root - a aplicação não precisa saber que está em uma subpasta internamente
+# Servir da raiz - o container não precisa saber do subcaminho interno
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
