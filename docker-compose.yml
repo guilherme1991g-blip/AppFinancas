@@ -9,7 +9,6 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-OttoFin2024Secure}
     volumes:
       - mongo_data:/data/db
-    # Porta NÃO exposta externamente — só acessível pela rede interna Docker
     networks:
       - financas_net
 
@@ -44,6 +43,7 @@ services:
       - "127.0.0.1:4000:80"
     depends_on:
       - backend
+      - admin
     networks:
       - financas_net
 
