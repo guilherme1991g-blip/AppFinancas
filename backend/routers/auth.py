@@ -53,7 +53,7 @@ async def register(data: UserCreate):
     }
     result = await users_collection.insert_one(user)
     token = create_token(str(result.inserted_id))
-    return {"token": token, "user": {"id": str(result.inserted_id), "name": data.name, "email": data.email}}
+    return {"token": token, "user": {"id": str(result.inserted_id), "name": data.name, "email": data.email, "is_admin": False}}
 
 
 @router.post("/login")
@@ -70,7 +70,7 @@ async def login(data: UserLogin):
         
         token = create_token(str(user["_id"]))
         print("DEBUG: Token gerado com sucesso")
-        return {"token": token, "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}}
+        return {"token": token, "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"], "is_admin": user.get("is_admin", False)}}
     except Exception as e:
         print(f"DEBUG: Erro inesperado no login: {str(e)}")
         raise e

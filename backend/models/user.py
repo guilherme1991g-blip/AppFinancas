@@ -98,6 +98,7 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: str
+    is_admin: bool = False
     phone: Optional[str] = None
     ddi: Optional[str] = None
     cpf: Optional[str] = None
