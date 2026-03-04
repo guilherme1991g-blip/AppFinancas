@@ -47,6 +47,20 @@ services:
     networks:
       - financas_net
 
+  admin:
+    image: ghcr.io/guilherme1991g-blip/appfinancas-admin:latest
+    build:
+      context: ./admin-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://meudindin.integrareplus.com/api}
+    container_name: financas_admin
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - financas_net
+
 volumes:
   mongo_data:
 
