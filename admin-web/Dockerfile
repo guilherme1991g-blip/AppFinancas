@@ -17,8 +17,8 @@ RUN npm run build
 # Stage 2: Nginx
 FROM nginx:alpine
 
-# Copy to root (Standard SPA)
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy to subfolder matching the base path used in build
+COPY --from=builder /app/dist /usr/share/nginx/html/dev-admin
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
