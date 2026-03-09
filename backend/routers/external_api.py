@@ -35,10 +35,10 @@ async def get_user_by_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
 
     # Fallback: match by phone number directly
     if not user:
-        last8 = clean_key[-8:]
+        last11 = clean_key[-11:]  # DDD + 9 + Number (Brazilian standard)
         async for u in users_collection.find({"phone": {"$exists": True}}):
             phone_digits = "".join(c for c in (u.get("phone") or "") if c.isdigit())
-            if phone_digits and phone_digits[-8:] == last8:
+            if phone_digits and phone_digits[-11:] == last11:
                 user = u
                 # Save api_key for faster lookups next time
                 await users_collection.update_one(
