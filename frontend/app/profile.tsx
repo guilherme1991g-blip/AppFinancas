@@ -152,9 +152,7 @@ export default function ProfileScreen() {
 
     function isPersonalComplete() {
         if (!name.trim() || !email.trim()) return false;
-        if (isBrazilian) {
-            if (!cpf || !cep || !city || !state) return false;
-        }
+        if (!cpf || !cep || !city || !state) return false;
         return true;
     }
 
@@ -185,12 +183,10 @@ export default function ProfileScreen() {
 
         setSaving(true);
         try {
-            if (isBrazilian) {
-                if (!cep || !city || !state) {
-                    Alert.alert(t('profile.error'), 'CEP, Cidade e UF são obrigatórios para brasileiros');
-                    setSaving(false);
-                    return;
-                }
+            if (!cep || !city || !state || !cpf) {
+                Alert.alert(t('profile.error'), 'CPF, CEP, Cidade e UF são obrigatórios');
+                setSaving(false);
+                return;
             }
 
             const res: any = await api.updateProfile({
@@ -198,11 +194,11 @@ export default function ProfileScreen() {
                 email: email.trim(),
                 phone,
                 ddi,
-                cpf: isBrazilian ? cpf : undefined,
-                is_brazilian: isBrazilian,
-                cep: isBrazilian ? cep : undefined,
-                city: isBrazilian ? city : undefined,
-                state: isBrazilian ? state : undefined,
+                cpf,
+                is_brazilian: true,
+                cep,
+                city,
+                state,
                 birth_date: birthDate,
                 education,
                 occupation,
@@ -358,78 +354,60 @@ export default function ProfileScreen() {
                                 />
                             </View>
 
-                            <View style={styles.nationalityRow}>
-                                <Text style={styles.formLabel}>Brasileiro(a)?</Text>
-                                <Switch
-                                    value={isBrazilian}
-                                    onValueChange={setIsBrazilian}
-                                    trackColor={{ false: colors.border, true: colors.primary + '80' }}
-                                    thumbColor={isBrazilian ? colors.primary : colors.textSecondary}
+                            <Text style={styles.formLabel}>{t('profile.cpf')}</Text>
+                            <View style={styles.inputRow}>
+                                <Ionicons name="document-text-outline" size={18} color={colors.textMuted} />
+                                <TextInput
+                                    style={styles.input}
+                                    value={cpf}
+                                    onChangeText={(v) => setCpf(formatCPF(v))}
+                                    placeholder="000.000.000-00"
+                                    placeholderTextColor={colors.textMuted}
+                                    keyboardType="number-pad"
                                 />
                             </View>
 
-                            {isBrazilian && (
-                                <>
-                                    <Text style={styles.formLabel}>{t('profile.cpf')}</Text>
+                            <Text style={styles.formLabel}>CEP *</Text>
+                            <View style={styles.inputRow}>
+                                <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+                                <TextInput
+                                    style={styles.input}
+                                    value={cep}
+                                    onChangeText={handleCepChange}
+                                    placeholder="00000-000"
+                                    placeholderTextColor={colors.textMuted}
+                                    keyboardType="number-pad"
+                                />
+                            </View>
+
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <View style={{ flex: 3 }}>
+                                    <Text style={styles.formLabel}>Cidade *</Text>
                                     <View style={styles.inputRow}>
-                                        <Ionicons name="document-text-outline" size={18} color={colors.textMuted} />
                                         <TextInput
                                             style={styles.input}
-                                            value={cpf}
-                                            onChangeText={(v) => setCpf(formatCPF(v))}
-                                            placeholder="000.000.000-00"
+                                            value={city}
+                                            onChangeText={setCity}
+                                            placeholder="Cidade"
                                             placeholderTextColor={colors.textMuted}
-                                            keyboardType="number-pad"
                                         />
                                     </View>
-                                </>
-                            )}
-
-                            {isBrazilian && (
-                                <>
-                                    <Text style={styles.formLabel}>CEP *</Text>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.formLabel}>UF *</Text>
                                     <View style={styles.inputRow}>
-                                        <Ionicons name="location-outline" size={18} color={colors.textMuted} />
                                         <TextInput
                                             style={styles.input}
-                                            value={cep}
-                                            onChangeText={handleCepChange}
-                                            placeholder="00000-000"
+                                            value={state}
+                                            onChangeText={setState}
+                                            placeholder="UF"
                                             placeholderTextColor={colors.textMuted}
-                                            keyboardType="number-pad"
+                                            autoCapitalize="characters"
+                                            maxLength={2}
                                         />
                                     </View>
-
-                                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                                        <View style={{ flex: 3 }}>
-                                            <Text style={styles.formLabel}>Cidade *</Text>
-                                            <View style={styles.inputRow}>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    value={city}
-                                                    onChangeText={setCity}
-                                                    placeholder="Cidade"
-                                                    placeholderTextColor={colors.textMuted}
-                                                />
-                                            </View>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.formLabel}>UF *</Text>
-                                            <View style={styles.inputRow}>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    value={state}
-                                                    onChangeText={setState}
-                                                    placeholder="UF"
-                                                    placeholderTextColor={colors.textMuted}
-                                                    autoCapitalize="characters"
-                                                    maxLength={2}
-                                                />
-                                            </View>
-                                        </View>
-                                    </View>
-                                </>
-                            )}
+                                </View>
+                            </View>
 
                             <TouchableOpacity
                                 style={[styles.nextBtn, !isPersonalComplete() && { opacity: 0.5 }]}

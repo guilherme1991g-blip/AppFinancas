@@ -65,12 +65,10 @@ def is_profile_complete(user: dict) -> bool:
             if not user.get("email"): print("DEBUG: Perfil incompleto - falta email")
             return False
             
-        # Nationality check - only check documents if brazilian
-        is_brazilian = user.get("is_brazilian")
-        if is_brazilian is not False: # Default to True (None or True)
-            if not user.get("cpf") or not user.get("cep") or not user.get("city") or not user.get("state"):
-                print(f"DEBUG: Perfil incompleto - falta info brasileira (is_brazilian={is_brazilian})")
-                return False
+        # Dados Obrigatórios (Antes condicionais a is_brazilian)
+        if not user.get("cpf") or not user.get("cep") or not user.get("city") or not user.get("state"):
+            print(f"DEBUG: Perfil incompleto - falta info obrigatória (CPF/Endereço)")
+            return False
                 
         # Profissional - Let's be a bit more lenient if needed, but for now we keep the check
         for field in ["education", "occupation", "salary_range"]:
