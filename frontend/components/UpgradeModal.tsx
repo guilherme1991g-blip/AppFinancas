@@ -4,6 +4,7 @@ import {
     Animated, Dimensions, Alert, ActivityIndicator, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
@@ -19,7 +20,8 @@ interface Props {
 
 export function UpgradeModal({ visible, message, onClose }: Props) {
     const { colors } = useTheme();
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
+    const router = useRouter();
     const scaleAnim = useRef(new Animated.Value(0.85)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const [trialLoading, setTrialLoading] = useState(false);
@@ -67,11 +69,13 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
     async function handleStartTrial() {
         setTrialLoading(true);
         try {
-            const result: any = await api.startTrial();
+            await api.startTrial();
+            await refreshUser();
+            onClose();
+            router.replace('/(tabs)');
             Alert.alert(
                 '🎉 Trial Ativado!',
-                result.message || 'Aproveite 7 dias de Premium!',
-                [{ text: 'Incrível!', onPress: onClose }]
+                'Aproveite 7 dias de Premium!'
             );
         } catch (err: any) {
             Alert.alert('Ops', err.message || 'Não foi possível ativar o trial.');

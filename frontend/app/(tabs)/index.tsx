@@ -599,6 +599,28 @@ export default function DashboardScreen() {
                 </View>
             </View>
 
+            {/* Premium Banner */}
+            {user?.trial_active && (
+                <TouchableOpacity
+                    style={styles.premiumBanner}
+                    onPress={() => router.push('/(tabs)/more')}
+                    activeOpacity={0.9}
+                >
+                    <View style={styles.premiumBannerContent}>
+                        <View style={styles.premiumIconWrap}>
+                            <Ionicons name="sparkles" size={20} color="#FFF" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.premiumTitle}>Período Premium Ativo!</Text>
+                            <Text style={styles.premiumSub}>
+                                Você tem {user.trial_days_left} {user.trial_days_left === 1 ? 'dia' : 'dias'} de acesso total. Aproveite!
+                            </Text>
+                        </View>
+                        <Ionicons name="star" size={24} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', right: -10, top: -5 }} />
+                    </View>
+                </TouchableOpacity>
+            )}
+
             {/* Month selector */}
             <View style={styles.monthRow}>
                 <TouchableOpacity onPress={prevMonth} style={styles.monthArrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
@@ -799,4 +821,42 @@ const s = (colors: any) => StyleSheet.create({
 
     overdueEmpty: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.income + '30' },
     overdueEmptyTxt: { fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
+
+    premiumBanner: {
+        marginHorizontal: 20,
+        marginBottom: 20,
+        borderRadius: 20,
+        backgroundColor: '#8B5CF6', // Purple Premium
+        padding: 16,
+        shadowColor: '#8B5CF6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+        overflow: 'hidden',
+    },
+    premiumBannerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    premiumIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    premiumTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#FFF',
+    },
+    premiumSub: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.8)',
+        fontWeight: '600',
+        marginTop: 2,
+    },
 });
