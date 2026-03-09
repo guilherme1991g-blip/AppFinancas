@@ -19,7 +19,7 @@ export const adminService = {
     getUsers: (limit = 50, skip = 0) => api.get(`/admin/users?limit=${limit}&skip=${skip}`),
     getUserDetail: (userId: string) => api.get(`/admin/users/${userId}`),
     updateUserRole: (userId: string, isAdmin: boolean) => api.patch(`/admin/users/${userId}/role?is_admin=${isAdmin}`),
-    updateUserPlan: (userId: string, plan: string) => api.patch(`/admin/users/${userId}/plan?plan=${plan}`),
+    updateUserPlan: (userId: string, plan: string, days: number = 30) => api.patch(`/admin/users/${userId}/plan?plan=${plan}&days=${days}`),
     getTransactions: (limit = 100) => api.get(`/admin/transactions?limit=${limit}`),
 };
 

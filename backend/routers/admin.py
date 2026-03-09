@@ -120,6 +120,10 @@ async def get_user_detail(user_id: str, admin_user=Depends(get_admin_user)):
     plan = user.get("plan", "free")
     limits = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
     
+    # Obter informações completas do plano (efetivo, expiração, trial)
+    from utils.plan_limits import get_plan_info
+    plan_info = get_plan_info(user)
+    
     user_data = _build_user_response(user).model_dump()
     user_data["usage"] = {
         "accounts": total_accounts,
@@ -127,7 +131,8 @@ async def get_user_detail(user_id: str, admin_user=Depends(get_admin_user)):
         "transactions_this_month": transactions_this_month,
         "total_transactions": total_transactions,
     }
-    user_data["plan_limits"] = limits
+    user_data["plan_limits"] = plan_info.get("plan_limits", limits)
+    user_data["plan_info"] = plan_info
     
     return user_data
 

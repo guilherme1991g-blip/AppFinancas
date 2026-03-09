@@ -16,7 +16,10 @@ import {
     Check,
     Sparkles,
     Crown,
-    Zap
+    Zap,
+    Clock,
+    AlertTriangle,
+    Gift
 } from 'lucide-react';
 import { adminService } from '../services/api';
 
@@ -65,6 +68,7 @@ export default function UserDetail() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [changingPlan, setChangingPlan] = useState<string | null>(null);
+    const [planDays, setPlanDays] = useState(30);
 
     const fetchUser = async () => {
         try {
@@ -87,7 +91,7 @@ export default function UserDetail() {
         if (plan === user?.plan) return;
         setChangingPlan(plan);
         try {
-            await adminService.updateUserPlan(user.id, plan);
+            await adminService.updateUserPlan(user.id, plan, plan === 'free' ? 30 : planDays);
             await fetchUser();
         } catch (err) {
             console.error('Error updating plan:', err);
@@ -107,6 +111,10 @@ export default function UserDetail() {
 
     if (!user) return null;
 
+    const planInfo = user.plan_info || {};
+    const effectivePlan = planInfo.plan || user.plan || 'free';
+    const storedPlan = planInfo.stored_plan || user.plan || 'free';
+
     const infoItems = [
         { icon: Mail, label: 'Email', value: user.email },
         { icon: Phone, label: 'Telefone', value: user.phone ? `${user.ddi || ''} ${user.phone}` : '—' },
@@ -115,6 +123,14 @@ export default function UserDetail() {
         { icon: User, label: 'CPF', value: user.cpf || '—' },
         { icon: Shield, label: 'Admin', value: user.is_admin ? 'Sim' : 'Não' },
     ];
+
+    const formatDate = (iso: string) => {
+        try {
+            return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        } catch {
+            return iso;
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -240,14 +256,123 @@ export default function UserDetail() {
                 </div>
             </div>
 
+            {/* ─── Status do Plano (Expiração + Trial) ─── */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-slate-400" />
+                    Status do Plano
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Plano Efetivo */}
+                    <div className={`rounded-xl p-4 border ${effectivePlan === 'premium' ? 'bg-amber-50 border-amber-200' :
+                            effectivePlan === 'basic' ? 'bg-blue-50 border-blue-200' :
+                                'bg-slate-50 border-slate-200'
+                        }`}>
+                        <p className="text-xs font-medium text-slate-500 mb-1">Plano Efetivo</p>
+                        <p className={`text-xl font-bold ${effectivePlan === 'premium' ? 'text-amber-700' :
+                                effectivePlan === 'basic' ? 'text-blue-700' :
+                                    'text-slate-700'
+                            }`}>
+                            {effectivePlan === 'premium' ? 'Premium' : effectivePlan === 'basic' ? 'Básico' : 'Grátis'}
+                        </p>
+                        {effectivePlan !== storedPlan && (
+                            <p className="text-xs text-slate-400 mt-1">
+                                Plano cadastrado: {storedPlan === 'premium' ? 'Premium' : storedPlan === 'basic' ? 'Básico' : 'Grátis'}
+                                {planInfo.plan_expired && <span className="text-red-500 font-semibold"> (Expirado)</span>}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Vencimento do Plano */}
+                    <div className={`rounded-xl p-4 border ${planInfo.plan_expired ? 'bg-red-50 border-red-200' :
+                            planInfo.plan_expires_at ? 'bg-slate-50 border-slate-200' :
+                                'bg-slate-50 border-slate-200'
+                        }`}>
+                        <p className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
+                            {planInfo.plan_expired && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                            Vencimento do Plano
+                        </p>
+                        {planInfo.plan_expires_at ? (
+                            <>
+                                <p className={`text-lg font-bold ${planInfo.plan_expired ? 'text-red-600' : 'text-slate-900'}`}>
+                                    {formatDate(planInfo.plan_expires_at)}
+                                </p>
+                                {planInfo.plan_days_left !== undefined && !planInfo.plan_expired && (
+                                    <p className={`text-xs mt-1 ${planInfo.plan_days_left <= 7 ? 'text-orange-500 font-semibold' : 'text-slate-400'}`}>
+                                        {planInfo.plan_days_left} dias restantes
+                                    </p>
+                                )}
+                                {planInfo.plan_expired && (
+                                    <p className="text-xs text-red-500 font-semibold mt-1">Plano expirado</p>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-lg font-bold text-slate-400">
+                                {user.is_admin ? 'Sem vencimento (Admin)' : 'Sem vencimento'}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Trial */}
+                    <div className={`rounded-xl p-4 border ${planInfo.trial_active ? 'bg-purple-50 border-purple-200' :
+                            planInfo.trial_used ? 'bg-slate-50 border-slate-200' :
+                                'bg-emerald-50 border-emerald-200'
+                        }`}>
+                        <p className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
+                            <Gift className="w-3 h-3" />
+                            Trial Premium (7 dias)
+                        </p>
+                        {planInfo.trial_active ? (
+                            <>
+                                <p className="text-lg font-bold text-purple-700">Ativo</p>
+                                <p className="text-xs text-purple-500 mt-1">
+                                    {planInfo.trial_days_left} dias restantes — expira {formatDate(planInfo.trial_expires_at)}
+                                </p>
+                            </>
+                        ) : planInfo.trial_used ? (
+                            <>
+                                <p className="text-lg font-bold text-slate-500">Já utilizado</p>
+                                <p className="text-xs text-slate-400 mt-1">Este usuário já consumiu o trial</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-lg font-bold text-emerald-700">Disponível</p>
+                                <p className="text-xs text-emerald-500 mt-1">O usuário ainda pode ativar o trial</p>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {/* Plano */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-slate-900 mb-2">Plano do Usuário</h2>
-                <p className="text-sm text-slate-500 mb-6">Selecione o plano para este usuário. As permissões são aplicadas imediatamente.</p>
+                <p className="text-sm text-slate-500 mb-4">Selecione o plano para este usuário. As permissões são aplicadas imediatamente.</p>
+
+                {/* Days Input */}
+                <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">Duração do plano:</span>
+                    <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={planDays}
+                        onChange={(e) => setPlanDays(Math.max(1, Math.min(365, Number(e.target.value))))}
+                        className="w-20 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-center font-semibold"
+                    />
+                    <span className="text-sm text-slate-400">dias</span>
+                    {user.is_admin && (
+                        <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">
+                            Admin — sem vencimento
+                        </span>
+                    )}
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {PLANS.map((plan) => {
-                        const isActive = user.plan === plan.id;
+                        const isActive = effectivePlan === plan.id;
+                        const isStoredActive = storedPlan === plan.id;
                         const isChanging = changingPlan === plan.id;
                         const Icon = plan.icon;
 
@@ -286,15 +411,15 @@ export default function UserDetail() {
 
                                 <button
                                     onClick={() => handleChangePlan(plan.id)}
-                                    disabled={isActive || isChanging}
+                                    disabled={isStoredActive || isChanging}
                                     className={`w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${plan.btnClass}`}
                                 >
                                     {isChanging ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : isActive ? (
+                                    ) : isStoredActive ? (
                                         'Plano Atual'
                                     ) : (
-                                        'Selecionar'
+                                        `Selecionar (${planDays}d)`
                                     )}
                                 </button>
                             </div>
