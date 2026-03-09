@@ -16,9 +16,14 @@ async function getToken(): Promise<string | null> {
 }
 
 let onUnauthorized: (() => void) | null = null;
+let onPlanLimit: ((message: string) => void) | null = null;
 
 export const setUnauthorizedListener = (callback: () => void) => {
     onUnauthorized = callback;
+};
+
+export const setPlanLimitListener = (callback: (message: string) => void) => {
+    onPlanLimit = callback;
 };
 
 async function request<T>(
@@ -43,10 +48,19 @@ async function request<T>(
         });
         clearTimeout(id);
 
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
             if (onUnauthorized) onUnauthorized();
             const err = await response.json().catch(() => ({ detail: 'Sessão expirada' }));
             throw new Error(err.detail || 'Sua sessão expirou. Por favor, entre novamente.');
+        }
+
+        if (response.status === 403) {
+            const err = await response.json().catch(() => ({ detail: 'Limite do plano atingido' }));
+            const msg = err.detail || 'Limite do plano atingido';
+            if (onPlanLimit) onPlanLimit(msg);
+            const error = new Error(msg);
+            (error as any).status = 403;
+            throw error;
         }
 
         if (!response.ok) {

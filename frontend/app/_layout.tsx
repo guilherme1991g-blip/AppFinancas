@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useAuth, AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { LocaleProvider } from '@/contexts/LocaleContext';
+import { UpgradeProvider, useUpgrade } from '@/contexts/UpgradeContext';
 import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,7 +15,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { api } from '@/services/api';
+import { api, setPlanLimitListener } from '@/services/api';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -72,8 +73,15 @@ async function registerForPushNotificationsAsync() {
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const { mode, colors } = useTheme();
+  const { showUpgrade } = useUpgrade();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    setPlanLimitListener((msg: string) => {
+      showUpgrade(msg);
+    });
+  }, [showUpgrade]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -145,7 +153,9 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <LocaleProvider>
-              <RootLayoutNav />
+              <UpgradeProvider>
+                <RootLayoutNav />
+              </UpgradeProvider>
             </LocaleProvider>
           </ThemeProvider>
         </AuthProvider>
