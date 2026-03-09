@@ -1,23 +1,88 @@
 """
 Helpers para verificação de limites de plano.
+Inclui resolução de plano efetivo (expiração, admin, trial).
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import users_collection, accounts_collection, transactions_collection, compromissos_collection
 from models.user import PLAN_LIMITS
 from fastapi import HTTPException
 from bson import ObjectId
 
 
+def get_effective_plan(user: dict) -> str:
+    """
+    Retorna o plano efetivo do usuário considerando:
+    - Admin nunca expira
+    - Planos pagos (basic/premium) expiram em plan_expires_at
+    - Trial expira em trial_expires_at
+    """
+    # Admin sempre mantém o plano
+    if user.get("is_admin"):
+        return user.get("plan", "free")
+
+    stored_plan = user.get("plan", "free")
+    now = datetime.utcnow()
+
+    # Verificar trial ativo
+    trial_expires = user.get("trial_expires_at")
+    if trial_expires and trial_expires > now:
+        return "premium"  # trial ativo = premium
+
+    # Verificar expiração de plano pago
+    if stored_plan in ("basic", "premium"):
+        plan_expires = user.get("plan_expires_at")
+        if plan_expires and plan_expires <= now:
+            return "free"  # expirado → cai para free
+
+    return stored_plan
+
+
 def get_plan_limits(user: dict) -> dict:
-    """Retorna os limites do plano do usuário."""
-    plan = user.get("plan", "free")
+    """Retorna os limites do plano efetivo do usuário."""
+    plan = get_effective_plan(user)
     return PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+
+
+def get_plan_info(user: dict) -> dict:
+    """Retorna informações completas do plano para o frontend."""
+    effective = get_effective_plan(user)
+    limits = PLAN_LIMITS.get(effective, PLAN_LIMITS["free"])
+    now = datetime.utcnow()
+
+    info = {
+        "plan": effective,
+        "plan_limits": limits,
+        "stored_plan": user.get("plan", "free"),
+        "is_admin": user.get("is_admin", False),
+        "trial_used": user.get("trial_used", False),
+    }
+
+    # Trial info
+    trial_expires = user.get("trial_expires_at")
+    if trial_expires and trial_expires > now:
+        info["trial_active"] = True
+        info["trial_expires_at"] = trial_expires.isoformat()
+        info["trial_days_left"] = max(0, (trial_expires - now).days)
+    else:
+        info["trial_active"] = False
+
+    # Plan expiration info
+    plan_expires = user.get("plan_expires_at")
+    if plan_expires:
+        info["plan_expires_at"] = plan_expires.isoformat()
+        if plan_expires > now:
+            info["plan_days_left"] = max(0, (plan_expires - now).days)
+        else:
+            info["plan_expired"] = True
+
+    return info
 
 
 async def check_account_limit(user_id, account_type: str):
     """Verifica se o usuário pode criar mais uma conta ou cartão."""
     user = await users_collection.find_one({"_id": user_id})
     limits = get_plan_limits(user)
+    effective = get_effective_plan(user)
 
     if account_type == "credit_card":
         max_allowed = limits["max_credit_cards"]
@@ -26,11 +91,10 @@ async def check_account_limit(user_id, account_type: str):
             "type": "credit_card"
         })
         if current >= max_allowed:
-            plan = user.get("plan", "free")
             if max_allowed == 0:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"Seu plano ({plan}) não permite cartões de crédito. Faça upgrade para desbloquear este recurso."
+                    detail=f"Seu plano ({effective}) não permite cartões de crédito. Faça upgrade para desbloquear este recurso."
                 )
             raise HTTPException(
                 status_code=403,
@@ -43,7 +107,6 @@ async def check_account_limit(user_id, account_type: str):
             "type": {"$ne": "credit_card"}
         })
         if current >= max_allowed:
-            plan = user.get("plan", "free")
             raise HTTPException(
                 status_code=403,
                 detail=f"Limite de contas atingido ({current}/{max_allowed}). Faça upgrade do seu plano para adicionar mais."
@@ -72,7 +135,7 @@ async def check_transaction_limit(user_id):
     })
 
     if current >= max_tx:
-        plan = user.get("plan", "free")
+        effective = get_effective_plan(user)
         raise HTTPException(
             status_code=403,
             detail=f"Limite de transações do mês atingido ({current}/{max_tx}). Faça upgrade do seu plano para transações ilimitadas."
@@ -93,7 +156,7 @@ async def check_agendamento_limit(user_id):
     })
 
     if current >= max_ag:
-        plan = user.get("plan", "free")
+        effective = get_effective_plan(user)
         raise HTTPException(
             status_code=403,
             detail=f"Limite de agendamentos atingido ({current}/{max_ag}). Faça upgrade do seu plano para agendamentos ilimitados."

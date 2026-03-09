@@ -52,7 +52,6 @@ class PreferencesUpdate(BaseModel):
     language: Optional[str] = None
     currency: Optional[str] = None
     theme: Optional[str] = None
-    whatsapp_enabled: Optional[bool] = None
     dashboard_cards: Optional[List[DashboardCard]] = None
 
 
@@ -64,34 +63,6 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="Sem dados para atualizar")
-
-    # Auto-generate API key from phone number when enabling WhatsApp
-    if update_data.get("whatsapp_enabled") is True:
-        # Verificar se o plano permite WhatsApp
-        from models.user import PLAN_LIMITS
-        user_plan = current_user.get("plan", "free")
-        limits = PLAN_LIMITS.get(user_plan, PLAN_LIMITS["free"])
-        if not limits.get("whatsapp_enabled"):
-            raise HTTPException(
-                status_code=403,
-                detail=f"Seu plano ({user_plan}) não inclui acesso ao WhatsApp. Faça upgrade para o plano Premium."
-            )
-
-        ddi = current_user.get("ddi", "55")
-        phone = current_user.get("phone", "")
-        if not phone:
-            raise HTTPException(status_code=400, detail="Cadastre seu número de celular no perfil antes de ativar a API.")
-        # Limpar e extrair apenas dígitos do telefone
-        phone_digits = "".join(c for c in phone if c.isdigit())
-        # Pegar DDD (2 primeiros dígitos) + últimos 8 dígitos
-        if len(phone_digits) >= 10:
-            ddd = phone_digits[:2]
-            last8 = phone_digits[-8:]
-        else:
-            ddd = ""
-            last8 = phone_digits
-        api_key = f"{ddi}{ddd}{last8}"
-        update_data["api_key"] = api_key
 
     # Construct the $set dictionary for nested preferences
     set_query = {}

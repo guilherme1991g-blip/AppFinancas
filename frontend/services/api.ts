@@ -245,6 +245,7 @@ export const api = {
         equity?: number;
     }) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
     deleteUserAccount: (deleteProfile: boolean = true) => request(`/auth/account?delete_profile=${deleteProfile}`, { method: 'DELETE' }),
+    startTrial: () => request('/auth/start-trial', { method: 'POST' }),
 
     // Sonhos
     getSonhos: () => request('/sonhos'),

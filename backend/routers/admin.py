@@ -132,27 +132,36 @@ async def get_user_detail(user_id: str, admin_user=Depends(get_admin_user)):
     return user_data
 
 @router.patch("/users/{user_id}/plan")
-async def update_user_plan(user_id: str, plan: str = Query(..., enum=["free", "basic", "premium"]), admin_user=Depends(get_admin_user)):
+async def update_user_plan(user_id: str, plan: str = Query(..., enum=["free", "basic", "premium"]), days: int = Query(30, ge=1, le=365), admin_user=Depends(get_admin_user)):
     if plan not in PLAN_LIMITS:
         raise HTTPException(status_code=400, detail="Plano inválido")
     
     limits = PLAN_LIMITS[plan]
     
-    # Atualizar plano e whatsapp_enabled de acordo
-    update = {
-        "$set": {
-            "plan": plan,
-            "preferences.whatsapp_enabled": limits["whatsapp_enabled"],
-        }
-    }
-    
-    result = await users_collection.update_one({"_id": ObjectId(user_id)}, update)
-    
-    if result.matched_count == 0:
+    # Verificar se o usuário alvo é admin
+    target_user = await users_collection.find_one({"_id": ObjectId(user_id)})
+    if not target_user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
+    update_set = {
+        "plan": plan,
+        "preferences.whatsapp_enabled": limits["whatsapp_enabled"],
+    }
+    
+    # Definir expiração (admins não expiram)
+    if plan in ("basic", "premium") and not target_user.get("is_admin"):
+        from datetime import timedelta
+        update_set["plan_expires_at"] = datetime.utcnow() + timedelta(days=days)
+    elif plan == "free":
+        update_set["plan_expires_at"] = None
+    
+    result = await users_collection.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": update_set}
+    )
+    
     return {
-        "message": f"Plano alterado para '{plan}' com sucesso",
+        "message": f"Plano alterado para '{plan}' com sucesso" + (f" ({days} dias)" if plan != "free" else ""),
         "plan": plan,
         "limits": limits
     }

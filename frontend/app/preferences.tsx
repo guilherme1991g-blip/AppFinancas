@@ -234,28 +234,6 @@ export default function PreferencesScreen() {
                     )}
                 </View>
 
-                {/* ─── WhatsApp ─── */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>{t('prefs.whatsapp')}</Text>
-                    <Text style={styles.sectionSub}>{t('prefs.whatsapp_sub')}</Text>
-
-                    <View style={styles.selectorCard}>
-                        <View style={[styles.whatsappIcon, { backgroundColor: '#25D36615' }]}>
-                            <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.selectorTitle}>WhatsApp</Text>
-                            <Text style={styles.selectorCode}>{whatsappEnabled ? 'Ativado' : 'Desativado'}</Text>
-                        </View>
-                        <Switch
-                            value={whatsappEnabled}
-                            onValueChange={toggleWhatsApp}
-                            trackColor={{ false: colors.border, true: '#25D366' + '80' }}
-                            thumbColor={whatsappEnabled ? '#25D366' : colors.textSecondary}
-                        />
-                    </View>
-                </View>
-
                 {/* ─── Zona de Perigo ─── */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionLabel, { color: colors.danger }]}>{t('prefs.danger_zone')}</Text>

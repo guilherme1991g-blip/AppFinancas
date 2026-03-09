@@ -18,6 +18,15 @@ interface User {
         whatsapp_enabled: boolean;
         tools_enabled: boolean;
     };
+    trial_used?: boolean;
+    trial_active?: boolean;
+    trial_expires_at?: string;
+    trial_days_left?: number;
+    plan_expires_at?: string;
+    plan_days_left?: number;
+    plan_expired?: boolean;
+    stored_plan?: string;
+    is_admin?: boolean;
 }
 
 interface AuthContextType {

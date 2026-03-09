@@ -70,8 +70,8 @@ async def login(data: UserLogin):
         
         token = create_token(str(user["_id"]))
         print("DEBUG: Token gerado com sucesso")
-        from models.user import PLAN_LIMITS
-        plan = user.get("plan", "free")
+        from utils.plan_limits import get_plan_info
+        plan_info = get_plan_info(user)
         return {
             "token": token,
             "user": {
@@ -79,8 +79,7 @@ async def login(data: UserLogin):
                 "name": user["name"],
                 "email": user["email"],
                 "is_admin": user.get("is_admin", False),
-                "plan": plan,
-                "plan_limits": PLAN_LIMITS.get(plan, PLAN_LIMITS["free"]),
+                **plan_info,
             }
         }
     except Exception as e:
@@ -109,8 +108,8 @@ async def change_password(data: ChangePassword, current_user=Depends(get_current
 
 @router.get("/me")
 async def me(current_user=Depends(get_current_user)):
-    from models.user import PLAN_LIMITS
-    plan = current_user.get("plan", "free")
+    from utils.plan_limits import get_plan_info
+    plan_info = get_plan_info(current_user)
     return {
         "id": str(current_user["_id"]),
         "name": current_user["name"],
@@ -135,8 +134,58 @@ async def me(current_user=Depends(get_current_user)):
         "vehicle_type": current_user.get("vehicle_type"),
         "equity": current_user.get("equity"),
         "created_at": current_user["created_at"],
-        "plan": plan,
-        "plan_limits": PLAN_LIMITS.get(plan, PLAN_LIMITS["free"]),
+        **plan_info,
+    }
+
+
+@router.post("/start-trial")
+async def start_trial(current_user=Depends(get_current_user)):
+    """Inicia o trial premium de 7 dias (apenas uma vez por usuário)."""
+    from utils.plan_limits import get_effective_plan, get_plan_info
+    from datetime import timedelta
+    
+    # Verificar se já usou o trial
+    if current_user.get("trial_used"):
+        raise HTTPException(status_code=400, detail="Você já utilizou seu período de degustação Premium.")
+    
+    # Verificar se já é premium (plano ativo, não expirado)
+    effective = get_effective_plan(current_user)
+    if effective == "premium":
+        raise HTTPException(status_code=400, detail="Você já está no plano Premium.")
+    
+    trial_end = datetime.utcnow() + timedelta(days=7)
+    
+    # Gerar API key para WhatsApp a partir do telefone
+    update_set: dict = {
+        "trial_used": True,
+        "trial_expires_at": trial_end,
+        "preferences.whatsapp_enabled": True,
+    }
+    
+    phone = current_user.get("phone", "")
+    if phone:
+        ddi = current_user.get("ddi", "55")
+        phone_digits = "".join(c for c in phone if c.isdigit())
+        if len(phone_digits) >= 10:
+            ddd = phone_digits[:2]
+            last8 = phone_digits[-8:]
+        else:
+            ddd = ""
+            last8 = phone_digits
+        update_set["preferences.api_key"] = f"{ddi}{ddd}{last8}"
+    
+    await users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": update_set}
+    )
+    
+    # Refetch user to return updated plan info
+    updated = await users_collection.find_one({"_id": current_user["_id"]})
+    plan_info = get_plan_info(updated)
+    
+    return {
+        "message": "Trial Premium ativado! Aproveite 7 dias com todos os recursos.",
+        **plan_info,
     }
 
 
