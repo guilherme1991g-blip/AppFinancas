@@ -289,7 +289,7 @@ export default function NewTransactionScreen() {
             }
             router.back();
         } catch (e: any) {
-            Alert.alert('Erro', e.message);
+            if (!e.planLimitHandled) Alert.alert('Erro', e.message);
         } finally {
             setLoading(false);
         }

@@ -56,6 +56,25 @@ async def register(data: UserCreate):
     return {"token": token, "user": {"id": str(result.inserted_id), "name": data.name, "email": data.email, "is_admin": False}}
 
 
+def is_profile_complete(user: dict) -> bool:
+    """Verifica se o perfil do usuário está completamente preenchido."""
+    # Pessoal
+    if not user.get("name") or not user.get("email"):
+        return False
+    if user.get("is_brazilian", True):
+        if not user.get("cpf") or not user.get("cep") or not user.get("city") or not user.get("state"):
+            return False
+    # Profissional
+    if not user.get("education") or not user.get("occupation") or not user.get("salary_range"):
+        return False
+    # Financeiro
+    if not user.get("housing_type") or not user.get("household_size"):
+        return False
+    if user.get("equity") is None:
+        return False
+    return True
+
+
 @router.post("/login")
 async def login(data: UserLogin):
     normalized_email = data.email.strip().lower()
@@ -79,6 +98,7 @@ async def login(data: UserLogin):
                 "name": user["name"],
                 "email": user["email"],
                 "is_admin": user.get("is_admin", False),
+                "profile_complete": is_profile_complete(user),
                 **plan_info,
             }
         }
@@ -134,6 +154,7 @@ async def me(current_user=Depends(get_current_user)):
         "vehicle_type": current_user.get("vehicle_type"),
         "equity": current_user.get("equity"),
         "created_at": current_user["created_at"],
+        "profile_complete": is_profile_complete(current_user),
         **plan_info,
     }
 

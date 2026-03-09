@@ -55,7 +55,7 @@ const DDI_LIST = [
 export default function ProfileScreen() {
     const { colors } = useTheme();
     const { t } = useLocale();
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const insets = useSafeAreaInsets();
 
     const [name, setName] = useState('');
@@ -213,6 +213,7 @@ export default function ProfileScreen() {
                 vehicle_type: hasVehicle ? vehicleType : undefined,
                 equity: parseFloat(equity.replace(',', '.')) || 0
             });
+            await refreshUser();
             Alert.alert('✅', t('profile.saved'));
         } catch (e: any) {
             Alert.alert(t('profile.error'), e.message || t('profile.save_error'));

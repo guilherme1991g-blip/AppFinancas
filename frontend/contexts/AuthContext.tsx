@@ -27,6 +27,7 @@ interface User {
     plan_expired?: boolean;
     stored_plan?: string;
     is_admin?: boolean;
+    profile_complete?: boolean;
 }
 
 interface AuthContextType {
@@ -35,6 +36,7 @@ interface AuthContextType {
     login: (email: string, password: string, saveSecure?: boolean) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
     getBiometricCredentials: () => Promise<{ email: string; password: string } | null>;
 }
 
@@ -63,6 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
+    }
+
+    async function refreshUser() {
+        try {
+            const me = await api.me() as User;
+            setUser(me);
+        } catch { }
     }
 
     async function login(email: string, password: string, saveSecure: boolean = false) {
@@ -98,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, register, logout, getBiometricCredentials }}>
+        <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser, getBiometricCredentials }}>
             {children}
         </AuthContext.Provider>
     );

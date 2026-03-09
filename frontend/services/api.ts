@@ -57,9 +57,16 @@ async function request<T>(
         if (response.status === 403) {
             const err = await response.json().catch(() => ({ detail: 'Limite do plano atingido' }));
             const msg = err.detail || 'Limite do plano atingido';
-            if (onPlanLimit) onPlanLimit(msg);
-            const error = new Error(msg);
-            (error as any).status = 403;
+            if (onPlanLimit) {
+                onPlanLimit(msg);
+                // Throw with flag so callers can silently ignore
+                const error: any = new Error(msg);
+                error.status = 403;
+                error.planLimitHandled = true;
+                throw error;
+            }
+            const error: any = new Error(msg);
+            error.status = 403;
             throw error;
         }
 

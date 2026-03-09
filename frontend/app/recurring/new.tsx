@@ -55,7 +55,7 @@ export default function NewRecurringScreen() {
                 start_date: new Date().toISOString()
             });
             router.back();
-        } catch (e: any) { Alert.alert('Erro', e.message); }
+        } catch (e: any) { if (!e.planLimitHandled) Alert.alert('Erro', e.message); }
         finally { setSaving(false); }
     }
 

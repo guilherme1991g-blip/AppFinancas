@@ -95,7 +95,7 @@ export default function NewAccountScreen() {
             await api.createAccount(data);
             router.back();
         } catch (e: any) {
-            Alert.alert('Erro', e.message);
+            if (!e.planLimitHandled) Alert.alert('Erro', e.message);
         } finally { setLoading(false); }
     }
 

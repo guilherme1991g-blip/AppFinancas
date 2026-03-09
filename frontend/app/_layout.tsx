@@ -87,11 +87,18 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inProfile = segments[segments.length - 1] === 'profile';
 
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/login' as any);
     } else if (user && inAuthGroup) {
-      router.replace('/(tabs)' as any);
+      if (user.profile_complete === false) {
+        router.replace('/profile' as any);
+      } else {
+        router.replace('/(tabs)' as any);
+      }
+    } else if (user && !inAuthGroup && !inProfile && user.profile_complete === false) {
+      router.replace('/profile' as any);
     }
   }, [user, segments, isLoading]);
 
