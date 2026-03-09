@@ -79,8 +79,8 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
             onClose();
             router.replace('/(tabs)');
             Alert.alert(
-                '🎉 Trial Ativado!',
-                'Aproveite 7 dias de Premium!'
+                '🎉 Premium Ativado!',
+                'Aproveite 7 dias com todos os recursos!'
             );
         } catch (err: any) {
             Alert.alert('Ops', err.message || 'Não foi possível ativar o trial.');
@@ -173,7 +173,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                                 ) : (
                                     <>
                                         <Ionicons name="sparkles" size={18} color="#FFF" />
-                                        <Text style={styles.trialText}>Testar Premium por 7 dias grátis</Text>
+                                        <Text style={styles.trialText}>7 dias de Premium Grátis</Text>
                                     </>
                                 )}
                             </TouchableOpacity>
@@ -206,7 +206,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         )}
 
                         <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
-                            <Text style={styles.ctaText}>Talvez mais tarde</Text>
+                            <Text style={styles.ctaText}>Entendi</Text>
                         </TouchableOpacity>
                     </View>
 

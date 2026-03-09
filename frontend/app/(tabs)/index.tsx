@@ -578,7 +578,15 @@ export default function DashboardScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]} 👋</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.greeting} numberOfLines={1}>Olá, {user?.name?.split(' ')[0]} 👋</Text>
+                        {user?.trial_active && (
+                            <View style={styles.headerPremiumBadge}>
+                                <Ionicons name="sparkles" size={10} color="#FFF" />
+                                <Text style={styles.headerPremiumBadgeText}>PREMIUM</Text>
+                            </View>
+                        )}
+                    </View>
                     <Text style={styles.greetingSub}>{monthNames[month - 1]} {year}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -858,5 +866,19 @@ const s = (colors: any) => StyleSheet.create({
         color: 'rgba(255,255,255,0.8)',
         fontWeight: '600',
         marginTop: 2,
+    },
+    headerPremiumBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: '#8B5CF6',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    headerPremiumBadgeText: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#FFF',
     },
 });

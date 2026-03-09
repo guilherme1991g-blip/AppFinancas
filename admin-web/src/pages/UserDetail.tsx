@@ -265,13 +265,13 @@ export default function UserDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Plano Efetivo */}
                     <div className={`rounded-xl p-4 border ${effectivePlan === 'premium' ? 'bg-amber-50 border-amber-200' :
-                            effectivePlan === 'basic' ? 'bg-blue-50 border-blue-200' :
-                                'bg-slate-50 border-slate-200'
+                        effectivePlan === 'basic' ? 'bg-blue-50 border-blue-200' :
+                            'bg-slate-50 border-slate-200'
                         }`}>
                         <p className="text-xs font-medium text-slate-500 mb-1">Plano Efetivo</p>
                         <p className={`text-xl font-bold ${effectivePlan === 'premium' ? 'text-amber-700' :
-                                effectivePlan === 'basic' ? 'text-blue-700' :
-                                    'text-slate-700'
+                            effectivePlan === 'basic' ? 'text-blue-700' :
+                                'text-slate-700'
                             }`}>
                             {effectivePlan === 'premium' ? 'Premium' : effectivePlan === 'basic' ? 'Básico' : 'Grátis'}
                         </p>
@@ -285,8 +285,8 @@ export default function UserDetail() {
 
                     {/* Vencimento do Plano */}
                     <div className={`rounded-xl p-4 border ${planInfo.plan_expired ? 'bg-red-50 border-red-200' :
-                            planInfo.plan_expires_at ? 'bg-slate-50 border-slate-200' :
-                                'bg-slate-50 border-slate-200'
+                        planInfo.plan_expires_at ? 'bg-slate-50 border-slate-200' :
+                            'bg-slate-50 border-slate-200'
                         }`}>
                         <p className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
                             {planInfo.plan_expired && <AlertTriangle className="w-3 h-3 text-red-500" />}
@@ -315,12 +315,13 @@ export default function UserDetail() {
 
                     {/* Trial */}
                     <div className={`rounded-xl p-4 border ${planInfo.trial_active ? 'bg-purple-50 border-purple-200' :
-                            planInfo.trial_used ? 'bg-slate-50 border-slate-200' :
-                                'bg-emerald-50 border-emerald-200'
+                        planInfo.trial_used ? 'bg-slate-50 border-slate-200' :
+                            'bg-emerald-50 border-emerald-200'
                         }`}>
                         <p className="text-xs font-medium text-slate-500 mb-1 flex items-center gap-1">
-                            <Gift className="w-3 h-3" />
-                            Trial Premium (7 dias)
+                            <span className="font-bold text-sm">
+                                Premium Experimental (7 dias)
+                            </span>
                         </p>
                         {planInfo.trial_active ? (
                             <>

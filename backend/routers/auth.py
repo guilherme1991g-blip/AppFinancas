@@ -161,13 +161,13 @@ async def me(current_user=Depends(get_current_user)):
 
 @router.post("/start-trial")
 async def start_trial(current_user=Depends(get_current_user)):
-    """Inicia o trial premium de 7 dias (apenas uma vez por usuário)."""
+    """Inicia o período Premium Experimental de 7 dias (apenas uma vez por usuário)."""
     from utils.plan_limits import get_effective_plan, get_plan_info
     from datetime import timedelta
     
-    # Verificar se já usou o trial
+    # Verificar se já usou o premium experimental
     if current_user.get("trial_used"):
-        raise HTTPException(status_code=400, detail="Você já utilizou seu período de degustação Premium.")
+        raise HTTPException(status_code=400, detail="Você já aproveitou seu período Premium Experimental.")
     
     # Verificar se já é premium (plano ativo, não expirado)
     effective = get_effective_plan(current_user)
@@ -205,7 +205,7 @@ async def start_trial(current_user=Depends(get_current_user)):
     plan_info = get_plan_info(updated)
     
     return {
-        "message": "Trial Premium ativado! Aproveite 7 dias com todos os recursos.",
+        "message": "Premium Ativado! Aproveite 7 dias com todos os recursos.",
         **plan_info,
     }
 

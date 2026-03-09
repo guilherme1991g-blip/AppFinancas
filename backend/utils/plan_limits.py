@@ -94,11 +94,11 @@ async def check_account_limit(user_id, account_type: str):
             if max_allowed == 0:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"Seu plano ({effective}) não permite cartões de crédito. Faça upgrade para desbloquear este recurso."
+                    detail="Este recurso é exclusivo do Premium. Faça upgrade para desbloquear!"
                 )
             raise HTTPException(
                 status_code=403,
-                detail=f"Limite de cartões de crédito atingido ({current}/{max_allowed}). Faça upgrade do seu plano para adicionar mais."
+                detail=f"Limite de cartões de crédito atingido ({current}/{max_allowed}). Faça upgrade para o Premium para adicionar mais."
             )
     else:
         max_allowed = limits["max_accounts"]
@@ -109,7 +109,7 @@ async def check_account_limit(user_id, account_type: str):
         if current >= max_allowed:
             raise HTTPException(
                 status_code=403,
-                detail=f"Limite de contas atingido ({current}/{max_allowed}). Faça upgrade do seu plano para adicionar mais."
+                detail=f"Limite de contas atingido ({current}/{max_allowed}). Faça upgrade para o Premium para adicionar mais."
             )
 
 
@@ -135,10 +135,9 @@ async def check_transaction_limit(user_id):
     })
 
     if current >= max_tx:
-        effective = get_effective_plan(user)
         raise HTTPException(
             status_code=403,
-            detail=f"Limite de transações do mês atingido ({current}/{max_tx}). Faça upgrade do seu plano para transações ilimitadas."
+            detail=f"Limite de transações do mês atingido ({current}/{max_tx}). Faça upgrade para o Premium para transações ilimitadas."
         )
 
 
@@ -156,8 +155,7 @@ async def check_agendamento_limit(user_id):
     })
 
     if current >= max_ag:
-        effective = get_effective_plan(user)
         raise HTTPException(
             status_code=403,
-            detail=f"Limite de agendamentos atingido ({current}/{max_ag}). Faça upgrade do seu plano para agendamentos ilimitados."
+            detail=f"Limite de agendamentos atingido ({current}/{max_ag}). Faça upgrade para o Premium para agendamentos ilimitados."
         )
