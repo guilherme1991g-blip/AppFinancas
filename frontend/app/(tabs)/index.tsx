@@ -629,6 +629,28 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
             )}
 
+            {/* Profile Completion Notice */}
+            {user?.profile_complete === false && (
+                <TouchableOpacity
+                    style={[styles.premiumBanner, { backgroundColor: '#F59E0B', shadowColor: '#F59E0B', marginTop: user?.trial_active ? 12 : 0 }]}
+                    onPress={() => router.push('/profile' as any)}
+                    activeOpacity={0.9}
+                >
+                    <View style={styles.premiumBannerContent}>
+                        <View style={[styles.premiumIconWrap, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+                            <Ionicons name="alert-circle" size={22} color="#FFF" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.premiumTitle}>Complete seu cadastro!</Text>
+                            <Text style={styles.premiumSub}>
+                                Libere todos os recursos e tenha uma análise melhor.
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+                    </View>
+                </TouchableOpacity>
+            )}
+
             {/* Month selector */}
             <View style={styles.monthRow}>
                 <TouchableOpacity onPress={prevMonth} style={styles.monthArrow}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
