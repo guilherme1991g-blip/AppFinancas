@@ -233,9 +233,13 @@ export default function ProfileScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                    <Ionicons name="chevron-back" size={22} color={colors.text} />
-                </TouchableOpacity>
+                {router.canGoBack() && user?.profile_complete !== false ? (
+                    <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                        <Ionicons name="chevron-back" size={22} color={colors.text} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 40 }} />
+                )}
                 <Text style={styles.headerTitle}>{t('profile.title')}</Text>
                 <View style={{ width: 40 }} />
             </View>
@@ -645,7 +649,7 @@ export default function ProfileScreen() {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </View>
+        </View >
     );
 }
 
