@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
+import UserDetail from './pages/UserDetail';
 import TransactionMonitor from './pages/TransactionMonitor';
 import Login from './pages/Login';
 
@@ -19,6 +20,7 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="users/:id" element={<UserDetail />} />
           <Route path="transactions" element={<TransactionMonitor />} />
         </Route>
 

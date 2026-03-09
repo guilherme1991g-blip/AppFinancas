@@ -17,7 +17,9 @@ api.interceptors.request.use((config) => {
 export const adminService = {
     getStats: () => api.get('/admin/stats'),
     getUsers: (limit = 50, skip = 0) => api.get(`/admin/users?limit=${limit}&skip=${skip}`),
+    getUserDetail: (userId: string) => api.get(`/admin/users/${userId}`),
     updateUserRole: (userId: string, isAdmin: boolean) => api.patch(`/admin/users/${userId}/role?is_admin=${isAdmin}`),
+    updateUserPlan: (userId: string, plan: string) => api.patch(`/admin/users/${userId}/plan?plan=${plan}`),
     getTransactions: (limit = 100) => api.get(`/admin/transactions?limit=${limit}`),
 };
 

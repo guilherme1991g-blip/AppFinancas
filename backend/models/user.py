@@ -99,6 +99,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     is_admin: bool = False
+    plan: str = "free"  # free, basic, premium
     phone: Optional[str] = None
     ddi: Optional[str] = None
     cpf: Optional[str] = None
@@ -121,3 +122,26 @@ class UserResponse(BaseModel):
     created_at: datetime
     preferences: Optional[UserPreferences] = Field(default_factory=UserPreferences)
     push_token: Optional[str] = None
+
+
+# Definição dos limites de cada plano
+PLAN_LIMITS = {
+    "free": {
+        "max_accounts": 2,
+        "max_credit_cards": 1,
+        "max_transactions_month": 50,
+        "whatsapp_enabled": False,
+    },
+    "basic": {
+        "max_accounts": 999,
+        "max_credit_cards": 999,
+        "max_transactions_month": 99999,
+        "whatsapp_enabled": False,
+    },
+    "premium": {
+        "max_accounts": 999,
+        "max_credit_cards": 999,
+        "max_transactions_month": 99999,
+        "whatsapp_enabled": True,
+    },
+}
