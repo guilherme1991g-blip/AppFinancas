@@ -16,6 +16,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api, setPlanLimitListener } from '@/services/api';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -73,15 +74,9 @@ async function registerForPushNotificationsAsync() {
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const { mode, colors } = useTheme();
-  const { showUpgrade } = useUpgrade();
+  const { visible, message, hideUpgrade } = useUpgrade();
   const segments = useSegments();
   const router = useRouter();
-
-  useEffect(() => {
-    setPlanLimitListener((msg: string) => {
-      showUpgrade(msg);
-    });
-  }, [showUpgrade]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -148,6 +143,7 @@ function RootLayoutNav() {
           headerBlurEffect: 'regular',
         }} />
       </Stack>
+      <UpgradeModal visible={visible} message={message} onClose={hideUpgrade} />
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
     </NavigationProvider>
   );

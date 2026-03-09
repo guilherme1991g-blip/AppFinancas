@@ -80,15 +80,16 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
         }
     }
 
+    if (!visible) return null;
+
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="none"
-            statusBarTranslucent
-            onRequestClose={onClose}
-        >
+        <View style={StyleSheet.absoluteFill}>
             <View style={styles.overlay}>
+                <TouchableOpacity
+                    style={StyleSheet.absoluteFill}
+                    onPress={onClose}
+                    activeOpacity={1}
+                />
                 <Animated.View
                     style={[
                         styles.container,
@@ -103,7 +104,6 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     {/* ─── BANNER IMAGE ─── */}
                     <View style={styles.bannerWrap}>
                         <Image source={BANNER_IMG} style={styles.bannerImage} resizeMode="cover" />
-                        {/* Close button over banner */}
                         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
                             <Ionicons name="close" size={20} color="rgba(255,255,255,0.9)" />
                         </TouchableOpacity>
@@ -171,7 +171,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     </Text>
                 </Animated.View>
             </View>
-        </Modal>
+        </View>
     );
 }
 

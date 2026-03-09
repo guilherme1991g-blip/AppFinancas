@@ -1,11 +1,20 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { setPlanLimitListener } from '@/services/api';
 
 interface UpgradeContextType {
     showUpgrade: (message: string) => void;
+    hideUpgrade: () => void;
+    visible: boolean;
+    message: string;
 }
 
-const UpgradeContext = createContext<UpgradeContextType>({ showUpgrade: () => { } });
+const UpgradeContext = createContext<UpgradeContextType>({
+    showUpgrade: () => { },
+    hideUpgrade: () => { },
+    visible: false,
+    message: ''
+});
 
 export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     const [visible, setVisible] = useState(false);
@@ -16,14 +25,19 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
         setVisible(true);
     }, []);
 
+    useEffect(() => {
+        setPlanLimitListener((msg: string) => {
+            showUpgrade(msg);
+        });
+    }, [showUpgrade]);
+
     const hideUpgrade = useCallback(() => {
         setVisible(false);
     }, []);
 
     return (
-        <UpgradeContext.Provider value={{ showUpgrade }}>
+        <UpgradeContext.Provider value={{ showUpgrade, hideUpgrade, visible, message }}>
             {children}
-            <UpgradeModal visible={visible} message={message} onClose={hideUpgrade} />
         </UpgradeContext.Provider>
     );
 }
