@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity,
-    Animated, Dimensions, Alert, ActivityIndicator, Image
+    Animated, Dimensions, Alert, ActivityIndicator, Image, Linking, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,10 @@ import { api } from '@/services/api';
 
 const { width } = Dimensions.get('window');
 const BANNER_IMG = require('@/assets/images/upgrade_banner.png');
+
+// URLs das lojas (Substituir pelos IDs reais quando disponíveis)
+const APP_STORE_LINK = 'itms-apps://itunes.apple.com/app/idYOUR_APP_ID';
+const PLAY_STORE_LINK = 'market://details?id=YOUR_PACKAGE_NAME';
 
 interface Props {
     visible: boolean;
@@ -51,6 +55,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
     const trialUsed = (user as any)?.trial_used || false;
     const trialActive = (user as any)?.trial_active || false;
 
+    // Só pode iniciar trial se nunca usou, não está em trial e não é premium
     const canStartTrial = !trialUsed && !trialActive && plan !== 'premium';
 
     const features = plan === 'free'
@@ -83,6 +88,21 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
             setTrialLoading(false);
         }
     }
+
+    const handleOpenStore = async () => {
+        const url = Platform.OS === 'ios' ? APP_STORE_LINK : PLAY_STORE_LINK;
+        const supported = await Linking.canOpenURL(url);
+
+        if (supported) {
+            await Linking.openURL(url);
+        } else {
+            // Fallback para HTTPS se o deep link falhar/não suportado no emulador
+            const webUrl = Platform.OS === 'ios'
+                ? 'https://apps.apple.com/app/idYOUR_APP_ID'
+                : 'https://play.google.com/store/apps/details?id=YOUR_PACKAGE_NAME';
+            await Linking.openURL(webUrl);
+        }
+    };
 
     if (!visible) return null;
 
@@ -126,52 +146,72 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         <Text style={[styles.featuresTitle, { color: colors.text }]}>
                             {plan === 'free' ? '✨ Desbloqueie com o upgrade:' : '✨ Desbloqueie com o Premium:'}
                         </Text>
-                        {features.map((f, i) => (
-                            <View key={i} style={[styles.featureRow, { borderBottomColor: colors.border }]}>
-                                <View style={styles.featureIconWrap}>
-                                    <Ionicons name={f.icon} size={18} color="#F59E0B" />
+                        <View style={styles.featuresList}>
+                            {features.map((f, i) => (
+                                <View key={i} style={[styles.featureRow, { borderBottomColor: colors.border }]}>
+                                    <View style={styles.featureIconWrap}>
+                                        <Ionicons name={f.icon} size={18} color="#F59E0B" />
+                                    </View>
+                                    <Text style={[styles.featureText, { color: colors.text }]}>{f.text}</Text>
+                                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                                 </View>
-                                <Text style={[styles.featureText, { color: colors.text }]}>{f.text}</Text>
-                                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                            </View>
-                        ))}
+                            ))}
+                        </View>
                     </View>
 
-                    {/* ─── TRIAL BUTTON ─── */}
-                    {canStartTrial && (
-                        <TouchableOpacity
-                            style={styles.trialButton}
-                            onPress={handleStartTrial}
-                            activeOpacity={0.8}
-                            disabled={trialLoading}
-                        >
-                            {trialLoading ? (
-                                <ActivityIndicator color="#FFF" size="small" />
-                            ) : (
-                                <>
-                                    <Ionicons name="sparkles" size={18} color="#FFF" />
-                                    <Text style={styles.trialText}>Testar Premium por 7 dias grátis</Text>
-                                </>
-                            )}
+                    {/* ─── ACTIONS ─── */}
+                    <View style={styles.actionsSection}>
+                        {canStartTrial ? (
+                            <TouchableOpacity
+                                style={styles.trialButton}
+                                onPress={handleStartTrial}
+                                activeOpacity={0.8}
+                                disabled={trialLoading}
+                            >
+                                {trialLoading ? (
+                                    <ActivityIndicator color="#FFF" size="small" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="sparkles" size={18} color="#FFF" />
+                                        <Text style={styles.trialText}>Testar Premium por 7 dias grátis</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={styles.planSelection}>
+                                <TouchableOpacity
+                                    style={[styles.planCard, { borderColor: colors.border }]}
+                                    onPress={handleOpenStore}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
+                                        <Text style={styles.planBadgeText}>Básico</Text>
+                                    </View>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
+                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.planCard, { borderColor: '#8B5CF6' }]}
+                                    onPress={handleOpenStore}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
+                                        <Text style={styles.planBadgeText}>Premium</Text>
+                                    </View>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
+                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
+                            <Text style={styles.ctaText}>Talvez mais tarde</Text>
                         </TouchableOpacity>
-                    )}
-
-                    {trialUsed && !trialActive && (
-                        <View style={[styles.trialUsedBox, { backgroundColor: colors.border + '40' }]}>
-                            <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-                            <Text style={[styles.trialUsedText, { color: colors.textMuted }]}>
-                                Você já utilizou seu período de degustação
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* ─── CLOSE CTA ─── */}
-                    <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
-                        <Text style={styles.ctaText}>Entendi</Text>
-                    </TouchableOpacity>
+                    </View>
 
                     <Text style={[styles.footerText, { color: colors.textMuted }]}>
-                        Fale com o administrador para alterar seu plano
+                        Assinatura via {Platform.OS === 'ios' ? 'App Store' : 'Google Play Store'}
                     </Text>
                 </Animated.View>
             </View>
@@ -266,6 +306,9 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         marginBottom: 10,
     },
+    featuresList: {
+        gap: 2,
+    },
     featureRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -287,14 +330,16 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
-    // ── Trial ──
+    // ── Actions ──
+    actionsSection: {
+        paddingHorizontal: 20,
+        marginTop: 16,
+    },
     trialButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        marginHorizontal: 20,
-        marginTop: 16,
         paddingVertical: 14,
         borderRadius: 16,
         backgroundColor: '#8B5CF6',
@@ -309,18 +354,42 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: '#FFF',
     },
-    trialUsedBox: {
+
+    // ── Plan Selection ──
+    planSelection: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginHorizontal: 20,
-        marginTop: 12,
-        padding: 10,
-        borderRadius: 12,
+        gap: 12,
     },
-    trialUsedText: {
-        fontSize: 12,
+    planCard: {
+        flex: 1,
+        borderWidth: 2,
+        borderRadius: 20,
+        padding: 12,
+        backgroundColor: 'transparent',
+    },
+    planBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    planBadgeText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#FFF',
+        textTransform: 'uppercase',
+    },
+    planDescription: {
+        fontSize: 11,
         fontWeight: '600',
+        lineHeight: 15,
+        marginBottom: 8,
+        height: 30,
+    },
+    planPrice: {
+        fontSize: 14,
+        fontWeight: '900',
     },
 
     // ── CTA ──
@@ -329,27 +398,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 10,
-        marginHorizontal: 20,
         marginTop: 12,
         paddingVertical: 14,
         borderRadius: 16,
-        backgroundColor: '#F59E0B',
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
+        backgroundColor: 'transparent',
     },
     ctaText: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#94A3B8', // Slate 400
     },
     footerText: {
         fontSize: 11,
         fontWeight: '600',
         textAlign: 'center',
-        marginTop: 12,
+        marginTop: 8,
         marginBottom: 16,
         paddingHorizontal: 20,
     },
