@@ -28,7 +28,7 @@ const LANGUAGES = [
 export default function PreferencesScreen() {
     const insets = useSafeAreaInsets();
     const { colors, mode, toggleTheme } = useTheme();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const { language, currency, setLanguage, setCurrency, t } = useLocale();
     const [showCurrencies, setShowCurrencies] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
@@ -46,12 +46,26 @@ export default function PreferencesScreen() {
     }, []);
 
     async function toggleWhatsApp(value: boolean) {
+        if (value) {
+            // Check plan from user context
+            const plan = (user as any)?.plan || 'free';
+            if (plan !== 'premium') {
+                Alert.alert(
+                    'Recurso Premium',
+                    'O WhatsApp (Agente IA) está disponível apenas no plano Premium. Entre em contato com o administrador para fazer upgrade.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+        }
         setWhatsappEnabled(value);
         try {
             const result: any = await api.updatePreferences({ whatsapp_enabled: value });
             if (result?.api_key) setApiKey(result.api_key);
-        } catch {
+        } catch (err: any) {
             setWhatsappEnabled(!value);
+            const msg = err?.response?.data?.detail || 'Erro ao alterar configuração';
+            Alert.alert('Erro', msg);
         }
     }
 

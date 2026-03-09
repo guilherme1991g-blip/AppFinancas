@@ -67,6 +67,16 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
 
     # Auto-generate API key from phone number when enabling WhatsApp
     if update_data.get("whatsapp_enabled") is True:
+        # Verificar se o plano permite WhatsApp
+        from models.user import PLAN_LIMITS
+        user_plan = current_user.get("plan", "free")
+        limits = PLAN_LIMITS.get(user_plan, PLAN_LIMITS["free"])
+        if not limits.get("whatsapp_enabled"):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Seu plano ({user_plan}) não inclui acesso ao WhatsApp. Faça upgrade para o plano Premium."
+            )
+
         ddi = current_user.get("ddi", "55")
         phone = current_user.get("phone", "")
         if not phone:
