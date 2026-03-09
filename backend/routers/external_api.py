@@ -74,6 +74,21 @@ def _serialize(doc: dict) -> dict:
     return result
 
 
+async def _check_duplicate(user_id, amount: float, description: str, date, tx_type: str, account_id):
+    """Verifica se já existe transação idêntica criada nos últimos 5 minutos."""
+    five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+    existing = await transactions_collection.find_one({
+        "user_id": user_id,
+        "amount": amount,
+        "description": description,
+        "date": date,
+        "type": tx_type,
+        "account_id": account_id,
+        "created_at": {"$gte": five_min_ago}
+    })
+    return existing
+
+
 # ──────────────── CONTAS ────────────────
 @router.get("/contas")
 async def listar_contas(x_api_key: str = Header(..., alias="X-API-Key")):
@@ -188,6 +203,14 @@ async def criar_despesa(
         "created_at": datetime.utcnow()
     }
 
+    # Verificação de duplicata
+    existing = await _check_duplicate(
+        user_id=user["_id"], amount=doc["amount"], description=doc["description"],
+        date=doc["date"], tx_type="expense", account_id=doc["account_id"]
+    )
+    if existing:
+        return _serialize(existing)
+
     result = await transactions_collection.insert_one(doc)
 
     # Update account balance
@@ -293,6 +316,14 @@ async def criar_receita(
         "created_at": datetime.utcnow()
     }
 
+    # Verificação de duplicata
+    existing = await _check_duplicate(
+        user_id=user["_id"], amount=doc["amount"], description=doc["description"],
+        date=doc["date"], tx_type="income", account_id=doc["account_id"]
+    )
+    if existing:
+        return _serialize(existing)
+
     result = await transactions_collection.insert_one(doc)
 
     # Update account balance
@@ -389,6 +420,15 @@ async def lancar_fatura(
             "is_credit_card": True,
             "created_at": datetime.utcnow()
         }
+
+        # Verificação de duplicata (apenas para a primeira parcela)
+        if i == 0:
+            existing = await _check_duplicate(
+                user_id=user["_id"], amount=installment_amount, description=description,
+                date=tx_date, tx_type="expense", account_id=ObjectId(data["account_id"])
+            )
+            if existing:
+                return _serialize(existing)
 
         result = await transactions_collection.insert_one(doc)
         doc["_id"] = result.inserted_id
