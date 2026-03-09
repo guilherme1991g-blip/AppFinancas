@@ -7,11 +7,11 @@ import sys
 load_dotenv()
 
 async def promote_to_admin(email):
-    mongo_url = os.environ.get('MONGO_URL')
-    db_name = os.environ.get('DB_NAME')
+    mongo_url = os.environ.get('MONGODB_URL') or os.environ.get('MONGO_URL')
+    db_name = os.environ.get('DATABASE_NAME') or os.environ.get('DB_NAME')
     
     if not mongo_url or not db_name:
-        print("Erro: MONGO_URL ou DB_NAME não encontrados no ambiente.")
+        print("Erro: MONGODB_URL ou DATABASE_NAME não encontrados no ambiente.")
         return
 
     client = AsyncIOMotorClient(mongo_url)
