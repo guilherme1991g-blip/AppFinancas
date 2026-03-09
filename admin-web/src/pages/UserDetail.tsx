@@ -18,8 +18,7 @@ import {
     Crown,
     Zap,
     Clock,
-    AlertTriangle,
-    Gift
+    AlertTriangle
 } from 'lucide-react';
 import { adminService } from '../services/api';
 
