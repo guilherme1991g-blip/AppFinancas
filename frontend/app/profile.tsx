@@ -241,8 +241,8 @@ export default function ProfileScreen() {
                     <View style={{ width: 40 }} />
                 )}
                 <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-                <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-                    <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+                <TouchableOpacity style={styles.closeScreenBtn} onPress={() => router.replace('/(tabs)')}>
+                    <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
@@ -660,7 +660,7 @@ const s = (colors: any) => StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
     backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
     headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-    logoutBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.danger + '10', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.danger + '20' },
+    closeScreenBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
     content: { padding: 20, paddingBottom: 60 },
 
     avatarSection: { alignItems: 'center', marginBottom: 32 },
