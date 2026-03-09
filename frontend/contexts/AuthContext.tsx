@@ -9,6 +9,15 @@ interface User {
     id: string;
     name: string;
     email: string;
+    plan?: string;
+    plan_limits?: {
+        max_accounts: number;
+        max_credit_cards: number;
+        max_transactions_month: number;
+        max_agendamentos: number;
+        whatsapp_enabled: boolean;
+        tools_enabled: boolean;
+    };
 }
 
 interface AuthContextType {

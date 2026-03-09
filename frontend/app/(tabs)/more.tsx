@@ -321,9 +321,20 @@ export default function SettingsScreen() {
                             <Text style={styles.profileName}>{user?.name}</Text>
                             <Text style={styles.profileEmail}>{user?.email}</Text>
                         </View>
-                        <View style={styles.profileBadge}>
-                            <Text style={styles.profileBadgeTxt}>{t('settings.premium')}</Text>
-                        </View>
+                        {(() => {
+                            const plan = (user as any)?.plan || 'free';
+                            const planConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                                free: { label: 'Grátis', color: '#64748B', bg: '#64748B15', border: '#64748B20' },
+                                basic: { label: 'Básico', color: '#3B82F6', bg: '#3B82F615', border: '#3B82F620' },
+                                premium: { label: 'Premium', color: '#F59E0B', bg: '#F59E0B15', border: '#F59E0B20' },
+                            };
+                            const cfg = planConfig[plan] || planConfig.free;
+                            return (
+                                <View style={[styles.profileBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
+                                    <Text style={[styles.profileBadgeTxt, { color: cfg.color }]}>{cfg.label}</Text>
+                                </View>
+                            );
+                        })()}
                     </View>
                 </View>
 
