@@ -137,41 +137,6 @@ export default function PreferencesScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}>
 
-                {/* ─── WhatsApp (Agente IA) ─── */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Agente IA (WhatsApp)</Text>
-                    <Text style={styles.sectionSub}>Ative para enviar transações e consultar o saldo via WhatsApp.</Text>
-
-                    <View style={styles.selectorCard}>
-                        <View style={[styles.whatsappIcon, { backgroundColor: '#25D36620' }]}>
-                            <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.selectorTitle}>Status do Agente</Text>
-                            <Text style={styles.selectorCode}>{whatsappEnabled ? 'Ativado' : 'Desativado'}</Text>
-                        </View>
-                        <Switch
-                            value={whatsappEnabled}
-                            onValueChange={toggleWhatsApp}
-                            trackColor={{ false: colors.border, true: '#25D36680' }}
-                            thumbColor={whatsappEnabled ? '#25D366' : colors.textSecondary}
-                        />
-                    </View>
-
-                    {whatsappEnabled && apiKey && (
-                        <View style={[styles.selectorCard, { marginTop: 12, borderStyle: 'dashed' }]}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.selectorTitle}>Sua API Key</Text>
-                                <Text style={[styles.selectorCode, { fontSize: 16, letterSpacing: 1 }]}>{apiKey}</Text>
-                            </View>
-                            <TouchableOpacity onPress={copyApiKey} style={styles.copyBtn}>
-                                <Ionicons name="copy-outline" size={20} color={colors.primary} />
-                                <Text style={styles.copyBtnTxt}>Copiar</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </View>
-
                 {/* ─── Modo Escuro ─── */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>{t('settings.dark_mode')}</Text>
@@ -354,7 +319,4 @@ const s = (colors: any) => StyleSheet.create({
     },
     dangerTitle: { fontSize: 16, fontWeight: '800', color: colors.danger },
     dangerSub: { fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginTop: 4, lineHeight: 16 },
-
-    copyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.primary + '10', borderRadius: 10 },
-    copyBtnTxt: { fontSize: 13, fontWeight: '700', color: colors.primary },
 });

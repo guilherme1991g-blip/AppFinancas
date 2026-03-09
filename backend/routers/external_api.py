@@ -50,9 +50,9 @@ async def get_user_by_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
     if not user:
         raise HTTPException(status_code=401, detail="API key inválida")
 
-    prefs = user.get("preferences", {})
-    if not prefs.get("whatsapp_enabled", False):
-        raise HTTPException(status_code=403, detail="API desabilitada. Ative o WhatsApp nas preferências.")
+    from utils.plan_limits import get_effective_plan
+    if get_effective_plan(user) != "premium":
+        raise HTTPException(status_code=403, detail="O Agente IA (WhatsApp) é exclusivo do plano Premium.")
 
     return user
 
