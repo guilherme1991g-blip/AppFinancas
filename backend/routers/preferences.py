@@ -53,6 +53,7 @@ class PreferencesUpdate(BaseModel):
     currency: Optional[str] = None
     theme: Optional[str] = None
     dashboard_cards: Optional[List[DashboardCard]] = None
+    whatsapp_enabled: Optional[bool] = None
 
 
 @router.patch("", response_model=UserPreferences)
@@ -67,6 +68,22 @@ async def update_preferences(data: PreferencesUpdate, current_user=Depends(get_c
     # Construct the $set dictionary for nested preferences
     set_query = {}
     for key, value in update_data.items():
+        # Special logic for whatsapp_enabled
+        if key == "whatsapp_enabled" and value is True:
+            from utils.plan_limits import get_effective_plan
+            if get_effective_plan(current_user) != "premium":
+                raise HTTPException(status_code=403, detail="Este recurso é exclusivo do plano Premium")
+            
+            # Generate API Key if not exists
+            if not current_user.get("preferences", {}).get("api_key"):
+                # Use phone number digits if available, otherwise random 12 digits
+                phone = "".join(c for c in (current_user.get("phone") or "") if c.isdigit())
+                if len(phone) >= 10:
+                    api_key = phone
+                else:
+                    api_key = "".join(secrets.choice("0123456789") for _ in range(12))
+                set_query["preferences.api_key"] = api_key
+
         # Pydantic models need to be dumped to dict for MongoDB
         if hasattr(value, "model_dump"):
             set_query[f"preferences.{key}"] = value.model_dump()
