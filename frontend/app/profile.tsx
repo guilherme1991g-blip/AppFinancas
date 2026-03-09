@@ -55,7 +55,7 @@ const DDI_LIST = [
 export default function ProfileScreen() {
     const { colors } = useTheme();
     const { t } = useLocale();
-    const { user, refreshUser } = useAuth();
+    const { user, refreshUser, logout } = useAuth();
     const insets = useSafeAreaInsets();
 
     const [name, setName] = useState('');
@@ -241,7 +241,9 @@ export default function ProfileScreen() {
                     <View style={{ width: 40 }} />
                 )}
                 <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                    <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+                </TouchableOpacity>
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -658,6 +660,7 @@ const s = (colors: any) => StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
     backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
     headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+    logoutBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.danger + '10', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.danger + '20' },
     content: { padding: 20, paddingBottom: 60 },
 
     avatarSection: { alignItems: 'center', marginBottom: 32 },
