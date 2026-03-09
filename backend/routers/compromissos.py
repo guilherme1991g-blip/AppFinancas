@@ -17,6 +17,9 @@ def serialize_compromisso(doc) -> dict:
 
 @router.post("", response_model=CompromissoResponse)
 async def create_compromisso(compromisso: CompromissoCreate, current_user=Depends(get_current_user)):
+    from utils.plan_limits import check_agendamento_limit
+    await check_agendamento_limit(current_user["_id"])
+
     user_id = str(current_user["_id"])
     doc = compromisso.dict()
     doc["user_id"] = user_id

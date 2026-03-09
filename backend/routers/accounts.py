@@ -38,6 +38,9 @@ async def list_accounts(current_user=Depends(get_current_user)):
 
 @router.post("")
 async def create_account(data: AccountCreate, current_user=Depends(get_current_user)):
+    from utils.plan_limits import check_account_limit
+    await check_account_limit(current_user["_id"], data.type)
+
     name = data.name
     if not name and data.type == "credit_card":
         brand = (data.card_brand or "Cartão").capitalize()

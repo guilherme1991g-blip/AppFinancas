@@ -70,7 +70,19 @@ async def login(data: UserLogin):
         
         token = create_token(str(user["_id"]))
         print("DEBUG: Token gerado com sucesso")
-        return {"token": token, "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"], "is_admin": user.get("is_admin", False)}}
+        from models.user import PLAN_LIMITS
+        plan = user.get("plan", "free")
+        return {
+            "token": token,
+            "user": {
+                "id": str(user["_id"]),
+                "name": user["name"],
+                "email": user["email"],
+                "is_admin": user.get("is_admin", False),
+                "plan": plan,
+                "plan_limits": PLAN_LIMITS.get(plan, PLAN_LIMITS["free"]),
+            }
+        }
     except Exception as e:
         print(f"DEBUG: Erro inesperado no login: {str(e)}")
         raise e
@@ -97,6 +109,8 @@ async def change_password(data: ChangePassword, current_user=Depends(get_current
 
 @router.get("/me")
 async def me(current_user=Depends(get_current_user)):
+    from models.user import PLAN_LIMITS
+    plan = current_user.get("plan", "free")
     return {
         "id": str(current_user["_id"]),
         "name": current_user["name"],
@@ -120,7 +134,9 @@ async def me(current_user=Depends(get_current_user)):
         "has_vehicle": current_user.get("has_vehicle"),
         "vehicle_type": current_user.get("vehicle_type"),
         "equity": current_user.get("equity"),
-        "created_at": current_user["created_at"]
+        "created_at": current_user["created_at"],
+        "plan": plan,
+        "plan_limits": PLAN_LIMITS.get(plan, PLAN_LIMITS["free"]),
     }
 
 

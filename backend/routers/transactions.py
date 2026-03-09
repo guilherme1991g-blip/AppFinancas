@@ -132,6 +132,9 @@ async def list_transactions(
 @router.post("")
 async def create_transaction(data: TransactionCreate, current_user=Depends(get_current_user)):
     user_id = current_user["_id"]
+
+    from utils.plan_limits import check_transaction_limit
+    await check_transaction_limit(user_id)
     
     # Check bill status
     if not await check_bill_status(data.dict(), user_id):
