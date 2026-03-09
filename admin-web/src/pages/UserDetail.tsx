@@ -31,7 +31,7 @@ const PLANS = [
         borderColor: 'border-slate-200',
         textColor: 'text-slate-700',
         btnClass: 'bg-slate-600 hover:bg-slate-700',
-        features: ['2 contas bancárias', '1 cartão de crédito', '50 transações/mês', 'Sem WhatsApp'],
+        features: ['1 conta bancária', 'Sem cartão de crédito', '20 transações/mês', '2 agendamentos', 'Sem ferramentas extras', 'Sem WhatsApp'],
     },
     {
         id: 'basic',
@@ -43,7 +43,7 @@ const PLANS = [
         borderColor: 'border-blue-200',
         textColor: 'text-blue-700',
         btnClass: 'bg-blue-600 hover:bg-blue-700',
-        features: ['Contas ilimitadas', 'Cartões ilimitados', 'Transações ilimitadas', 'Sem WhatsApp'],
+        features: ['Contas ilimitadas', 'Cartões ilimitados', 'Transações ilimitadas', 'Agendamentos ilimitados', 'Todas as ferramentas', 'Sem WhatsApp'],
     },
     {
         id: 'premium',
@@ -55,7 +55,7 @@ const PLANS = [
         borderColor: 'border-amber-200',
         textColor: 'text-amber-700',
         btnClass: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600',
-        features: ['Contas ilimitadas', 'Cartões ilimitados', 'Transações ilimitadas', 'WhatsApp (Agente IA) ✅'],
+        features: ['Contas ilimitadas', 'Cartões ilimitados', 'Transações ilimitadas', 'Agendamentos ilimitados', 'Todas as ferramentas', 'WhatsApp (Agente IA) ✅'],
     },
 ];
 
@@ -255,8 +255,8 @@ export default function UserDetail() {
                             <div
                                 key={plan.id}
                                 className={`relative rounded-2xl border-2 p-6 transition-all ${isActive
-                                        ? `${plan.borderColor} bg-gradient-to-br ${plan.bgGradient} shadow-md scale-[1.02]`
-                                        : 'border-slate-150 hover:border-slate-300 hover:shadow-sm'
+                                    ? `${plan.borderColor} bg-gradient-to-br ${plan.bgGradient} shadow-md scale-[1.02]`
+                                    : 'border-slate-150 hover:border-slate-300 hover:shadow-sm'
                                     }`}
                             >
                                 {isActive && (

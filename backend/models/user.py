@@ -127,21 +127,27 @@ class UserResponse(BaseModel):
 # Definição dos limites de cada plano
 PLAN_LIMITS = {
     "free": {
-        "max_accounts": 2,
-        "max_credit_cards": 1,
-        "max_transactions_month": 50,
+        "max_accounts": 1,
+        "max_credit_cards": 0,
+        "max_transactions_month": 20,
+        "max_agendamentos": 2,
         "whatsapp_enabled": False,
+        "tools_enabled": False,   # metas, sonhos, recorrentes, etc.
     },
     "basic": {
         "max_accounts": 999,
         "max_credit_cards": 999,
         "max_transactions_month": 99999,
+        "max_agendamentos": 99999,
         "whatsapp_enabled": False,
+        "tools_enabled": True,
     },
     "premium": {
         "max_accounts": 999,
         "max_credit_cards": 999,
         "max_transactions_month": 99999,
+        "max_agendamentos": 99999,
         "whatsapp_enabled": True,
+        "tools_enabled": True,
     },
 }
