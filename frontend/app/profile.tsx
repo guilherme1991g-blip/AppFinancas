@@ -193,7 +193,7 @@ export default function ProfileScreen() {
                 }
             }
 
-            await api.updateProfile({
+            const res: any = await api.updateProfile({
                 name: name.trim(),
                 email: email.trim(),
                 phone,
@@ -213,7 +213,14 @@ export default function ProfileScreen() {
                 vehicle_type: hasVehicle ? vehicleType : undefined,
                 equity: parseFloat(equity.replace(',', '.')) || 0
             });
-            await refreshUser();
+
+            // Update local user state immediately with returned completion status
+            if (user) {
+                const updatedUser = { ...user, profile_complete: res.profile_complete };
+                // Also trigger refresh to ensure sync with backend data
+                await refreshUser();
+            }
+
             Alert.alert('✅', t('profile.saved'));
         } catch (e: any) {
             Alert.alert(t('profile.error'), e.message || t('profile.save_error'));

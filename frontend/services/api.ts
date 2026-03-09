@@ -90,7 +90,7 @@ export const api = {
         request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
     login: (data: { email: string; password: string }) =>
         request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
-    me: () => request('/auth/me'),
+    me: () => request(`/auth/me?cb=${Date.now()}`),
 
     // Accounts
     getAccounts: () => request('/accounts'),

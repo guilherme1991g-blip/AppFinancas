@@ -58,21 +58,47 @@ async def register(data: UserCreate):
 
 def is_profile_complete(user: dict) -> bool:
     """Verifica se o perfil do usuário está completamente preenchido."""
-    # Pessoal
-    if not user.get("name") or not user.get("email"):
-        return False
-    if user.get("is_brazilian", True):
-        if not user.get("cpf") or not user.get("cep") or not user.get("city") or not user.get("state"):
+    try:
+        # Pessoal - Requeridos sempre
+        if not user.get("name") or not user.get("email"):
+            if not user.get("name"): print("DEBUG: Perfil incompleto - falta nome")
+            if not user.get("email"): print("DEBUG: Perfil incompleto - falta email")
             return False
-    # Profissional
-    if not user.get("education") or not user.get("occupation") or not user.get("salary_range"):
+            
+        # Nationality check - only check documents if brazilian
+        is_brazilian = user.get("is_brazilian")
+        if is_brazilian is not False: # Default to True (None or True)
+            if not user.get("cpf") or not user.get("cep") or not user.get("city") or not user.get("state"):
+                print(f"DEBUG: Perfil incompleto - falta info brasileira (is_brazilian={is_brazilian})")
+                return False
+                
+        # Profissional - Let's be a bit more lenient if needed, but for now we keep the check
+        for field in ["education", "occupation", "salary_range"]:
+            val = user.get(field)
+            if val is None or str(val).strip() == "":
+                print(f"DEBUG: Perfil incompleto - falta profissional: {field}")
+                return False
+                
+        # Financeiro
+        if not user.get("housing_type"):
+            print("DEBUG: Perfil incompleto - falta housing_type")
+            return False
+            
+        # household_size is an int, can be 1 or more
+        household_size = user.get("household_size")
+        if household_size is None or (isinstance(household_size, int) and household_size < 1):
+            print(f"DEBUG: Perfil incompleto - falta household_size: {household_size}")
+            return False
+            
+        # equity can be 0, but must not be None
+        if user.get("equity") is None:
+            print("DEBUG: Perfil incompleto - falta equity")
+            return False
+            
+        return True
+    except Exception as e:
+        print(f"DEBUG: Erro ao verificar completitude do perfil: {e}")
         return False
-    # Financeiro
-    if not user.get("housing_type") or not user.get("household_size"):
-        return False
-    if user.get("equity") is None:
-        return False
-    return True
 
 
 @router.post("/login")
@@ -275,7 +301,13 @@ async def update_profile(data: UserProfileUpdate, current_user=Depends(get_curre
         {"_id": ObjectId(current_user["_id"])},
         {"$set": updates}
     )
-    return {"message": "Perfil atualizado com sucesso"}
+    
+    # Return updated completion status
+    updated_user = {**current_user, **updates}
+    return {
+        "message": "Perfil atualizado com sucesso",
+        "profile_complete": is_profile_complete(updated_user)
+    }
 
 
 @router.delete("/account")
