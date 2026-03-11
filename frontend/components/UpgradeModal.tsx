@@ -105,13 +105,13 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
     };
 
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="none"
-            onRequestClose={onClose}
+        <View
+            style={[
+                StyleSheet.absoluteFill,
+                { zIndex: 9999, pointerEvents: visible ? 'auto' : 'none' }
+            ]}
         >
-            <View style={styles.overlay}>
+            <View style={[styles.overlay, { opacity: visible ? 1 : 0 }]}>
                 <TouchableOpacity
                     style={StyleSheet.absoluteFill}
                     onPress={onClose}
@@ -225,7 +225,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     </Text>
                 </Animated.View>
             </View>
-        </Modal>
+        </View>
     );
 }
 
