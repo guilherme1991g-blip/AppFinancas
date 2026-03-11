@@ -1,5 +1,4 @@
 
-
 const PriceCard = ({ title, price, features, highlighted = false }: { title: string, price: string, features: string[], highlighted?: boolean }) => (
     <div className={`glass ${highlighted ? 'highlighted-card' : ''}`} style={{
         padding: '2.5rem',
@@ -23,7 +22,7 @@ const PriceCard = ({ title, price, features, highlighted = false }: { title: str
                 fontSize: '0.8rem',
                 fontWeight: 700
             }}>
-                MAIS POPULAR
+                O MELHOR DO OTTO
             </span>
         )}
         <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>{title}</h3>
@@ -37,7 +36,7 @@ const PriceCard = ({ title, price, features, highlighted = false }: { title: str
                 </li>
             ))}
         </ul>
-        <a href="https://app.appfinancas.com/register" className={highlighted ? 'btn-primary' : 'glass'} style={{
+        <a href="https://app.integrareplus.com/register" className={highlighted ? 'btn-primary' : 'glass'} style={{
             display: 'block',
             padding: '1rem',
             borderRadius: '99px',
@@ -45,7 +44,7 @@ const PriceCard = ({ title, price, features, highlighted = false }: { title: str
             width: '100%',
             textAlign: 'center'
         }}>
-            {title === 'Gratuito' ? 'Começar Agora' : 'Assinar Agora'}
+            {title === 'Gratuito' ? 'Começar com Otto' : 'Otto Premium'}
         </a>
     </div>
 );
@@ -54,8 +53,8 @@ const Pricing: React.FC = () => {
     return (
         <section id="pricing" style={{ padding: '6rem 1.5rem', background: '#0f172a' }}>
             <div className="container">
-                <h2 className="section-title">Encontre o plano ideal para você</h2>
-                <p className="section-sub">Transparência total, sem letras miúdas.</p>
+                <h2 className="section-title">Escolha como o Otto vai te ajudar</h2>
+                <p className="section-sub">Planos simples para todos os perfis financeiros.</p>
 
                 <div style={{
                     display: 'grid',
@@ -76,9 +75,9 @@ const Pricing: React.FC = () => {
                         features={[
                             'Contas ilimitadas',
                             'Transações ilimitadas',
-                            'Agente IA via WhatsApp',
+                            'Otto no WhatsApp (Full)',
                             'Sincronização Automática',
-                            'Insights Avançados'
+                            'Conselhos Financeiros IA'
                         ]}
                     />
                     <PriceCard

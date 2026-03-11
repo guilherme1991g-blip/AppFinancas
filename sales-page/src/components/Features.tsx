@@ -1,5 +1,4 @@
 
-
 const FeatureCard = ({ icon, title, desc }: { icon: string, title: string, desc: string }) => (
     <div className="glass" style={{ padding: '2rem', borderRadius: '24px', textAlign: 'left' }}>
         <div style={{
@@ -24,8 +23,8 @@ const Features: React.FC = () => {
     return (
         <section id="features" style={{ padding: '6rem 1.5rem', backgroundColor: '#0f172a' }}>
             <div className="container">
-                <h2 className="section-title">O que o AppFinancas faz por você</h2>
-                <p className="section-sub">Tudo o que você precisa para dominar suas finanças, sem esforço.</p>
+                <h2 className="section-title">O que o Otto faz por você</h2>
+                <p className="section-sub">Deixe o trabalho pesado com o Otto e foque no que importa.</p>
 
                 <div style={{
                     display: 'grid',
@@ -33,34 +32,34 @@ const Features: React.FC = () => {
                     gap: '2rem'
                 }}>
                     <FeatureCard
+                        icon="💬"
+                        title="Fale com o Otto no Zap"
+                        desc="Envie áudios ou textos com seus gastos e o Otto anota tudo pra você instantaneamente."
+                    />
+                    <FeatureCard
                         icon="🤖"
-                        title="Agente IA no WhatsApp"
-                        desc="Envie transações e consulte seu saldo direto pelo Zap. Sem precisar abrir o app."
+                        title="Inteligência Autêntica"
+                        desc="O Otto aprende seus hábitos e sugere onde você pode economizar de verdade."
                     />
                     <FeatureCard
                         icon="🏦"
-                        title="Sincronização Bancária"
-                        desc="Conecte suas contas e cartões com segurança e veja tudo em um só lugar."
+                        title="Conexão Bancária Real"
+                        desc="Sincronize com os principais bancos brasileiros com segurança máxima e zero esforço."
                     />
                     <FeatureCard
-                        icon="📈"
-                        title="Insights Inteligentes"
-                        desc="Gráficos claros e relatórios que mostram exatamente para onde seu dinheiro está indo."
+                        icon="📊"
+                        title="Relatórios Sem Complicação"
+                        desc="Nada de planilhas chatas. O Otto te mostra sua saúde financeira com gráficos simples."
                     />
                     <FeatureCard
-                        icon="📅"
-                        title="Metas de Gastos"
-                        desc="Crie limites para categorias e receba avisos antes de estourar o orçamento."
+                        icon="🔔"
+                        title="Alertas Inteligentes"
+                        desc="O Otto te avisa sobre contas a vencer e se você estiver gastando mais que o planejado."
                     />
                     <FeatureCard
-                        icon="☁️"
-                        title="Sincronização na Nuvem"
-                        desc="Acesse seus dados de qualquer lugar, com segurança de nível bancário."
-                    />
-                    <FeatureCard
-                        icon="📱"
-                        title="Interface Premium"
-                        desc="Uma experiência visual moderna e fluida, pensada em cada detalhe."
+                        icon="🔒"
+                        title="Segurança Integrare"
+                        desc="Seus dados protegidos pela infraestrutura robusta da Integrare Plus."
                     />
                 </div>
             </div>

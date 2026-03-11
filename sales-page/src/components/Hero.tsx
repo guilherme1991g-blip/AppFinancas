@@ -1,5 +1,4 @@
 
-
 const Hero: React.FC = () => {
     return (
         <header style={{
@@ -18,18 +17,33 @@ const Hero: React.FC = () => {
                     marginBottom: '1.5rem',
                     display: 'inline-block'
                 }}>
-                    Novo: Agente IA via WhatsApp 🤖
+                    Meu Otto: Seu assistente pessoal de finanças 🤖
                 </span>
-                <h1 className="section-title" style={{ fontSize: '4rem', maxWidth: '800px', margin: '0 auto 1.5rem' }}>
-                    Sua vida financeira, organizada por IA.
+                <h1 className="section-title" style={{ fontSize: '4.5rem', maxWidth: '900px', margin: '0 auto 1.5rem' }}>
+                    Sua vida financeira, organizada pelo Otto.
                 </h1>
                 <p className="section-sub" style={{ maxWidth: '600px', margin: '0 auto 2.5rem', fontSize: '1.25rem' }}>
-                    Controle seus gastos, sincronize seus bancos e receba insights inteligentes. Tudo em um lugar só, agora com integração total via WhatsApp.
+                    O Otto controla seus gastos, sincroniza seus bancos e te dá conselhos inteligentes via WhatsApp. Simples, rápido e inteligente.
                 </p>
-                <div style={{ position: 'relative', marginTop: '4rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
+                    <a href="https://app.integrareplus.com/register" className="btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                        Conhecer o Otto — Grátis
+                    </a>
+                    <a href="#features" className="glass" style={{
+                        padding: '1rem 2rem',
+                        borderRadius: '99px',
+                        fontWeight: 600,
+                        color: '#fff',
+                        display: 'inline-flex',
+                        alignItems: 'center'
+                    }}>
+                        Como funciona
+                    </a>
+                </div>
+                <div style={{ position: 'relative' }}>
                     <img
                         src="/src/assets/hero-visual.png"
-                        alt="AppFinancas Dashboard"
+                        alt="Meu Otto Dashboard"
                         style={{
                             width: '100%',
                             maxWidth: '1000px',
