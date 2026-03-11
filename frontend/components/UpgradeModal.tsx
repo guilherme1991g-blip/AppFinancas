@@ -108,8 +108,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                             borderColor: colors.border,
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
-                            maxHeight: height * 0.88,
-                            minHeight: 480,
+                            maxHeight: height * 0.9,
                         },
                     ]}
                 >
@@ -245,7 +244,9 @@ const styles = StyleSheet.create({
     },
     bannerWrap: {
         width: '100%',
-        height: 130,
+        height: height * 0.15,
+        maxHeight: 140,
+        minHeight: 90,
         position: 'relative',
     },
     bannerImage: {
