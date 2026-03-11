@@ -48,10 +48,8 @@ async function registerForPushNotificationsAsync() {
     }
 
     try {
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })).data;
+      token = (await Notifications.getDevicePushTokenAsync()).data;
+      console.log('Native Push Token:', token);
     } catch (e) {
       console.log('Error getting push token', e);
     }
