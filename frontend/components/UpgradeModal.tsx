@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity,
-    Animated, Dimensions, Alert, ActivityIndicator, Image, Linking, Platform
+    Animated, Dimensions, Alert, ActivityIndicator, Image, Linking, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -104,7 +104,6 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
         }
     };
 
-    if (!visible) return null;
 
     return (
         <Modal
@@ -138,82 +137,84 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         </TouchableOpacity>
                     </View>
 
-                    {/* ─── LIMIT WARNING ─── */}
-                    <View style={styles.warningBox}>
-                        <View style={styles.warningIconWrap}>
-                            <Ionicons name="alert-circle" size={22} color="#D97706" />
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                        {/* ─── LIMIT WARNING ─── */}
+                        <View style={styles.warningBox}>
+                            <View style={styles.warningIconWrap}>
+                                <Ionicons name="alert-circle" size={22} color="#D97706" />
+                            </View>
+                            <Text style={styles.warningText}>{message}</Text>
                         </View>
-                        <Text style={styles.warningText}>{message}</Text>
-                    </View>
 
-                    {/* ─── FEATURES ─── */}
-                    <View style={styles.featuresSection}>
-                        <Text style={[styles.featuresTitle, { color: colors.text }]}>
-                            {plan === 'free' ? '✨ Desbloqueie com o upgrade:' : '✨ Desbloqueie com o Premium:'}
-                        </Text>
-                        <View style={styles.featuresList}>
-                            {features.map((f, i) => (
-                                <View key={i} style={[styles.featureRow, { borderBottomColor: colors.border }]}>
-                                    <View style={styles.featureIconWrap}>
-                                        <Ionicons name={f.icon} size={18} color="#F59E0B" />
+                        {/* ─── FEATURES ─── */}
+                        <View style={styles.featuresSection}>
+                            <Text style={[styles.featuresTitle, { color: colors.text }]}>
+                                {plan === 'free' ? '✨ Desbloqueie com o upgrade:' : '✨ Desbloqueie com o Premium:'}
+                            </Text>
+                            <View style={styles.featuresList}>
+                                {features.map((f, i) => (
+                                    <View key={i} style={[styles.featureRow, { borderBottomColor: colors.border }]}>
+                                        <View style={styles.featureIconWrap}>
+                                            <Ionicons name={f.icon} size={18} color="#F59E0B" />
+                                        </View>
+                                        <Text style={[styles.featureText, { color: colors.text }]}>{f.text}</Text>
+                                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                                     </View>
-                                    <Text style={[styles.featureText, { color: colors.text }]}>{f.text}</Text>
-                                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* ─── ACTIONS ─── */}
-                    <View style={styles.actionsSection}>
-                        {canStartTrial && (
-                            <TouchableOpacity
-                                style={[styles.trialButton, { marginBottom: 12 }]}
-                                onPress={handleStartTrial}
-                                activeOpacity={0.8}
-                                disabled={trialLoading}
-                            >
-                                {trialLoading ? (
-                                    <ActivityIndicator color="#FFF" size="small" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="sparkles" size={18} color="#FFF" />
-                                        <Text style={styles.trialText}>7 dias de Premium Grátis</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        )}
-
-                        <View style={styles.planSelection}>
-                            <TouchableOpacity
-                                style={[styles.planCard, { borderColor: colors.border }]}
-                                onPress={handleOpenStore}
-                                activeOpacity={0.8}
-                            >
-                                <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
-                                    <Text style={styles.planBadgeText}>Básico</Text>
-                                </View>
-                                <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
-                                <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.planCard, { borderColor: '#8B5CF6' }]}
-                                onPress={handleOpenStore}
-                                activeOpacity={0.8}
-                            >
-                                <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
-                                    <Text style={styles.planBadgeText}>Premium</Text>
-                                </View>
-                                <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
-                                <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
-                            </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
 
-                        <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
-                            <Text style={styles.ctaText}>Entendi</Text>
-                        </TouchableOpacity>
-                    </View>
+                        {/* ─── ACTIONS ─── */}
+                        <View style={styles.actionsSection}>
+                            {canStartTrial && (
+                                <TouchableOpacity
+                                    style={[styles.trialButton, { marginBottom: 12 }]}
+                                    onPress={handleStartTrial}
+                                    activeOpacity={0.8}
+                                    disabled={trialLoading}
+                                >
+                                    {trialLoading ? (
+                                        <ActivityIndicator color="#FFF" size="small" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="sparkles" size={18} color="#FFF" />
+                                            <Text style={styles.trialText}>7 dias de Premium Grátis</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                            )}
+
+                            <View style={styles.planSelection}>
+                                <TouchableOpacity
+                                    style={[styles.planCard, { borderColor: colors.border }]}
+                                    onPress={handleOpenStore}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
+                                        <Text style={styles.planBadgeText}>Básico</Text>
+                                    </View>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
+                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.planCard, { borderColor: '#8B5CF6' }]}
+                                    onPress={handleOpenStore}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
+                                        <Text style={styles.planBadgeText}>Premium</Text>
+                                    </View>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
+                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
+                                <Text style={styles.ctaText}>Entendi</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
 
                     <Text style={[styles.footerText, { color: colors.textMuted }]}>
                         Assinatura via {Platform.OS === 'ios' ? 'App Store' : 'Google Play Store'}
