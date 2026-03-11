@@ -40,15 +40,19 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                 }),
                 Animated.timing(opacityAnim, {
                     toValue: 1,
-                    duration: 200,
+                    duration: 300,
                     useNativeDriver: true,
                 }),
             ]).start();
         } else {
+            // Reset anim values when hidden to ensure next show is clean
             scaleAnim.setValue(0.9);
             opacityAnim.setValue(0);
         }
     }, [visible]);
+
+    // Importante: No early return para manter o Modal montado se necessário,
+    // ou simplesmente deixar o Modal gerenciar pelo seu 'visible' prop.
 
     const plan = (user as any)?.plan || 'free';
     const trialUsed = (user as any)?.trial_used || false;
@@ -125,6 +129,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
                             maxHeight: height * 0.85,
+                            minHeight: 480, // Força altura mínima para evitar colapso
                         },
                     ]}
                 >
@@ -139,14 +144,14 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     <ScrollView
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollContent}
-                        style={{ flexGrow: 0 }}
+                        style={{ flex: 1 }} // Usa flex: 1 para ocupar o espaço do container
                     >
                         {/* ─── LIMIT WARNING ─── */}
                         <View style={styles.warningBox}>
                             <View style={styles.warningIconWrap}>
                                 <Ionicons name="alert-circle" size={22} color="#D97706" />
                             </View>
-                            <Text style={styles.warningText}>{message || 'Limite do plano atingido'}</Text>
+                            <Text style={styles.warningText}>{message || 'Você atingiu o limite do seu plano atual.'}</Text>
                         </View>
 
                         {/* ─── FEATURES ─── */}
