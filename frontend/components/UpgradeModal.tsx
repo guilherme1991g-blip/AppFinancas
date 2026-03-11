@@ -123,7 +123,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     <ScrollView
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollContent}
-                        style={{ flex: 1 }}
+                        style={{ flexShrink: 1 }}
                     >
                         {/* ─── LIMIT WARNING ─── */}
                         <View style={styles.warningBox}>
