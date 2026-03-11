@@ -289,7 +289,11 @@ export default function NewTransactionScreen() {
             }
             router.back();
         } catch (e: any) {
-            if (!e.planLimitHandled) Alert.alert('Erro', e.message);
+            if (e.planLimitHandled) {
+                router.back(); // Dismiss native modal so UpgradeModal can show
+            } else {
+                Alert.alert('Erro', e.message);
+            }
         } finally {
             setLoading(false);
         }

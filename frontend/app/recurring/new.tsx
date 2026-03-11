@@ -55,7 +55,13 @@ export default function NewRecurringScreen() {
                 start_date: new Date().toISOString()
             });
             router.back();
-        } catch (e: any) { if (!e.planLimitHandled) Alert.alert('Erro', e.message); }
+        } catch (e: any) {
+            if (e.planLimitHandled) {
+                router.back(); // Dismiss native modal so UpgradeModal can show
+            } else {
+                Alert.alert('Erro', e.message);
+            }
+        }
         finally { setSaving(false); }
     }
 

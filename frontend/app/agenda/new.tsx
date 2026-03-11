@@ -43,9 +43,13 @@ export default function NewCompromissoScreen() {
                 reminder
             });
             router.back();
-        } catch (e) {
-            console.error(e);
-            Alert.alert('Erro', 'Não foi possível agendar o compromisso.');
+        } catch (e: any) {
+            if (e.planLimitHandled) {
+                router.back(); // Dismiss native modal so UpgradeModal can show
+            } else {
+                console.error(e);
+                Alert.alert('Erro', 'Não foi possível agendar o compromisso.');
+            }
         } finally {
             setLoading(false);
         }
