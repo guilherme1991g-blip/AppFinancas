@@ -59,7 +59,8 @@ async def _create_and_send(user: dict, title: str, body: str,
 
     token = user.get("push_token")
     if token:
-        send_push_notification(token, title, body, data)
+        # Run sync push in thread to avoid blocking the event loop
+        await asyncio.to_thread(send_push_notification, token, title, body, data)
 
 
 # ───────────────────── individual checks ──────────────────
@@ -215,6 +216,10 @@ def __to_oid(val):
 async def notification_scheduler():
     """Background loop: runs every 30 minutes."""
     print("🔔 Notification scheduler started!")
+
+    # Wait 30s before first run to let the server stabilize
+    await asyncio.sleep(30)
+
     while True:
         try:
             print(f"[Scheduler] Running checks at {datetime.utcnow().isoformat()}")
@@ -227,3 +232,4 @@ async def notification_scheduler():
             print(f"[Scheduler] Error: {e}")
 
         await asyncio.sleep(30 * 60)  # 30 minutes
+
