@@ -105,13 +105,13 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
     };
 
     return (
-        <View
-            style={[
-                StyleSheet.absoluteFill,
-                { zIndex: 9999, pointerEvents: visible ? 'auto' : 'none' }
-            ]}
+        <Modal
+            visible={visible}
+            transparent
+            animationType="none"
+            onRequestClose={onClose}
         >
-            <View style={[styles.overlay, { opacity: visible ? 1 : 0 }]}>
+            <View style={styles.overlay}>
                 <TouchableOpacity
                     style={StyleSheet.absoluteFill}
                     onPress={onClose}
@@ -126,6 +126,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
                             maxHeight: '85%',
+                            minHeight: 450, // Garante que o corpo do modal apareça
                         },
                     ]}
                 >
@@ -139,15 +140,15 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 20 }}
-                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingBottom: 24 }}
+                        style={{ flexShrink: 1 }}
                     >
                         {/* ─── LIMIT WARNING ─── */}
                         <View style={styles.warningBox}>
                             <View style={styles.warningIconWrap}>
                                 <Ionicons name="alert-circle" size={22} color="#D97706" />
                             </View>
-                            <Text style={styles.warningText}>{message}</Text>
+                            <Text style={styles.warningText}>{message || 'Limite do plano atingido'}</Text>
                         </View>
 
                         {/* ─── FEATURES ─── */}
@@ -172,7 +173,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         <View style={styles.actionsSection}>
                             {canStartTrial && (
                                 <TouchableOpacity
-                                    style={[styles.trialButton, { marginBottom: 12 }]}
+                                    style={[styles.trialButton, { marginBottom: 16 }]}
                                     onPress={handleStartTrial}
                                     activeOpacity={0.8}
                                     disabled={trialLoading}
@@ -225,7 +226,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     </Text>
                 </Animated.View>
             </View>
-        </View>
+        </Modal>
     );
 }
 
