@@ -166,9 +166,9 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
 
                     {/* ─── ACTIONS ─── */}
                     <View style={styles.actionsSection}>
-                        {canStartTrial ? (
+                        {canStartTrial && (
                             <TouchableOpacity
-                                style={styles.trialButton}
+                                style={[styles.trialButton, { marginBottom: 12 }]}
                                 onPress={handleStartTrial}
                                 activeOpacity={0.8}
                                 disabled={trialLoading}
@@ -182,33 +182,33 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                                     </>
                                 )}
                             </TouchableOpacity>
-                        ) : (
-                            <View style={styles.planSelection}>
-                                <TouchableOpacity
-                                    style={[styles.planCard, { borderColor: colors.border }]}
-                                    onPress={handleOpenStore}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
-                                        <Text style={styles.planBadgeText}>Básico</Text>
-                                    </View>
-                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
-                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.planCard, { borderColor: '#8B5CF6' }]}
-                                    onPress={handleOpenStore}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
-                                        <Text style={styles.planBadgeText}>Premium</Text>
-                                    </View>
-                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
-                                    <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
-                                </TouchableOpacity>
-                            </View>
                         )}
+
+                        <View style={styles.planSelection}>
+                            <TouchableOpacity
+                                style={[styles.planCard, { borderColor: colors.border }]}
+                                onPress={handleOpenStore}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
+                                    <Text style={styles.planBadgeText}>Básico</Text>
+                                </View>
+                                <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
+                                <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.planCard, { borderColor: '#8B5CF6' }]}
+                                onPress={handleOpenStore}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
+                                    <Text style={styles.planBadgeText}>Premium</Text>
+                                </View>
+                                <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
+                                <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <TouchableOpacity style={styles.ctaButton} onPress={onClose} activeOpacity={0.8}>
                             <Text style={styles.ctaText}>Entendi</Text>
