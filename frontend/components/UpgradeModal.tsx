@@ -9,7 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const BANNER_IMG = require('@/assets/images/upgrade_banner.png');
 
 // URLs das lojas (Substituir pelos IDs reais quando disponíveis)
@@ -26,31 +26,29 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
     const { colors } = useTheme();
     const { user, refreshUser } = useAuth();
     const router = useRouter();
-    const scaleAnim = useRef(new Animated.Value(0.85)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const [trialLoading, setTrialLoading] = useState(false);
 
     useEffect(() => {
         if (visible) {
-            opacityAnim.setValue(0);
-            scaleAnim.setValue(0.85);
             Animated.parallel([
                 Animated.spring(scaleAnim, {
                     toValue: 1,
-                    friction: 7,
-                    tension: 40,
+                    friction: 8,
                     useNativeDriver: true,
                 }),
                 Animated.timing(opacityAnim, {
                     toValue: 1,
-                    duration: 300,
+                    duration: 200,
                     useNativeDriver: true,
                 }),
             ]).start();
+        } else {
+            scaleAnim.setValue(0.9);
+            opacityAnim.setValue(0);
         }
     }, [visible]);
-
-    if (!visible) return null;
 
     const plan = (user as any)?.plan || 'free';
     const trialUsed = (user as any)?.trial_used || false;
@@ -108,8 +106,9 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
         <Modal
             visible={visible}
             transparent
-            animationType="none"
+            animationType="fade"
             onRequestClose={onClose}
+            statusBarTranslucent
         >
             <View style={styles.overlay}>
                 <TouchableOpacity
@@ -125,8 +124,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                             borderColor: colors.border,
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
-                            maxHeight: '85%',
-                            minHeight: 450, // Garante que o corpo do modal apareça
+                            maxHeight: height * 0.85,
                         },
                     ]}
                 >
@@ -134,14 +132,14 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     <View style={styles.bannerWrap}>
                         <Image source={BANNER_IMG} style={styles.bannerImage} resizeMode="cover" />
                         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                            <Ionicons name="close" size={20} color="rgba(255,255,255,0.9)" />
+                            <Ionicons name="close" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 24 }}
-                        style={{ flexShrink: 1 }}
+                        contentContainerStyle={styles.scrollContent}
+                        style={{ flexGrow: 0 }}
                     >
                         {/* ─── LIMIT WARNING ─── */}
                         <View style={styles.warningBox}>
@@ -173,7 +171,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         <View style={styles.actionsSection}>
                             {canStartTrial && (
                                 <TouchableOpacity
-                                    style={[styles.trialButton, { marginBottom: 16 }]}
+                                    style={styles.trialButton}
                                     onPress={handleStartTrial}
                                     activeOpacity={0.8}
                                     disabled={trialLoading}
@@ -198,7 +196,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                                     <View style={[styles.planBadge, { backgroundColor: '#3B82F6' }]}>
                                         <Text style={styles.planBadgeText}>Básico</Text>
                                     </View>
-                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Todos os recursos essenciais ilimitados</Text>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Recursos essenciais ilimitados</Text>
                                     <Text style={[styles.planPrice, { color: colors.text }]}>R$ 9,90/mês</Text>
                                 </TouchableOpacity>
 
@@ -210,7 +208,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                                     <View style={[styles.planBadge, { backgroundColor: '#8B5CF6' }]}>
                                         <Text style={styles.planBadgeText}>Premium</Text>
                                     </View>
-                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>Agente IA no WhatsApp + Básico</Text>
+                                    <Text style={[styles.planDescription, { color: colors.textSecondary }]}>IA no Whats + Básico</Text>
                                     <Text style={[styles.planPrice, { color: colors.text }]}>R$ 29,90/mês</Text>
                                 </TouchableOpacity>
                             </View>
@@ -238,8 +236,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.6)',
     },
     container: {
-        width: width - 40,
-        maxWidth: 420,
+        width: width - 30,
+        maxWidth: 440,
         borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1,
@@ -249,11 +247,9 @@ const styles = StyleSheet.create({
         shadowRadius: 30,
         elevation: 20,
     },
-
-    // ── Banner Image ──
     bannerWrap: {
         width: '100%',
-        height: 160,
+        height: 150,
         position: 'relative',
     },
     bannerImage: {
@@ -262,8 +258,8 @@ const styles = StyleSheet.create({
     },
     closeBtn: {
         position: 'absolute',
-        top: 10,
-        right: 10,
+        top: 12,
+        right: 12,
         width: 34,
         height: 34,
         borderRadius: 17,
@@ -272,29 +268,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         zIndex: 10,
     },
-
-    // ── Warning ──
+    scrollContent: {
+        paddingBottom: 20,
+    },
     warningBox: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
         marginHorizontal: 16,
         marginTop: 16,
-        padding: 14,
+        padding: 12,
         borderRadius: 16,
         backgroundColor: '#FEF3C7',
         borderWidth: 1,
         borderColor: '#FDE68A',
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
     },
     warningIconWrap: {
-        width: 36,
-        height: 36,
-        borderRadius: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 10,
         backgroundColor: '#FDE68A',
         alignItems: 'center',
         justifyContent: 'center',
@@ -306,8 +298,6 @@ const styles = StyleSheet.create({
         color: '#92400E',
         lineHeight: 18,
     },
-
-    // ── Features ──
     featuresSection: {
         paddingHorizontal: 20,
         marginTop: 16,
@@ -315,33 +305,31 @@ const styles = StyleSheet.create({
     featuresTitle: {
         fontSize: 14,
         fontWeight: '800',
-        marginBottom: 10,
+        marginBottom: 8,
     },
     featuresList: {
-        gap: 2,
+        gap: 0,
     },
     featureRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 9,
+        gap: 10,
+        paddingVertical: 8,
         borderBottomWidth: 0.5,
     },
     featureIconWrap: {
-        width: 34,
-        height: 34,
-        borderRadius: 10,
+        width: 30,
+        height: 30,
+        borderRadius: 8,
         backgroundColor: '#FEF3C7',
         alignItems: 'center',
         justifyContent: 'center',
     },
     featureText: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
     },
-
-    // ── Actions ──
     actionsSection: {
         paddingHorizontal: 20,
         marginTop: 16,
@@ -354,76 +342,62 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 16,
         backgroundColor: '#8B5CF6',
-        shadowColor: '#8B5CF6',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
-        elevation: 6,
+        marginBottom: 16,
     },
     trialText: {
         fontSize: 15,
         fontWeight: '800',
         color: '#FFF',
     },
-
-    // ── Plan Selection ──
     planSelection: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 10,
     },
     planCard: {
         flex: 1,
         borderWidth: 2,
         borderRadius: 20,
-        padding: 12,
-        backgroundColor: 'transparent',
+        padding: 10,
     },
     planBadge: {
         alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        marginBottom: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 6,
+        marginBottom: 6,
     },
     planBadgeText: {
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: '900',
         color: '#FFF',
         textTransform: 'uppercase',
     },
     planDescription: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '600',
-        lineHeight: 15,
-        marginBottom: 8,
-        height: 30,
+        lineHeight: 14,
+        marginBottom: 6,
+        height: 28,
     },
     planPrice: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '900',
     },
-
-    // ── CTA ──
     ctaButton: {
-        flexDirection: 'row',
+        marginTop: 10,
+        paddingVertical: 12,
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        marginTop: 12,
-        paddingVertical: 14,
-        borderRadius: 16,
-        backgroundColor: 'transparent',
     },
     ctaText: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#94A3B8', // Slate 400
+        color: '#94A3B8',
     },
     footerText: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '600',
         textAlign: 'center',
-        marginTop: 8,
+        marginTop: 4,
         marginBottom: 16,
         paddingHorizontal: 20,
     },
