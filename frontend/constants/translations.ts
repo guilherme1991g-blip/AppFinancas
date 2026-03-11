@@ -238,6 +238,8 @@ const ptBR: Record<string, string> = {
     'profile.saved': 'Perfil atualizado com sucesso!',
     'profile.save_error': 'Não foi possível salvar o perfil',
     'profile.info': 'Para alterar sua senha, acesse a seção de Segurança nos Ajustes.',
+    'profile.complete_notice': 'Complete seu cadastro',
+    'profile.complete_notice_sub': 'Preencha seus dados para liberar todas as as funcionalidades do app.',
 
     // Settings extra
     'settings.profile': 'Meu Perfil',
@@ -502,6 +504,8 @@ const en: Record<string, string> = {
     'profile.saved': 'Profile updated successfully!',
     'profile.save_error': 'Could not save profile',
     'profile.info': 'To change your password, go to the Security section in Settings.',
+    'profile.complete_notice': 'Complete your registration',
+    'profile.complete_notice_sub': 'Fill in your details to unlock all app features.',
 
     // Settings extra
     'settings.profile': 'My Profile',
@@ -766,6 +770,8 @@ const es: Record<string, string> = {
     'profile.saved': '¡Perfil actualizado exitosamente!',
     'profile.save_error': 'No se pudo guardar el perfil',
     'profile.info': 'Para cambiar tu contraseña, accede a la sección de Seguridad en Ajustes.',
+    'profile.complete_notice': 'Completa tu registro',
+    'profile.complete_notice_sub': 'Completa tus datos para desbloquear todas las funciones de la aplicación.',
 
     // Settings extra
     'settings.profile': 'Mi Perfil',

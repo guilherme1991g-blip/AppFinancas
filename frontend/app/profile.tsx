@@ -55,7 +55,7 @@ const DDI_LIST = [
 export default function ProfileScreen() {
     const { colors } = useTheme();
     const { t } = useLocale();
-    const { user, refreshUser, logout } = useAuth();
+    const { user, refreshUser, logout, skipProfile } = useAuth();
     const insets = useSafeAreaInsets();
 
     const [name, setName] = useState('');
@@ -85,6 +85,13 @@ export default function ProfileScreen() {
     const [showDdiModal, setShowDdiModal] = useState(false);
     const [activeSection, setActiveSection] = useState<'personal' | 'professional' | 'financial'>('personal');
     const [showPicker, setShowPicker] = useState<{ field: string, data: string[], title: string } | null>(null);
+    const [showCompleteNotice, setShowCompleteNotice] = useState(false);
+
+    useEffect(() => {
+        if (user && user.profile_complete === false) {
+            setShowCompleteNotice(true);
+        }
+    }, [user]);
 
     useEffect(() => {
         (async () => {
@@ -244,13 +251,32 @@ export default function ProfileScreen() {
                     <View style={{ width: 40 }} />
                 )}
                 <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-                <TouchableOpacity style={styles.closeScreenBtn} onPress={() => router.replace('/(tabs)')}>
+                <TouchableOpacity style={styles.closeScreenBtn} onPress={() => {
+                    skipProfile();
+                    router.replace('/(tabs)');
+                }}>
                     <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+
+                    {/* Complete Profile Notice */}
+                    {showCompleteNotice && (
+                        <View style={styles.noticeBanner}>
+                            <View style={styles.noticeIcon}>
+                                <Ionicons name="sparkles" size={24} color="#FFF" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.noticeTitle}>{t('profile.complete_notice')}</Text>
+                                <Text style={styles.noticeSub}>{t('profile.complete_notice_sub')}</Text>
+                            </View>
+                            <TouchableOpacity style={styles.noticeClose} onPress={() => setShowCompleteNotice(false)}>
+                                <Ionicons name="close" size={20} color="#FFF" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Avatar */}
                     <View style={styles.avatarSection}>
@@ -704,4 +730,40 @@ const s = (colors: any) => StyleSheet.create({
         marginTop: 10,
     },
     nextBtnTxt: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+
+    noticeBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 20,
+        gap: 12,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    noticeIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noticeTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFF',
+    },
+    noticeSub: {
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.8)',
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    noticeClose: {
+        padding: 4,
+    },
 });

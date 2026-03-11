@@ -72,7 +72,7 @@ async function registerForPushNotificationsAsync() {
 }
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, skipProfileRequirement } = useAuth();
   const { mode, colors } = useTheme();
   const { visible, message, hideUpgrade } = useUpgrade();
   const segments = useSegments();
@@ -87,15 +87,15 @@ function RootLayoutNav() {
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/login' as any);
     } else if (user && inAuthGroup) {
-      if (user.profile_complete === false) {
+      if (user.profile_complete === false && !skipProfileRequirement) {
         router.replace('/profile' as any);
       } else {
         router.replace('/(tabs)' as any);
       }
-    } else if (user && !inAuthGroup && !inProfile && user.profile_complete === false) {
+    } else if (user && !inAuthGroup && !inProfile && user.profile_complete === false && !skipProfileRequirement) {
       router.replace('/profile' as any);
     }
-  }, [user, segments, isLoading]);
+  }, [user, segments, isLoading, skipProfileRequirement]);
 
   useEffect(() => {
     if (user) {

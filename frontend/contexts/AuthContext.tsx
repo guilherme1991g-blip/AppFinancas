@@ -38,6 +38,8 @@ interface AuthContextType {
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
     getBiometricCredentials: () => Promise<{ email: string; password: string } | null>;
+    skipProfileRequirement: boolean;
+    skipProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -45,6 +47,9 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [skipProfileRequirement, setSkipProfileRequirement] = useState(false);
+
+    const skipProfile = () => setSkipProfileRequirement(true);
 
     useEffect(() => {
         setUnauthorizedListener(() => {
@@ -107,7 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser, getBiometricCredentials }}>
+        <AuthContext.Provider value={{
+            user, isLoading, login, register, logout, refreshUser,
+            getBiometricCredentials, skipProfileRequirement, skipProfile
+        }}>
             {children}
         </AuthContext.Provider>
     );
