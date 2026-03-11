@@ -15,6 +15,7 @@ from database import (
     recurring_collection
 )
 from utils.date_utils import calculate_due_date
+from utils.notifications import send_push_notification
 
 router = APIRouter(prefix="/v1", tags=["external_api"])
 
@@ -221,6 +222,16 @@ async def criar_despesa(
         )
 
     doc["_id"] = result.inserted_id
+
+    # Send Push Notification (WhatsApp Arrival)
+    push_token = user.get("push_token")
+    if push_token:
+        send_push_notification(
+            push_token, 
+            "✅ Despesa Lançada", 
+            f"Lançamos a despesa '{doc['description']}' de R$ {doc['amount']:,.2f} via WhatsApp."
+        )
+
     return _serialize(doc)
 
 
@@ -334,6 +345,16 @@ async def criar_receita(
         )
 
     doc["_id"] = result.inserted_id
+
+    # Send Push Notification (WhatsApp Arrival)
+    push_token = user.get("push_token")
+    if push_token:
+        send_push_notification(
+            push_token, 
+            "💰 Receita Lançada", 
+            f"Lançamos a receita '{doc['description']}' de R$ {doc['amount']:,.2f} via WhatsApp."
+        )
+
     return _serialize(doc)
 
 
@@ -440,6 +461,16 @@ async def lancar_fatura(
             {"$inc": {"balance": -installment_amount}}
         )
 
+    # Send Push Notification (WhatsApp Arrival)
+    push_token = user.get("push_token")
+    if push_token:
+        # total_amount is calculated in lancar_fatura
+        send_push_notification(
+            push_token, 
+            "💳 Compra no Cartão", 
+            f"Lançamos '{data['description']}' no cartão {account['name']}. Total: R$ {total_amount:,.2f} ({installments}x)."
+        )
+
     if installments == 1:
         return _serialize(created_docs[0])
 
@@ -534,6 +565,16 @@ async def criar_agenda(
 
     result = await compromissos_collection.insert_one(doc)
     doc["_id"] = result.inserted_id
+
+    # Send Push Notification (WhatsApp Arrival)
+    push_token = user.get("push_token")
+    if push_token:
+        send_push_notification(
+            push_token, 
+            "📅 Agenda Atualizada", 
+            f"Adicionamos '{doc['title']}' à sua agenda via WhatsApp."
+        )
+
     return _serialize(doc)
 
 
