@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from datetime import datetime
 from bson import ObjectId
-from database import notifications_collection
+from database import notifications_collection, users_collection
 from routers.auth import get_current_user
 from models.notification import NotificationResponse
+from utils.notifications import send_push_notification
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -45,3 +46,34 @@ async def mark_all_as_read(current_user=Depends(get_current_user)):
         {"$set": {"read": True}}
     )
     return {"message": "Todas marcadas como lidas"}
+
+
+@router.post("/test")
+async def send_test_notification(current_user=Depends(get_current_user)):
+    """Send a test push notification to the current user."""
+    user_id = str(current_user["_id"])
+    user = await users_collection.find_one({"_id": ObjectId(user_id)})
+
+    token = user.get("push_token") if user else None
+    if not token:
+        raise HTTPException(status_code=400, detail="Nenhum push token registrado. Abra o app primeiro.")
+
+    title = "🔔 Teste de Notificação"
+    body = "Se você está vendo isso, as notificações push estão funcionando! 🎉"
+
+    # Save to DB
+    await notifications_collection.insert_one({
+        "user_id": user_id,
+        "title": title,
+        "body": body,
+        "type": "system",
+        "data": {"ref_id": f"test_{datetime.utcnow().isoformat()}"},
+        "read": False,
+        "created_at": datetime.utcnow(),
+    })
+
+    # Send push
+    send_push_notification(token, title, body)
+
+    return {"message": "Notificação de teste enviada!"}
+
