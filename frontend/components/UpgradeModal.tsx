@@ -32,11 +32,13 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
 
     useEffect(() => {
         if (visible) {
+            opacityAnim.setValue(0);
+            scaleAnim.setValue(0.85);
             Animated.parallel([
                 Animated.spring(scaleAnim, {
                     toValue: 1,
-                    friction: 6,
-                    tension: 80,
+                    friction: 7,
+                    tension: 40,
                     useNativeDriver: true,
                 }),
                 Animated.timing(opacityAnim, {
@@ -45,11 +47,10 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                     useNativeDriver: true,
                 }),
             ]).start();
-        } else {
-            scaleAnim.setValue(0.85);
-            opacityAnim.setValue(0);
         }
     }, [visible]);
+
+    if (!visible) return null;
 
     const plan = (user as any)?.plan || 'free';
     const trialUsed = (user as any)?.trial_used || false;
@@ -96,14 +97,12 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
         if (supported) {
             await Linking.openURL(url);
         } else {
-            // Fallback para HTTPS se o deep link falhar/não suportado no emulador
             const webUrl = Platform.OS === 'ios'
                 ? 'https://apps.apple.com/app/idYOUR_APP_ID'
                 : 'https://play.google.com/store/apps/details?id=YOUR_PACKAGE_NAME';
             await Linking.openURL(webUrl);
         }
     };
-
 
     return (
         <Modal
@@ -126,6 +125,7 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                             borderColor: colors.border,
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
+                            maxHeight: '85%',
                         },
                     ]}
                 >
@@ -137,7 +137,11 @@ export function UpgradeModal({ visible, message, onClose }: Props) {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        style={{ flex: 1 }}
+                    >
                         {/* ─── LIMIT WARNING ─── */}
                         <View style={styles.warningBox}>
                             <View style={styles.warningIconWrap}>
