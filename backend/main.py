@@ -1,5 +1,4 @@
 import os
-import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -7,7 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from routers import auth, accounts, categories, transactions, transfers, metas, recurring, companies, analytics, bills, preferences, sonhos, compromissos, notifications, data, external_api, admin
-from utils.scheduler import notification_scheduler
 
 app = FastAPI(
     title="App Finanças API",
@@ -40,11 +38,6 @@ app.include_router(notifications.router)
 app.include_router(data.router)
 app.include_router(external_api.router)
 app.include_router(admin.router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(notification_scheduler())
 
 
 @app.get("/")
